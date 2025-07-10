@@ -12,6 +12,9 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       User.hasOne(models.Member, { foreignKey: 'user_id' });
+      User.hasMany(models.Review, { foreignKey: 'user_id' });
+      User.hasMany(models.MemberPackage, { foreignKey: 'user_id' });
+      User.hasMany(models.Session, { foreignKey: 'user_id' });
     }
   }
   User.init({
@@ -34,8 +37,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     refresh_token: {
       type: DataTypes.STRING(255),
-      allowNull: false,
+      allowNull: true,
     },
+    reset_token: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
+    reset_token_expiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    }
   }, {
     sequelize,
     modelName: 'User',

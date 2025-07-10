@@ -1,8 +1,10 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const path = require('path');
 const PORT = process.env.PORT || 3000;
 const authRoutes = require('./routes/auth.route');
+const profileRoutes = require('./routes/profile.route');
 
 app.use(express.json());
 app.use(cors({
@@ -12,12 +14,15 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Serve static files dari folder uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World');
 });
-
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

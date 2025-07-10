@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      MemberPackage.belongsTo(models.Member, { foreignKey: 'member_id' });
+      MemberPackage.belongsTo(models.User, { foreignKey: 'user_id' });
       MemberPackage.belongsTo(models.Package, { foreignKey: 'package_id' });
       MemberPackage.hasMany(models.Payment, { foreignKey: 'member_package_id' });
     }

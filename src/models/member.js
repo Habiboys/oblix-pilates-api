@@ -12,9 +12,6 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Member.belongsTo(models.User, { foreignKey: 'user_id' });
-      Member.hasMany(models.Review, { foreignKey: 'member_id' });
-      Member.hasMany(models.MemberPackage, { foreignKey: 'member_id' });
-      Member.hasMany(models.Session, { foreignKey: 'member_id' });
     }
   }
   Member.init({
@@ -25,11 +22,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     member_code: {
       type: DataTypes.STRING(50),
-      allowNull: false
+      allowNull: true,
+      unique: true
     },
     username: {
       type: DataTypes.STRING(50),
-      allowNull: false
+      allowNull: false,
+      unique: true
     },
     full_name: {
       type: DataTypes.STRING(150),
@@ -45,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     address: {
       type: DataTypes.TEXT,
-      allowNull: false
+      allowNull: true
     },
     date_of_join: {
       type: DataTypes.DATE,

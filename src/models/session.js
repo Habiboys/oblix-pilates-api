@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Session.belongsTo(models.Member, { foreignKey: 'member_id' });
+      Session.belongsTo(models.User, { foreignKey: 'user_id' });
       Session.belongsTo(models.Coach, { foreignKey: 'coach_id' });
       Session.belongsTo(models.ClassType, { foreignKey: 'class_type_id' });
     }

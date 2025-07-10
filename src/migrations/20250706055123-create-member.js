@@ -11,11 +11,13 @@ module.exports = {
       },
       member_code: {
         type: Sequelize.STRING(50),
-        allowNull: false
+        allowNull: true,
+        unique: true
       },
       username: {
         type: Sequelize.STRING(50),
-        allowNull: false
+        allowNull: false,
+        unique: true
       },
       full_name: {
         type: Sequelize.STRING(150),
@@ -31,7 +33,7 @@ module.exports = {
       },
       address: {
         type: Sequelize.TEXT,
-        allowNull: false
+        allowNull: true
       },
       date_of_join: {
         type: Sequelize.DATE,
