@@ -29,7 +29,10 @@
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
     "redis": "^5.5.6",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "sequelize-cli": "^6.6.3"

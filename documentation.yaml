@@ -1,0 +1,594 @@
+openapi: 3.0.0
+info:
+  title: Oblix Pilates API
+  description: API untuk aplikasi Oblix Pilates - sistem manajemen studio pilates
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@oblixpilates.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, user]
+        refresh_token:
+          type: string
+          nullable: true
+
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_code:
+          type: string
+        username:
+          type: string
+        full_name:
+          type: string
+        phone_number:
+          type: string
+        dob:
+          type: string
+          format: date
+        address:
+          type: string
+        date_of_join:
+          type: string
+          format: date
+        profile_picture:
+          type: string
+          nullable: true
+        status:
+          type: string
+
+    RegisterRequest:
+      type: object
+      required:
+        - full_name
+        - username
+        - email
+        - dob
+        - phone_number
+        - password
+      properties:
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        dob:
+          type: string
+          format: date
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        password:
+          type: string
+          minLength: 6
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        dob:
+          type: string
+          format: date
+        address:
+          type: string
+          maxLength: 500
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Register a new user and create member profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user and return access tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          access_token:
+                            type: string
+                          refresh_token:
+                            type: string
+                          user:
+                            $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset link to user's email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Reset link sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Email not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password with token
+      description: Reset user password using reset token from email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          access_token:
+                            type: string
+                          refresh_token:
+                            type: string
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /profile/{id}:
+    get:
+      tags:
+        - Profile
+      summary: Get user profile
+      description: Retrieve user profile with member information
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        allOf:
+                          - $ref: '#/components/schemas/User'
+                          - type: object
+                            properties:
+                              Member:
+                                $ref: '#/components/schemas/Member'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Profile
+      summary: Update user profile
+      description: Update user profile information and optionally upload profile photo
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                full_name:
+                  type: string
+                  minLength: 3
+                  maxLength: 150
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                phone_number:
+                  type: string
+                  minLength: 10
+                  maxLength: 15
+                dob:
+                  type: string
+                  format: date
+                address:
+                  type: string
+                  maxLength: 500
+                profile_picture:
+                  type: string
+                  format: binary
+                  description: Profile photo (JPG, PNG, GIF, WebP, max 5MB)
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          profile_picture:
+                            type: string
+        '400':
+          description: Validation error or file upload error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /profile/{id}/change-password:
+    put:
+      tags:
+        - Profile
+      summary: Change user password
+      description: Change user password with current password verification
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid current password or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /profile/{id}/profile-photo:
+    delete:
+      tags:
+        - Profile
+      summary: Delete profile photo
+      description: Remove user's profile photo
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      responses:
+        '200':
+          description: Profile photo deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Profile
+    description: User profile management endpoints

@@ -5,6 +5,11 @@ const path = require('path');
 const PORT = process.env.PORT || 3000;
 const authRoutes = require('./routes/auth.route');
 const profileRoutes = require('./routes/profile.route');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(express.json());
 app.use(cors({
