@@ -13,16 +13,16 @@ module.exports = {
         type: Sequelize.STRING(50),
         allowNull: false
       },
+      username: {
+        type: Sequelize.STRING(50),
+        allowNull: false
+      },
       full_name: {
         type: Sequelize.STRING(150),
         allowNull: false
       },
       phone_number: {
         type: Sequelize.STRING(50),
-        allowNull: false
-      },
-      email: {
-        type: Sequelize.STRING(150),
         allowNull: false
       },
       dob: {
@@ -36,6 +36,10 @@ module.exports = {
       date_of_join: {
         type: Sequelize.DATE,
         allowNull: false
+      },
+      profile_picture: {
+        type: Sequelize.STRING(255),
+        allowNull: true
       },
       status: {
         type: Sequelize.STRING(50),

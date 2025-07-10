@@ -25,6 +25,10 @@ module.exports = {
           key: 'id'
         }
       },
+      is_trial: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

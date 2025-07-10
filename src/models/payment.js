@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Payment.belongsTo(models.Membership, { foreignKey: 'membership_id' });
+      Payment.belongsTo(models.MemberPackage, { foreignKey: 'member_package_id' });
     }
   }
   Payment.init({
@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    membership_id: {
+    member_package_id: {
       type: DataTypes.UUID,
       allowNull: false
     },

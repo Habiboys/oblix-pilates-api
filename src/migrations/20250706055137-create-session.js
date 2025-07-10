@@ -41,6 +41,10 @@ module.exports = {
         type: Sequelize.TIME,
         allowNull: false
       },
+      spot: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
       status: {
         type: Sequelize.STRING(50),
         allowNull: false

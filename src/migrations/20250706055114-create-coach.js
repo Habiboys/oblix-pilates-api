@@ -25,7 +25,11 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: false
       },
-      image_name: {
+      description: {
+        type: Sequelize.TEXT,
+        allowNull: false
+      },
+      photo: {
         type: Sequelize.STRING(255),
         allowNull: false
       },

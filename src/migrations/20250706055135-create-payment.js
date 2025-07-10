@@ -9,11 +9,11 @@ module.exports = {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      membership_id: {
+      member_package_id: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'membership',
+          model: 'member_packages',
           key: 'id'
         }
       },

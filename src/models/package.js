@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Package.belongsTo(models.ClassType, { foreignKey: 'class_type_id' });
       Package.hasMany(models.PriceList, { foreignKey: 'package_id' });
-      Package.hasMany(models.Membership, { foreignKey: 'package_id' });
+      Package.hasMany(models.MemberPackage, { foreignKey: 'package_id' });
     }
   }
   Package.init({
@@ -32,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     class_type_id: {
       type: DataTypes.UUID,
+      allowNull: false
+    },
+    is_trial: {
+      type: DataTypes.BOOLEAN,
       allowNull: false
     }
   }, {

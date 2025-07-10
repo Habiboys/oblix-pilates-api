@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Member.belongsTo(models.User, { foreignKey: 'user_id' });
       Member.hasMany(models.Review, { foreignKey: 'member_id' });
-      Member.hasMany(models.Membership, { foreignKey: 'member_id' });
+      Member.hasMany(models.MemberPackage, { foreignKey: 'member_id' });
       Member.hasMany(models.Session, { foreignKey: 'member_id' });
     }
   }
@@ -27,16 +27,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50),
       allowNull: false
     },
+    username: {
+      type: DataTypes.STRING(50),
+      allowNull: false
+    },
     full_name: {
       type: DataTypes.STRING(150),
       allowNull: false
     },
     phone_number: {
       type: DataTypes.STRING(50),
-      allowNull: false
-    },
-    email: {
-      type: DataTypes.STRING(150),
       allowNull: false
     },
     dob: {
@@ -50,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
     date_of_join: {
       type: DataTypes.DATE,
       allowNull: false
+    },
+    profile_picture: {
+      type: DataTypes.STRING(255),
+      allowNull: true
     },
     status: {
       type: DataTypes.STRING(50),

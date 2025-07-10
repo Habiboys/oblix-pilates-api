@@ -11,7 +11,11 @@ module.exports = {
       },
       member_id: {
         type: Sequelize.UUID,
-        allowNull: false
+        allowNull: false,
+        references: {
+          model: 'members',
+          key: 'id'
+        }
       },
       rating: {
         type: Sequelize.FLOAT,
