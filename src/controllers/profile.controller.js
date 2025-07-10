@@ -22,12 +22,15 @@ const getProfile = async (req, res) => {
         }
 
         const userData = user.get({ plain: true });
-        const { Member: memberData, user_id, ...userFields } = userData;
+        const { Member: memberData, ...userFields } = userData;
+        
+        // Hapus user_id dari memberData
+        const { user_id: memberUserId, ...memberFields } = memberData;
         
         const data = {
             ...userFields, // Semua field user kecuali Member
             Member: {
-                ...memberData // Semua field dari Member
+                ...memberFields // Semua field dari Member kecuali user_id
             }
         };
     

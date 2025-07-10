@@ -24,12 +24,15 @@ const validateToken = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'User tidak aktif'
-      });
-    }
+    // if (!user.isActive) {
+    //   return res.status(401).json({
+    //     status: 'error',
+    //     message: 'User tidak aktif'
+    //   });
+    // }
+
+
+
 
     req.user = user;
     next();
