@@ -8,10 +8,11 @@ info:
     email: support@oblixpilates.com
 
 servers:
-  - url: http://localhost:3000/api
-    description: Development server
   - url: http://34.101.143.2:3020/api
     description: Testing server
+  - url: http://localhost:3000/api
+    description: Development server
+
 
 
 components:
