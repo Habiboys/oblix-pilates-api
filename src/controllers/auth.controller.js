@@ -164,7 +164,7 @@ const forgotPassword = async (req, res) => {
         });
 
         // Reset URL (sesuaikan dengan frontend URL)
-        const resetUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const resetUrl = process.env.FRONTEND_URL;
         
         // Kirim email reset password
         const emailSent = await emailService.sendResetPasswordEmail(email, resetToken, resetUrl);
