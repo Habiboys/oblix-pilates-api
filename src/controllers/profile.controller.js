@@ -5,7 +5,7 @@ const path = require('path');
 
 const getProfile = async (req, res) => {
     try{
-        const { id } = req.params; // id ini adalah id user
+        const { id } = req.user.id; // id ini adalah id user
         
         // Cari user berdasarkan id user
         const user = await User.findOne({ 
@@ -45,7 +45,7 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.user.id;
         const {
             email,
             full_name,
@@ -105,7 +105,7 @@ const updateProfile = async (req, res) => {
 
 const changePassword = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.user.id;
         const { currentPassword, newPassword } = req.body;
 
         // Validasi input
@@ -147,7 +147,7 @@ const changePassword = async (req, res) => {
 
 const deleteProfilePhoto = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.user.id;
 
         // Cari user dengan member
         const user = await User.findOne({

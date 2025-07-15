@@ -15,10 +15,10 @@ const {
 } = require('../validations/profile.validation');
 
 // Get profile
-router.get('/:id', validateToken, getProfile);
+router.get('/', validateToken, getProfile);
 
 // Update profile (dengan upload foto)
-router.put('/:id', 
+router.put('/', 
     validateToken, 
     uploadProfilePhoto, 
     handleUploadError,
@@ -27,13 +27,13 @@ router.put('/:id',
 );
 
 // Change password
-router.put('/:id/change-password', 
+router.put('/change-password', 
     validateToken, 
     validate(changePasswordSchema), 
     changePassword
 );
 
 // Delete profile photo
-router.delete('/:id/profile-photo', validateToken, deleteProfilePhoto);
+router.delete('/profile-photo', validateToken, deleteProfilePhoto);
 
 module.exports = router; 
