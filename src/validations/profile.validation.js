@@ -2,25 +2,25 @@ const Joi = require('joi');
 
 // Schema untuk update profile
 const updateProfileSchema = Joi.object({
-    email: Joi.string().email().optional().messages({
+    email: Joi.string().email().allow('', null).optional().messages({
         'string.email': 'Please provide a valid email address'
     }),
-    full_name: Joi.string().min(3).max(150).optional().messages({
+    full_name: Joi.string().min(3).max(150).allow('', null).optional().messages({
         'string.min': 'Full name must be at least 3 characters long',
         'string.max': 'Full name cannot exceed 150 characters'
     }),
-    username: Joi.string().min(3).max(50).optional().messages({
+    username: Joi.string().min(3).max(50).allow('', null).optional().messages({
         'string.min': 'Username must be at least 3 characters long',
         'string.max': 'Username cannot exceed 50 characters'
     }),
-    phone_number: Joi.string().min(10).max(15).optional().messages({
+    phone_number: Joi.string().min(10).max(15).allow('', null).optional().messages({
         'string.min': 'Phone number must be at least 10 characters long',
         'string.max': 'Phone number cannot exceed 15 characters'
     }),
-    dob: Joi.date().optional().messages({
+    dob: Joi.date().allow('', null).optional().messages({
         'date.base': 'Date of birth must be a valid date'
     }),
-    address: Joi.string().max(500).optional().messages({
+    address: Joi.string().max(500).allow('', null).optional().messages({
         'string.max': 'Address cannot exceed 500 characters'
     })
 });
