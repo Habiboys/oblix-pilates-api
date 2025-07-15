@@ -379,7 +379,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /profile/{id}:
+  /profile:
     get:
       tags:
         - Profile
@@ -387,14 +387,6 @@ paths:
       description: Retrieve user profile with member information
       security:
         - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: User ID
       responses:
         '200':
           description: Profile retrieved successfully
@@ -433,14 +425,6 @@ paths:
       description: Update user profile information and optionally upload profile photo
       security:
         - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: User ID
       requestBody:
         required: true
         content:
@@ -507,7 +491,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /profile/{id}/change-password:
+  /profile/change-password:
     put:
       tags:
         - Profile
@@ -515,14 +499,6 @@ paths:
       description: Change user password with current password verification
       security:
         - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: User ID
       requestBody:
         required: true
         content:
@@ -555,7 +531,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /profile/{id}/profile-photo:
+  /profile/profile-photo:
     delete:
       tags:
         - Profile
@@ -563,14 +539,6 @@ paths:
       description: Remove user's profile photo
       security:
         - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: User ID
       responses:
         '200':
           description: Profile photo deleted successfully
