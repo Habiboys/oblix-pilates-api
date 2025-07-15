@@ -5,11 +5,11 @@ const path = require('path');
 
 const getProfile = async (req, res) => {
     try{
-        const { id } = req.user.id; // id ini adalah id user
+        const userId = req.user.id; // id ini adalah id user
         
         // Cari user berdasarkan id user
         const user = await User.findOne({ 
-            where: { id },
+            where: { id: userId },
             include: [Member]
         });
 
@@ -45,7 +45,7 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     try {
-        const { id } = req.user.id;
+        const userId = req.user.id;
         const {
             email,
             full_name,
@@ -57,7 +57,7 @@ const updateProfile = async (req, res) => {
 
         // Cari user berdasarkan id user
         const user = await User.findOne({
-            where: { id },
+            where: { id: userId },
             include: [Member],
         });
 
@@ -105,7 +105,7 @@ const updateProfile = async (req, res) => {
 
 const changePassword = async (req, res) => {
     try {
-        const { id } = req.user.id;
+        const userId = req.user.id;
         const { currentPassword, newPassword } = req.body;
 
         // Validasi input
@@ -116,7 +116,7 @@ const changePassword = async (req, res) => {
         }
 
         // Cari user
-        const user = await User.findOne({ where: { id } });
+        const user = await User.findOne({ where: { id: userId } });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -147,11 +147,11 @@ const changePassword = async (req, res) => {
 
 const deleteProfilePhoto = async (req, res) => {
     try {
-        const { id } = req.user.id;
+        const userId = req.user.id;
 
         // Cari user dengan member
         const user = await User.findOne({
-            where: { id },
+            where: { id: userId },
             include: [Member]
         });
 

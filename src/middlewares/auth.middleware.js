@@ -31,10 +31,13 @@ const validateToken = async (req, res, next) => {
     //   });
     // }
 
-
-
-
     req.user = user;
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role
+    };
+    console.log(req.user);
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
