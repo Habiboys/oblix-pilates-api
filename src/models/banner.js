@@ -19,18 +19,18 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
-    image_name: {
+    title: {
       type: DataTypes.STRING(255),
       allowNull: false
     },
-    active: {
-      type: DataTypes.BOOLEAN,
+    picture: {
+      type: DataTypes.STRING(255),
       allowNull: false
-    }
+    },
   }, {
     sequelize,
     modelName: 'Banner',
-    tableName: 'banner',
+    tableName: 'banners',
   });
   return Banner;
 };

@@ -35,6 +35,9 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "sequelize-cli": "^6.6.3"
+    "cross-env": "^7.0.3",
+    "jest": "^30.0.4",
+    "sequelize-cli": "^6.6.3",
+    "supertest": "^7.1.3"
   }
 }

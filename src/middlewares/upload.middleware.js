@@ -1,17 +1,19 @@
 const multer = require('multer');
 const path = require('path');
 
-// Konfigurasi storage
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/profiles/');
-    },
-    filename: function (req, file, cb) {
-        // Generate nama file unik dengan timestamp
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Konfigurasi storage universal
+const createStorage = (folder, prefix) => {
+    return multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, `uploads/${folder}/`);
+        },
+        filename: function (req, file, cb) {
+            // Generate nama file unik dengan timestamp
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
+        }
+    });
+};
 
 // Filter file yang diizinkan
 const fileFilter = (req, file, cb) => {
@@ -23,17 +25,23 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-// Konfigurasi upload
-const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    }
-});
+// Fungsi universal untuk membuat upload middleware
+const createUploadMiddleware = (folder, prefix, fieldName) => {
+    const storage = createStorage(folder, prefix);
+    const upload = multer({
+        storage: storage,
+        fileFilter: fileFilter,
+        limits: {
+            fileSize: 5 * 1024 * 1024 // 5MB limit
+        }
+    });
+    return upload.single(fieldName);
+};
 
-// Middleware untuk upload single file
-const uploadProfilePhoto = upload.single('profile_picture');
+// Middleware universal untuk upload gambar
+const uploadPicture = (folder, prefix = 'image', fieldName = 'picture') => {
+    return createUploadMiddleware(folder, prefix, fieldName);
+};
 
 // Middleware untuk handle error upload
 const handleUploadError = (err, req, res, next) => {
@@ -54,7 +62,13 @@ const handleUploadError = (err, req, res, next) => {
     next();
 };
 
+// Backward compatibility - middleware khusus yang sudah ada
+const uploadProfilePhoto = uploadPicture('profiles', 'profile', 'profile_picture');
+const uploadTrainerPicture = uploadPicture('trainers', 'trainer', 'picture');
+
 module.exports = {
+    uploadPicture,
     uploadProfilePhoto,
+    uploadTrainerPicture,
     handleUploadError
 }; 

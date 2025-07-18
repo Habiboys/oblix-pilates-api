@@ -9,16 +9,12 @@ module.exports = {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      question: {
+      title: {
         type: Sequelize.STRING(255),
         allowNull: false
       },
-      answer: {
-        type: Sequelize.STRING(255),
-        allowNull: false
-      },
-      active: {
-        type: Sequelize.BOOLEAN,
+      content: {
+        type: Sequelize.TEXT,
         allowNull: false
       },
       createdAt: {
