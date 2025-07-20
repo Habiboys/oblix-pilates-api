@@ -25,7 +25,7 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-// Middleware upload universal - handle field 'file' dan 'picture'
+// Middleware upload universal - hanya menggunakan field 'picture'
 const uploadFile = (folder, required = false) => {
     const storage = createStorage(folder);
     const upload = multer({
@@ -37,36 +37,8 @@ const uploadFile = (folder, required = false) => {
     });
 
     return (req, res, next) => {
-        // Coba upload dengan field 'file' dulu, kalau tidak ada coba 'picture'
-        upload.single('file')(req, res, (err) => {
-            if (err && err.code === 'LIMIT_UNEXPECTED_FILE') {
-                // Jika field 'file' tidak ada, coba field 'picture'
-                upload.single('picture')(req, res, (err2) => {
-                    if (err2 instanceof multer.MulterError) {
-                        if (err2.code === 'LIMIT_FILE_SIZE') {
-                            return res.status(400).json({
-                                message: 'File size too large. Maximum size is 5MB'
-                            });
-                        }
-                        return res.status(400).json({
-                            message: 'Upload error: ' + err2.message
-                        });
-                    } else if (err2) {
-                        return res.status(400).json({
-                            message: err2.message
-                        });
-                    }
-                    
-                    // Jika required dan tidak ada file, return error
-                    if (required && !req.file) {
-                        return res.status(400).json({
-                            message: 'File is required'
-                        });
-                    }
-                    
-                    next();
-                });
-            } else if (err instanceof multer.MulterError) {
+        upload.single('picture')(req, res, (err) => {
+            if (err instanceof multer.MulterError) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
                     return res.status(400).json({
                         message: 'File size too large. Maximum size is 5MB'
@@ -79,16 +51,16 @@ const uploadFile = (folder, required = false) => {
                 return res.status(400).json({
                     message: err.message
                 });
-            } else {
-                // Jika required dan tidak ada file, return error
-                if (required && !req.file) {
-                    return res.status(400).json({
-                        message: 'File is required'
-                    });
-                }
-                
-                next();
             }
+            
+            // Jika required dan tidak ada file, return error
+            if (required && !req.file) {
+                return res.status(400).json({
+                    message: 'Picture is required'
+                });
+            }
+            
+            next();
         });
     };
 };
