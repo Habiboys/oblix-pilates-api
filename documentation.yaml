@@ -108,8 +108,10 @@ components:
         email:
           type: string
           format: email
+          example: "admin@oblix.com"
         password:
           type: string
+          example: "admin123"
 
     ForgotPasswordRequest:
       type: object
@@ -626,6 +628,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
+  
       responses:
         '200':
           description: Login successful

@@ -14,8 +14,17 @@ const galleryRoutes = require('./routes/gallery.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
+const { logger, errorLogger } = require('./middlewares/logger.middleware');
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Middleware untuk logging semua request
+app.use(logger);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  swaggerOptions: {
+    cacheControl: false,
+    persistAuthorization: false
+  }
+}));
 
 app.use(express.json());
 app.use(cors({
@@ -40,6 +49,11 @@ app.get('/', (req, res) => {
   res.send('Hello World');
 });
 
+// Error handling middleware (harus di akhir)
+app.use(errorLogger);
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`API Documentation: http://localhost:${PORT}/api-docs`);
+  console.log(`Logs will be saved to: logs/api-${new Date().toISOString().split('T')[0]}.log`);
 });

@@ -1,0 +1,43 @@
+[2025-07-20T05:40:46.923Z] REQUEST: GET /api/auth/login - IP: ::1
+[2025-07-20T05:40:46.924Z] HEADERS: {"authorization":"None","content-type":"None","user-agent":"curl/8.7.1"}
+[2025-07-20T05:40:46.925Z] GET /api/auth/login - 404 - 2ms - IP: ::1 - UA: curl/8.7.1 - Size: 153 bytes
+[2025-07-20T05:40:46.926Z] RESPONSE BODY: <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>Cannot GET /api/auth/login</pre>
+</body>
+</html>
+
+[2025-07-20T05:40:51.351Z] REQUEST: POST /api/auth/login - IP: ::1
+[2025-07-20T05:40:51.351Z] HEADERS: {"authorization":"None","content-type":"application/json","user-agent":"curl/8.7.1"}
+[2025-07-20T05:40:52.809Z] POST /api/auth/login - 200 - 1458ms - IP: ::1 - UA: curl/8.7.1 - Size: 542 bytes
+[2025-07-20T05:41:16.566Z] REQUEST: GET /api/banner?page=1&limit=5&search=test - IP: ::1
+[2025-07-20T05:41:16.566Z] QUERY PARAMS: {"page":"1","limit":"5","search":"test"}
+[2025-07-20T05:41:16.566Z] HEADERS: {"authorization":"Bearer [HIDDEN]","content-type":"None","user-agent":"curl/8.7.1"}
+[2025-07-20T05:41:17.333Z] GET /api/banner?page=1&limit=5&search=test - 500 - 767ms - IP: ::1 - UA: curl/8.7.1 - Size: 174 bytes
+[2025-07-20T05:41:17.334Z] RESPONSE BODY: {"message":"You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'ILIKE '%test%'' at line 1"}
+[2025-07-20T05:43:32.972Z] REQUEST: PUT /api/trainer/1a64a8fe-63f6-11f0-b95b-42010ab80002 - IP: ::1
+[2025-07-20T05:43:32.973Z] HEADERS: {"authorization":"Bearer [HIDDEN]","content-type":"application/json","user-agent":"curl/8.7.1"}
+[2025-07-20T05:43:32.975Z] PUT /api/trainer/1a64a8fe-63f6-11f0-b95b-42010ab80002 - 401 - 3ms - IP: ::1 - UA: curl/8.7.1 - Size: 48 bytes
+[2025-07-20T05:43:32.976Z] RESPONSE BODY: {"status":"error","message":"Token tidak valid"}
+[2025-07-20T05:43:43.333Z] REQUEST: POST /api/auth/login - IP: ::1
+[2025-07-20T05:43:43.333Z] HEADERS: {"authorization":"None","content-type":"application/json","user-agent":"curl/8.7.1"}
+[2025-07-20T05:43:44.492Z] POST /api/auth/login - 200 - 1159ms - IP: ::1 - UA: curl/8.7.1 - Size: 542 bytes
+[2025-07-20T05:43:50.794Z] REQUEST: PUT /api/trainer/1a64a8fe-63f6-11f0-b95b-42010ab80002 - IP: ::1
+[2025-07-20T05:43:50.795Z] HEADERS: {"authorization":"Bearer [HIDDEN]","content-type":"application/json","user-agent":"curl/8.7.1"}
+[2025-07-20T05:43:50.837Z] PUT /api/trainer/1a64a8fe-63f6-11f0-b95b-42010ab80002 - 400 - 43ms - IP: ::1 - UA: curl/8.7.1 - Size: 36 bytes
+[2025-07-20T05:43:50.838Z] RESPONSE BODY: {"message":"Trainer ID is required"}
+[2025-07-20T05:43:57.130Z] REQUEST: GET /api/trainer - IP: ::1
+[2025-07-20T05:43:57.130Z] HEADERS: {"authorization":"Bearer [HIDDEN]","content-type":"None","user-agent":"curl/8.7.1"}
+[2025-07-20T05:43:57.204Z] GET /api/trainer - 200 - 74ms - IP: ::1 - UA: curl/8.7.1 - Size: 1073 bytes
+[2025-07-20T05:44:04.398Z] REQUEST: PUT /api/trainer/dae8d66e-34c6-4e31-94a5-6d732b553c86 - IP: ::1
+[2025-07-20T05:44:04.400Z] HEADERS: {"authorization":"Bearer [HIDDEN]","content-type":"application/json","user-agent":"curl/8.7.1"}
+[2025-07-20T05:44:04.450Z] PUT /api/trainer/dae8d66e-34c6-4e31-94a5-6d732b553c86 - 400 - 52ms - IP: ::1 - UA: curl/8.7.1 - Size: 36 bytes
+[2025-07-20T05:44:04.450Z] RESPONSE BODY: {"message":"Trainer ID is required"}
+[2025-07-20T05:44:31.690Z] REQUEST: PUT /api/trainer/dae8d66e-34c6-4e31-94a5-6d732b553c86 - IP: ::1
+[2025-07-20T05:44:31.691Z] HEADERS: {"authorization":"Bearer [HIDDEN]","content-type":"application/json","user-agent":"curl/8.7.1"}
+[2025-07-20T05:44:32.945Z] PUT /api/trainer/dae8d66e-34c6-4e31-94a5-6d732b553c86 - 200 - 1255ms - IP: ::1 - UA: curl/8.7.1 - Size: 361 bytes

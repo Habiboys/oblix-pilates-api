@@ -4,15 +4,15 @@ const path = require('path');
 // Konfigurasi storage universal
 const createStorage = (folder, prefix) => {
     return multer.diskStorage({
-        destination: function (req, file, cb) {
+    destination: function (req, file, cb) {
             cb(null, `uploads/${folder}/`);
-        },
-        filename: function (req, file, cb) {
-            // Generate nama file unik dengan timestamp
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    },
+    filename: function (req, file, cb) {
+        // Generate nama file unik dengan timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
             cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
-        }
-    });
+    }
+});
 };
 
 // Filter file yang diizinkan
@@ -28,13 +28,13 @@ const fileFilter = (req, file, cb) => {
 // Fungsi universal untuk membuat upload middleware
 const createUploadMiddleware = (folder, prefix, fieldName) => {
     const storage = createStorage(folder, prefix);
-    const upload = multer({
-        storage: storage,
-        fileFilter: fileFilter,
-        limits: {
-            fileSize: 5 * 1024 * 1024 // 5MB limit
-        }
-    });
+const upload = multer({
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
     return upload.single(fieldName);
 };
 
