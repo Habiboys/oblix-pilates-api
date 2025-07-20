@@ -11,17 +11,32 @@ const createStorage = (folder) => {
 // Fungsi untuk compress dan convert ke WebP
 const compressAndConvertToWebP = async (buffer, folder) => {
     try {
-        // Compress dan convert ke WebP
-        const compressedBuffer = await sharp(buffer)
-            .resize(1200, 1200, { // Max width/height 1200px
-                fit: 'inside',
-                withoutEnlargement: true
-            })
-            .webp({ 
-                quality: 80, // Quality 80%
-                effort: 6 // Compression effort
-            })
-            .toBuffer();
+        const fileSizeInMB = buffer.length / (1024 * 1024);
+        const isLargeFile = fileSizeInMB > 1; // Compress jika > 1MB
+
+        let processedBuffer;
+
+        if (isLargeFile) {
+            // Compress dan resize untuk file besar (> 1MB)
+            processedBuffer = await sharp(buffer)
+                .resize(1200, 1200, { // Max width/height 1200px
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .webp({ 
+                    quality: 80, // Quality 80%
+                    effort: 6 // Compression effort
+                })
+                .toBuffer();
+        } else {
+            // Hanya convert ke WebP tanpa compress untuk file kecil (< 1MB)
+            processedBuffer = await sharp(buffer)
+                .webp({ 
+                    quality: 100, // Quality 100% untuk file kecil
+                    effort: 6
+                })
+                .toBuffer();
+        }
 
         // Generate nama file unik
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -35,7 +50,7 @@ const compressAndConvertToWebP = async (buffer, folder) => {
 
         // Simpan file
         const filePath = path.join(uploadDir, filename);
-        fs.writeFileSync(filePath, compressedBuffer);
+        fs.writeFileSync(filePath, processedBuffer);
 
         return filename;
     } catch (error) {
@@ -60,7 +75,7 @@ const uploadFile = (folder, required = false) => {
         storage: storage,
         fileFilter: fileFilter,
         limits: {
-            fileSize: 2 * 1024 * 1024 // 2MB limit
+            fileSize: 5 * 1024 * 1024 // 5MB limit
         }
     });
 
@@ -69,7 +84,7 @@ const uploadFile = (folder, required = false) => {
             if (err instanceof multer.MulterError) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
                     return res.status(400).json({
-                        message: 'File size too large. Maximum size is 2MB'
+                        message: 'File size too large. Maximum size is 5MB'
                     });
                 }
                 return res.status(400).json({
@@ -111,7 +126,7 @@ const handleUploadError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
-                message: 'File size too large. Maximum size is 2MB'
+                message: 'File size too large. Maximum size is 5MB'
             });
         }
         return res.status(400).json({

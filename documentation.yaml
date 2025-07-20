@@ -596,7 +596,7 @@ components:
         image:
           type: string
           format: binary
-          description: Blog image (JPG, PNG, GIF, WebP, max 2MB) - Will be converted to WebP format
+          description: Blog image (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format
 
     UpdateBlogRequest:
       type: object
@@ -612,7 +612,7 @@ components:
         image:
           type: string
           format: binary
-          description: Blog image (JPG, PNG, GIF, WebP, max 2MB) - Will be converted to WebP format - Optional
+          description: Blog image (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format - Optional
 
     BlogListResponse:
       type: object
