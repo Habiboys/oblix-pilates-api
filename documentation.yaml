@@ -567,7 +567,7 @@ components:
         title:
           type: string
           maxLength: 255
-        image:
+        picture:
           type: string
         content:
           type: string
@@ -583,7 +583,7 @@ components:
       required:
         - title
         - content
-        - image
+        - picture
       properties:
         title:
           type: string
@@ -593,10 +593,10 @@ components:
           type: string
           minLength: 10
           maxLength: 10000
-        image:
+        picture:
           type: string
           format: binary
-          description: Blog image (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format
 
     UpdateBlogRequest:
       type: object
@@ -609,10 +609,10 @@ components:
           type: string
           minLength: 10
           maxLength: 10000
-        image:
+        picture:
           type: string
           format: binary
-          description: Blog image (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format - Optional
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format - Optional
 
     BlogListResponse:
       type: object
@@ -2375,7 +2375,7 @@ paths:
       tags:
         - Blog
       summary: Create blog
-      description: Create a new blog with image upload (Admin only)
+      description: Create a new blog with picture upload (Admin only)
       security:
         - BearerAuth: []
       requestBody:
@@ -2470,7 +2470,7 @@ paths:
       tags:
         - Blog
       summary: Update blog
-      description: Update an existing blog with optional image upload (Admin only)
+      description: Update an existing blog with optional picture upload (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -2534,7 +2534,7 @@ paths:
       tags:
         - Blog
       summary: Delete blog
-      description: Delete an existing blog and its image (Admin only)
+      description: Delete an existing blog and its picture (Admin only)
       security:
         - BearerAuth: []
       parameters:

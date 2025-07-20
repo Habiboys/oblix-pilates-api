@@ -89,7 +89,7 @@ const createBlog = async (req, res) => {
         const blogData = {
             title,
             content,
-            image: req.file ? req.file.filename : null
+            picture: req.file ? req.file.filename : null
         };
 
         const blog = await Blog.create(blogData);
@@ -158,16 +158,16 @@ const updateBlog = async (req, res) => {
         if (title !== undefined) updateData.title = title;
         if (content !== undefined) updateData.content = content;
 
-        // Handle image update
+        // Handle picture update
         if (req.file) {
-            // Delete old image if exists
-            if (blog.image) {
-                const oldImagePath = path.join(__dirname, '../../uploads/blogs/', blog.image);
-                if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
+            // Delete old picture if exists
+            if (blog.picture) {
+                const oldPicturePath = path.join(__dirname, '../../uploads/blogs/', blog.picture);
+                if (fs.existsSync(oldPicturePath)) {
+                    fs.unlinkSync(oldPicturePath);
                 }
             }
-            updateData.image = req.file.filename;
+            updateData.picture = req.file.filename;
         }
 
         await blog.update(updateData);
@@ -202,11 +202,11 @@ const deleteBlog = async (req, res) => {
             });
         }
 
-        // Delete image file if exists
-        if (blog.image) {
-            const imagePath = path.join(__dirname, '../../uploads/blogs/', blog.image);
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
+        // Delete picture file if exists
+        if (blog.picture) {
+            const picturePath = path.join(__dirname, '../../uploads/blogs/', blog.picture);
+            if (fs.existsSync(picturePath)) {
+                fs.unlinkSync(picturePath);
             }
         }
 
