@@ -394,7 +394,7 @@ components:
         picture:
           type: string
           format: binary
-          description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB)
+          description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
 
     TrainerListResponse:
       type: object
@@ -463,7 +463,7 @@ components:
         picture:
           type: string
           format: binary
-          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB)
+          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
 
     BannerListResponse:
       type: object
@@ -532,7 +532,7 @@ components:
         picture:
           type: string
           format: binary
-          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB)
+          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
 
     GalleryListResponse:
       type: object

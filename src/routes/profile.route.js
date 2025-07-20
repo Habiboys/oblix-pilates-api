@@ -8,7 +8,7 @@ const {
 } = require('../controllers/profile.controller');
 const { validateToken } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
-const { uploadProfilePhoto, handleUploadError } = require('../middlewares/upload.middleware');
+const { uploadFile, handleUploadError } = require('../middlewares/upload.middleware');
 const { 
     updateProfileSchema, 
     changePasswordSchema 
@@ -20,7 +20,7 @@ router.get('/', validateToken, getProfile);
 // Update profile (dengan upload foto)
 router.put('/', 
     validateToken, 
-    uploadProfilePhoto, 
+    uploadFile('profiles', false), // optional untuk update
     handleUploadError,
     validate(updateProfileSchema), 
     updateProfile

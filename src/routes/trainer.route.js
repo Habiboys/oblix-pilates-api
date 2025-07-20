@@ -10,7 +10,7 @@ const {
 } = require('../controllers/trainer.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
-const { uploadTrainerPicture, handleUploadError } = require('../middlewares/upload.middleware');
+const { uploadFile, handleUploadError } = require('../middlewares/upload.middleware');
 const { 
     createTrainerSchema, 
     updateTrainerSchema, 
@@ -25,7 +25,7 @@ router.get('/:id', validate(getTrainerSchema, 'params'), getTrainerById);
 router.post('/', 
     validateToken, 
     checkRole('admin'), 
-    uploadTrainerPicture,
+    uploadFile('trainers', true), // required untuk create
     handleUploadError,
     validate(createTrainerSchema), 
     createTrainer
@@ -34,7 +34,7 @@ router.post('/',
 router.put('/:id', 
     validateToken, 
     checkRole('admin'), 
-    uploadTrainerPicture,
+    uploadFile('trainers', false), // optional untuk update
     handleUploadError,
     validate(getTrainerSchema, 'params'),
     validate(updateTrainerSchema), 

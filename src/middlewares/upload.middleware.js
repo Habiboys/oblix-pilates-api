@@ -2,17 +2,17 @@ const multer = require('multer');
 const path = require('path');
 
 // Konfigurasi storage universal
-const createStorage = (folder, prefix) => {
+const createStorage = (folder) => {
     return multer.diskStorage({
-    destination: function (req, file, cb) {
+        destination: function (req, file, cb) {
             cb(null, `uploads/${folder}/`);
-    },
-    filename: function (req, file, cb) {
-        // Generate nama file unik dengan timestamp
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            cb(null, `${prefix}-${uniqueSuffix}${path.extname(file.originalname)}`);
-    }
-});
+        },
+        filename: function (req, file, cb) {
+            // Generate nama file unik dengan timestamp
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, `${folder}-${uniqueSuffix}${path.extname(file.originalname)}`);
+        }
+    });
 };
 
 // Filter file yang diizinkan
@@ -25,22 +25,72 @@ const fileFilter = (req, file, cb) => {
     }
 };
 
-// Fungsi universal untuk membuat upload middleware
-const createUploadMiddleware = (folder, prefix, fieldName) => {
-    const storage = createStorage(folder, prefix);
-const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    }
-});
-    return upload.single(fieldName);
-};
+// Middleware upload universal - handle field 'file' dan 'picture'
+const uploadFile = (folder, required = false) => {
+    const storage = createStorage(folder);
+    const upload = multer({
+        storage: storage,
+        fileFilter: fileFilter,
+        limits: {
+            fileSize: 5 * 1024 * 1024 // 5MB limit
+        }
+    });
 
-// Middleware universal untuk upload gambar
-const uploadPicture = (folder, prefix = 'image', fieldName = 'picture') => {
-    return createUploadMiddleware(folder, prefix, fieldName);
+    return (req, res, next) => {
+        // Coba upload dengan field 'file' dulu, kalau tidak ada coba 'picture'
+        upload.single('file')(req, res, (err) => {
+            if (err && err.code === 'LIMIT_UNEXPECTED_FILE') {
+                // Jika field 'file' tidak ada, coba field 'picture'
+                upload.single('picture')(req, res, (err2) => {
+                    if (err2 instanceof multer.MulterError) {
+                        if (err2.code === 'LIMIT_FILE_SIZE') {
+                            return res.status(400).json({
+                                message: 'File size too large. Maximum size is 5MB'
+                            });
+                        }
+                        return res.status(400).json({
+                            message: 'Upload error: ' + err2.message
+                        });
+                    } else if (err2) {
+                        return res.status(400).json({
+                            message: err2.message
+                        });
+                    }
+                    
+                    // Jika required dan tidak ada file, return error
+                    if (required && !req.file) {
+                        return res.status(400).json({
+                            message: 'File is required'
+                        });
+                    }
+                    
+                    next();
+                });
+            } else if (err instanceof multer.MulterError) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({
+                        message: 'File size too large. Maximum size is 5MB'
+                    });
+                }
+                return res.status(400).json({
+                    message: 'Upload error: ' + err.message
+                });
+            } else if (err) {
+                return res.status(400).json({
+                    message: err.message
+                });
+            } else {
+                // Jika required dan tidak ada file, return error
+                if (required && !req.file) {
+                    return res.status(400).json({
+                        message: 'File is required'
+                    });
+                }
+                
+                next();
+            }
+        });
+    };
 };
 
 // Middleware untuk handle error upload
@@ -62,13 +112,7 @@ const handleUploadError = (err, req, res, next) => {
     next();
 };
 
-// Backward compatibility - middleware khusus yang sudah ada
-const uploadProfilePhoto = uploadPicture('profiles', 'profile', 'profile_picture');
-const uploadTrainerPicture = uploadPicture('trainers', 'trainer', 'picture');
-
 module.exports = {
-    uploadPicture,
-    uploadProfilePhoto,
-    uploadTrainerPicture,
+    uploadFile,
     handleUploadError
 }; 

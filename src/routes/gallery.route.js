@@ -9,7 +9,7 @@ const {
 } = require('../controllers/gallery.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
-const { uploadPicture, handleUploadError } = require('../middlewares/upload.middleware');
+const { uploadFile, handleUploadError } = require('../middlewares/upload.middleware');
 const { 
     createGallerySchema, 
     updateGallerySchema, 
@@ -24,7 +24,7 @@ router.get('/:id', validate(getGallerySchema, 'params'), getGalleryById);
 router.post('/', 
     validateToken, 
     checkRole('admin'), 
-    uploadPicture('galleries', 'gallery', 'picture'),
+    uploadFile('galleries', true), // required untuk create
     handleUploadError,
     validate(createGallerySchema), 
     createGallery
@@ -33,7 +33,7 @@ router.post('/',
 router.put('/:id', 
     validateToken, 
     checkRole('admin'), 
-    uploadPicture('galleries', 'gallery', 'picture'),
+    uploadFile('galleries', false), // optional untuk update
     handleUploadError,
     validate(getGallerySchema, 'params'),
     validate(updateGallerySchema), 
