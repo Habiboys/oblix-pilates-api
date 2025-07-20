@@ -11,6 +11,7 @@ const testimonialRoutes = require('./routes/testimonial.route');
 const trainerRoutes = require('./routes/trainer.route');
 const bannerRoutes = require('./routes/banner.route');
 const galleryRoutes = require('./routes/gallery.route');
+const blogRoutes = require('./routes/blog.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
@@ -44,6 +45,7 @@ app.use('/api/testimonial', testimonialRoutes);
 app.use('/api/trainer', trainerRoutes);
 app.use('/api/banner', bannerRoutes);
 app.use('/api/gallery', galleryRoutes);
+app.use('/api/blog', blogRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World');

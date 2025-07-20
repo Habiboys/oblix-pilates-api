@@ -558,6 +558,86 @@ components:
                 itemsPerPage:
                   type: integer
 
+    Blog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        image:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateBlogRequest:
+      type: object
+      required:
+        - title
+        - content
+        - image
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        image:
+          type: string
+          format: binary
+          description: Blog image (JPG, PNG, GIF, WebP, max 5MB)
+
+    UpdateBlogRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        image:
+          type: string
+          format: binary
+          description: Blog image (JPG, PNG, GIF, WebP, max 5MB) - Optional
+
+    BlogListResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            blogs:
+              type: array
+              items:
+                $ref: '#/components/schemas/Blog'
+            pagination:
+              type: object
+              properties:
+                currentPage:
+                  type: integer
+                totalPages:
+                  type: integer
+                totalItems:
+                  type: integer
+                itemsPerPage:
+                  type: integer
+
     SuccessResponse:
       type: object
       properties:
@@ -2253,6 +2333,256 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /blog:
+    get:
+      tags:
+        - Blog
+      summary: Get all blogs
+      description: Retrieve all blogs with pagination and search functionality
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term for title or content
+      responses:
+        '200':
+          description: Blogs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogListResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Blog
+      summary: Create blog
+      description: Create a new blog with image upload (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateBlogRequest'
+      responses:
+        '201':
+          description: Blog created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '400':
+          description: Validation error, missing image, or blog with same title exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /blog/{id}:
+    get:
+      tags:
+        - Blog
+      summary: Get blog by ID
+      description: Retrieve a specific blog by its ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      responses:
+        '200':
+          description: Blog retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '400':
+          description: Invalid blog ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Blog
+      summary: Update blog
+      description: Update an existing blog with optional image upload (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateBlogRequest'
+      responses:
+        '200':
+          description: Blog updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '400':
+          description: Validation error, invalid ID format, or blog with same title exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Blog
+      summary: Delete blog
+      description: Delete an existing blog and its image (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      responses:
+        '200':
+          description: Blog deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid blog ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 tags:
   - name: Authentication
     description: User authentication and authorization endpoints
@@ -2268,3 +2598,5 @@ tags:
     description: Banner management endpoints
   - name: Gallery
     description: Gallery management endpoints
+  - name: Blog
+    description: Blog management endpoints
