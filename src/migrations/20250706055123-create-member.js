@@ -39,7 +39,7 @@ module.exports = {
         type: Sequelize.DATE,
         allowNull: false
       },
-      profile_picture: {
+      picture: {
         type: Sequelize.STRING(255),
         allowNull: true
       },

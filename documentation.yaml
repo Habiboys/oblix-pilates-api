@@ -61,7 +61,7 @@ components:
         date_of_join:
           type: string
           format: date
-        profile_picture:
+        picture:
           type: string
           nullable: true
         status:
@@ -923,7 +923,7 @@ paths:
                 address:
                   type: string
                   maxLength: 500
-                profile_picture:
+                picture:
                   type: string
                   format: binary
                   description: Profile photo (JPG, PNG, GIF, WebP, max 5MB)
@@ -940,7 +940,7 @@ paths:
                       data:
                         type: object
                         properties:
-                          profile_picture:
+                          picture:
                             type: string
         '400':
           description: Validation error or file upload error

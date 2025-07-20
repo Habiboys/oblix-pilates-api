@@ -84,16 +84,16 @@ const updateProfile = async (req, res) => {
         if (dob) updateData.dob = dob;
         if (address) updateData.address = address;
 
-        // Update profile picture jika ada file upload
+        // Update picture jika ada file upload
         if (req.file) {
             // Hapus foto lama jika ada
-            if (user.member.profile_picture) {
-                const oldPhotoPath = path.join(__dirname, '../../uploads/profiles/', user.member.profile_picture);
+            if (user.member.picture) {
+                const oldPhotoPath = path.join(__dirname, '../../uploads/profiles/', user.member.picture);
                 if (fs.existsSync(oldPhotoPath)) {
                     fs.unlinkSync(oldPhotoPath);
                 }
             }
-            updateData.profile_picture = req.file.filename;
+            updateData.picture = req.file.filename;
         }
 
         // Update member
@@ -172,15 +172,15 @@ const deleteProfilePhoto = async (req, res) => {
         }
 
         // Hapus file foto jika ada
-        if (user.member.profile_picture) {
-            const photoPath = path.join(__dirname, '../../uploads/profiles/', user.member.profile_picture);
+        if (user.member.picture) {
+            const photoPath = path.join(__dirname, '../../uploads/profiles/', user.member.picture);
             if (fs.existsSync(photoPath)) {
                 fs.unlinkSync(photoPath);
             }
         }
 
-        // Update member untuk hapus profile_picture
-        await user.member.update({ profile_picture: null });
+        // Update member untuk hapus picture
+        await user.member.update({ picture: null });
 
         res.status(200).json({
             message: 'Profile photo deleted successfully'
