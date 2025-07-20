@@ -596,7 +596,7 @@ components:
         image:
           type: string
           format: binary
-          description: Blog image (JPG, PNG, GIF, WebP, max 5MB)
+          description: Blog image (JPG, PNG, GIF, WebP, max 2MB) - Will be converted to WebP format
 
     UpdateBlogRequest:
       type: object
@@ -612,7 +612,7 @@ components:
         image:
           type: string
           format: binary
-          description: Blog image (JPG, PNG, GIF, WebP, max 5MB) - Optional
+          description: Blog image (JPG, PNG, GIF, WebP, max 2MB) - Will be converted to WebP format - Optional
 
     BlogListResponse:
       type: object
@@ -2397,7 +2397,7 @@ paths:
                       data:
                         $ref: '#/components/schemas/Blog'
         '400':
-          description: Validation error, missing image, or blog with same title exists
+          description: Validation error, missing picture, or blog with same title exists
           content:
             application/json:
               schema:
