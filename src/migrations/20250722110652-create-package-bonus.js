@@ -1,8 +1,9 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('price_list', {
+    await queryInterface.createTable('package_bonus', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -15,18 +16,24 @@ module.exports = {
         references: {
           model: 'packages',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      price: {
+      private_session: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      validity_weeks: {
+      group_session: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      is_happy_hour: {
-        type: Sequelize.BOOLEAN,
+      duration_value: {
+        type: Sequelize.INTEGER,
+        allowNull: false
+      },
+      duration_unit: {
+        type: Sequelize.ENUM('month'),
         allowNull: false
       },
       createdAt: {
@@ -39,7 +46,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('price_list');
+    await queryInterface.dropTable('package_bonus');
   }
 };

@@ -12,7 +12,7 @@ const getProfile = async (req, res) => {
             where: { id: userId },
             include: [{
                 model: Member,
-                as: 'member'
+    
             }]
         });
 
@@ -65,7 +65,6 @@ const updateProfile = async (req, res) => {
             where: { id: userId },
             include: [{
                 model: Member,
-                as: 'member'
             }],
         });
 
@@ -163,7 +162,7 @@ const deleteProfilePhoto = async (req, res) => {
             where: { id: userId },
             include: [{
                 model: Member,
-                as: 'member'
+                
             }]
         });
 

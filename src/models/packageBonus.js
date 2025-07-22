@@ -1,9 +1,7 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class PriceList extends Model {
+  class PackageBonus extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,35 +9,43 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      PriceList.belongsTo(models.Package, { foreignKey: 'package_id' });
+      PackageBonus.belongsTo(models.Package, {
+        foreignKey: 'package_id',
+       
+      });
     }
   }
-  PriceList.init({
+  PackageBonus.init({
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      defaultValue: DataTypes.UUIDV4
     },
     package_id: {
       type: DataTypes.UUID,
       allowNull: false
     },
-    price: {
+    private_session: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    validity_weeks: {
+    group_session: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    is_happy_hour: {
-      type: DataTypes.BOOLEAN,
+    duration_value: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    duration_unit: {
+      type: DataTypes.ENUM('month'),
       allowNull: false
     }
   }, {
     sequelize,
-    modelName: 'PriceList',
-    tableName: 'price_list',
+    modelName: 'PackageBonus',
+    tableName: 'package_bonus',
+    timestamps: true
   });
-  return PriceList;
-};
+  return PackageBonus;
+}; 

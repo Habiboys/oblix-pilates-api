@@ -6,23 +6,79 @@ info:
   contact:
     name: API Support
     email: support@oblixpilates.com
-
 servers:
   - url: http://34.101.143.2:3020/api
     description: Testing server
   - url: http://localhost:3000/api
     description: Development server
-
-
-
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
   schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation successful
+        data:
+          type: object
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Error message
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    PaginationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Data retrieved successfully
+        data:
+          type: array
+        pagination:
+          type: object
+          properties:
+            current_page:
+              type: integer
+              example: 1
+            total_pages:
+              type: integer
+              example: 5
+            total_items:
+              type: integer
+              example: 100
+            per_page:
+              type: integer
+              example: 20
+            has_next:
+              type: boolean
+              example: true
+            has_prev:
+              type: boolean
+              example: false
     User:
       type: object
       properties:
@@ -34,11 +90,12 @@ components:
           format: email
         role:
           type: string
-          enum: [admin, user]
+          enum:
+            - admin
+            - user
         refresh_token:
           type: string
           nullable: true
-
     Member:
       type: object
       properties:
@@ -66,7 +123,609 @@ components:
           nullable: true
         status:
           type: string
-
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+    Class:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class_name:
+          type: string
+        color_sign:
+          type: string
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          nullable: true
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+        type:
+          type: string
+          enum:
+            - group
+            - semi_private
+            - private
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum:
+            - none
+            - weekly
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+        booking_deadline_hour:
+          type: integer
+        waitlist_lock_minutes:
+          type: integer
+        min_signup:
+          type: integer
+        cancel_buffer_minutes:
+          type: integer
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+        price:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - failed
+            - expired
+        payment_type:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        expire_at:
+          type: string
+          format: date-time
+          nullable: true
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        payment_type:
+          type: string
+        payment_status:
+          type: string
+          enum:
+            - pending
+            - success
+            - failed
+        transaction_time:
+          type: string
+          format: date-time
+          nullable: true
+        settlement_time:
+          type: string
+          format: date-time
+          nullable: true
+        midtrans_response:
+          type: object
+          nullable: true
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        session_left:
+          type: integer
+    MemberPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        total_session:
+          type: integer
+        used_session:
+          type: integer
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Blog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          nullable: true
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Gallery:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Testimonial:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        age:
+          type: integer
+          minimum: 1
+          maximum: 150
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Trainer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          nullable: true
+        description:
+          type: string
+        instagram:
+          type: string
+          nullable: true
+        tiktok:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Package:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        price:
+          type: number
+          format: decimal
+        type:
+          type: string
+          enum:
+            - membership
+            - first_trial
+            - promo
+            - bonus
+        duration_value:
+          type: integer
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+        reminder_day:
+          type: integer
+          nullable: true
+        reminder_session:
+          type: integer
+          nullable: true
+        membership:
+          $ref: '#/components/schemas/PackageMembership'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    MembershipPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the membership package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the membership package
+        price:
+          type: number
+          format: decimal
+          description: Price of the membership package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - duration_value
+        - duration_unit
+    TrialPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the trial package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the trial package
+        price:
+          type: number
+          format: decimal
+          description: Price of the trial package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - duration_value
+        - duration_unit
+    PromoPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the promo package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the promo package
+        price:
+          type: number
+          format: decimal
+          description: Price of the promo package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - duration_value
+        - duration_unit
+    BonusPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the bonus package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the bonus package
+        price:
+          type: number
+          format: decimal
+          description: Price of the bonus package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        member:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Member ID
+            name:
+              type: string
+              description: Member name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - member
+        - duration_value
+        - duration_unit
+    Staff:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the staff member
+        full_name:
+          type: string
+          maxLength: 100
+          description: Full name of the staff member
+        username:
+          type: string
+          maxLength: 50
+          description: Username for login
+        email:
+          type: string
+          format: email
+          description: Email address of the staff member
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth
+        phone_number:
+          type: string
+          maxLength: 20
+          description: Phone number
+      required:
+        - id
+        - full_name
+        - username
+        - email
+        - date_of_birth
+        - phone_number
+    PackageMembership:
+      type: object
+      properties:
+        package_id:
+          type: string
+          format: uuid
+        session:
+          type: integer
+        category:
+          $ref: '#/components/schemas/Category'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     RegisterRequest:
       type: object
       required:
@@ -98,7 +757,6 @@ components:
         password:
           type: string
           minLength: 6
-
     LoginRequest:
       type: object
       required:
@@ -108,11 +766,8 @@ components:
         email:
           type: string
           format: email
-          example: "admin@oblix.com"
         password:
           type: string
-          example: "admin123"
-
     ForgotPasswordRequest:
       type: object
       required:
@@ -121,7 +776,6 @@ components:
         email:
           type: string
           format: email
-
     ResetPasswordRequest:
       type: object
       required:
@@ -133,7 +787,132 @@ components:
         newPassword:
           type: string
           minLength: 6
-
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+    CreateBannerRequest:
+      type: object
+      required:
+        - title
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB)
+    UpdateBannerRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+    CreateBlogRequest:
+      type: object
+      required:
+        - title
+        - content
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        picture:
+          type: string
+          format: binary
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format
+    UpdateBlogRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        picture:
+          type: string
+          format: binary
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format - Optional
+    CreateFAQRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+    UpdateFAQRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+    CreateGalleryRequest:
+      type: object
+      required:
+        - title
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB)
+    UpdateGalleryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+    UpdateProfileRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        address:
+          type: string
+        picture:
+          type: string
+          format: uri
     ChangePasswordRequest:
       type: object
       required:
@@ -145,123 +924,6 @@ components:
         newPassword:
           type: string
           minLength: 6
-
-    UpdateProfileRequest:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        full_name:
-          type: string
-          minLength: 3
-          maxLength: 150
-        username:
-          type: string
-          minLength: 3
-          maxLength: 50
-        phone_number:
-          type: string
-          minLength: 10
-          maxLength: 15
-        dob:
-          type: string
-          format: date
-        address:
-          type: string
-          maxLength: 500
-
-    Faq:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-          maxLength: 255
-        content:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
-    CreateFaqRequest:
-      type: object
-      required:
-        - title
-        - content
-      properties:
-        title:
-          type: string
-          minLength: 3
-          maxLength: 255
-        content:
-          type: string
-          minLength: 10
-          maxLength: 1000
-
-    UpdateFaqRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 3
-          maxLength: 255
-        content:
-          type: string
-          minLength: 10
-          maxLength: 1000
-
-    FaqListResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        data:
-          type: object
-          properties:
-            faqs:
-              type: array
-              items:
-                $ref: '#/components/schemas/Faq'
-            pagination:
-              type: object
-              properties:
-                currentPage:
-                  type: integer
-                totalPages:
-                  type: integer
-                totalItems:
-                  type: integer
-                itemsPerPage:
-                  type: integer
-
-    Testimonial:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-          maxLength: 150
-        age:
-          type: integer
-          minimum: 1
-          maximum: 150
-        content:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
     CreateTestimonialRequest:
       type: object
       required:
@@ -271,84 +933,25 @@ components:
       properties:
         name:
           type: string
-          minLength: 2
           maxLength: 150
         age:
           type: integer
           minimum: 1
-          maximum: 150
+          maximum: 120
         content:
           type: string
-          minLength: 10
-          maxLength: 1000
-
     UpdateTestimonialRequest:
       type: object
       properties:
         name:
           type: string
-          minLength: 2
           maxLength: 150
         age:
           type: integer
           minimum: 1
-          maximum: 150
+          maximum: 120
         content:
           type: string
-          minLength: 10
-          maxLength: 1000
-
-    TestimonialListResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        data:
-          type: object
-          properties:
-            testimonials:
-              type: array
-              items:
-                $ref: '#/components/schemas/Testimonial'
-            pagination:
-              type: object
-              properties:
-                currentPage:
-                  type: integer
-                totalPages:
-                  type: integer
-                totalItems:
-                  type: integer
-                itemsPerPage:
-                  type: integer
-
-    Trainer:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-          maxLength: 255
-        picture:
-          type: string
-          nullable: true
-        description:
-          type: string
-        instagram:
-          type: string
-          nullable: true
-        tiktok:
-          type: string
-          nullable: true
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
     CreateTrainerRequest:
       type: object
       required:
@@ -373,7 +976,6 @@ components:
           type: string
           format: binary
           description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB)
-
     UpdateTrainerRequest:
       type: object
       properties:
@@ -395,263 +997,801 @@ components:
           type: string
           format: binary
           description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
-
-    TrainerListResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        data:
-          type: object
-          properties:
-            trainers:
-              type: array
-              items:
-                $ref: '#/components/schemas/Trainer'
-            pagination:
-              type: object
-              properties:
-                currentPage:
-                  type: integer
-                totalPages:
-                  type: integer
-                totalItems:
-                  type: integer
-                itemsPerPage:
-                  type: integer
-
-    Banner:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-          maxLength: 255
-        picture:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
-    CreateBannerRequest:
+    CreateClassRequest:
       type: object
       required:
-        - title
-        - picture
+        - class_name
+        - color_sign
       properties:
-        title:
-          type: string
-          minLength: 3
-          maxLength: 255
-        picture:
-          type: string
-          format: binary
-          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB)
-
-    UpdateBannerRequest:
-      type: object
-      properties:
-        title:
-          type: string
-          minLength: 3
-          maxLength: 255
-        picture:
-          type: string
-          format: binary
-          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
-
-    BannerListResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        data:
-          type: object
-          properties:
-            banners:
-              type: array
-              items:
-                $ref: '#/components/schemas/Banner'
-            pagination:
-              type: object
-              properties:
-                currentPage:
-                  type: integer
-                totalPages:
-                  type: integer
-                totalItems:
-                  type: integer
-                itemsPerPage:
-                  type: integer
-
-    Gallery:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
+        class_name:
           type: string
           maxLength: 255
-        picture:
+        color_sign:
           type: string
-        createdAt:
+          maxLength: 7
+    UpdateClassRequest:
+      type: object
+      properties:
+        class_name:
           type: string
-          format: date-time
-        updatedAt:
+          maxLength: 255
+        color_sign:
           type: string
-          format: date-time
-
-    CreateGalleryRequest:
+          maxLength: 7
+    CreatePackageRequest:
       type: object
       required:
-        - title
-        - picture
+        - name
+        - price
+        - type
+        - duration_value
+        - duration_unit
       properties:
-        title:
+        name:
           type: string
-          minLength: 3
-          maxLength: 255
-        picture:
+          maxLength: 100
+        price:
+          type: number
+          minimum: 0
+        type:
           type: string
-          format: binary
-          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB)
-
-    UpdateGalleryRequest:
+          enum:
+            - membership
+            - first_trial
+            - promo
+            - bonus
+        duration_value:
+          type: integer
+          minimum: 1
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 31
+        reminder_session:
+          type: integer
+          minimum: 1
+    UpdatePackageRequest:
       type: object
       properties:
-        title:
+        name:
           type: string
-          minLength: 3
-          maxLength: 255
-        picture:
+          maxLength: 100
+        price:
+          type: number
+          minimum: 0
+        type:
           type: string
-          format: binary
-          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
-
-    GalleryListResponse:
-      type: object
-      properties:
-        message:
+          enum:
+            - membership
+            - first_trial
+            - promo
+            - bonus
+        duration_value:
+          type: integer
+          minimum: 1
+        duration_unit:
           type: string
-        data:
-          type: object
-          properties:
-            galleries:
-              type: array
-              items:
-                $ref: '#/components/schemas/Gallery'
-            pagination:
-              type: object
-              properties:
-                currentPage:
-                  type: integer
-                totalPages:
-                  type: integer
-                totalItems:
-                  type: integer
-                itemsPerPage:
-                  type: integer
-
-    Blog:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        title:
-          type: string
-          maxLength: 255
-        picture:
-          type: string
-        content:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
-    CreateBlogRequest:
+          enum:
+            - week
+            - month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 31
+        reminder_session:
+          type: integer
+          minimum: 1
+    CreateScheduleRequest:
       type: object
       required:
-        - title
-        - content
-        - picture
+        - class_id
+        - coach_id
+        - pax
+        - type
+        - date_start
+        - time_start
+        - time_end
+        - repeat_type
+        - booking_deadline_hour
+        - waitlist_lock_minutes
+        - min_signup
+        - cancel_buffer_minutes
       properties:
-        title:
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          format: uri
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+          minimum: 1
+        type:
+          type: string
+          enum:
+            - group
+            - semi_private
+            - private
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum:
+            - none
+            - weekly
+        schedule_until:
+          type: string
+          format: date
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+        min_signup:
+          type: integer
+          minimum: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+    UpdateScheduleRequest:
+      type: object
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          format: uri
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+          minimum: 1
+        type:
+          type: string
+          enum:
+            - group
+            - semi_private
+            - private
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum:
+            - none
+            - weekly
+        schedule_until:
+          type: string
+          format: date
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+        min_signup:
+          type: integer
+          minimum: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+    CreateBookingRequest:
+      type: object
+      required:
+        - schedule_id
+        - package_id
+      properties:
+        schedule_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+    CreateOrderRequest:
+      type: object
+      required:
+        - package_id
+        - payment_type
+      properties:
+        package_id:
+          type: string
+          format: uuid
+        payment_type:
+          type: string
+          enum:
+            - bank_transfer
+            - qris
+            - gopay
+            - ovo
+            - dana
+    CreateMembershipPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+      properties:
+        name:
           type: string
           minLength: 3
-          maxLength: 255
-        content:
+          maxLength: 100
+          description: Name of the membership package
+          example: Premium Membership 3 Months
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the membership package
+          example: 1500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 3
+        duration_unit:
           type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 12
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the membership package
+          example: 123e4567-e89b-12d3-a456-426614174000
+    UpdateMembershipPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the membership package
+          example: Premium Membership 3 Months
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the membership package
+          example: 1500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 3
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 12
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the membership package
+          example: 123e4567-e89b-12d3-a456-426614174000
+    CreateTrialPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the trial package
+          example: 10 Session Group
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the trial package
+          example: 630000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 10
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: week
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 10
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 10
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the trial package
+          example: 123e4567-e89b-12d3-a456-426614174000
+    UpdateTrialPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the trial package
+          example: 10 Session Group
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the trial package
+          example: 630000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 10
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: week
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 10
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 10
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the trial package
+          example: 123e4567-e89b-12d3-a456-426614174000
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Name of the category
+          example: Group
+        description:
+          type: string
+          maxLength: 500
+          description: Description of the category (optional)
+          example: Group session category
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Name of the category
+          example: Group
+        description:
+          type: string
+          maxLength: 500
+          description: Description of the category (optional)
+          example: Group session category
+    CreatePromoPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the promo package
+          example: Summer Promo Package
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the promo package
+          example: 500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 2
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 8
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the promo package
+          example: 123e4567-e89b-12d3-a456-426614174000
+    UpdatePromoPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the promo package
+          example: Summer Promo Package
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the promo package
+          example: 500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 2
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 8
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the promo package
+          example: 123e4567-e89b-12d3-a456-426614174000
+    CreateBonusPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+        - member_id
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the bonus package
+          example: Bonus Session Package
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the bonus package
+          example: 200000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 1
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 5
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 1
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 3
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the bonus package
+          example: 123e4567-e89b-12d3-a456-426614174000
+        member_id:
+          type: string
+          format: uuid
+          description: Member ID for the bonus package
+          example: 123e4567-e89b-12d3-a456-426614174001
+    UpdateBonusPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the bonus package
+          example: Bonus Session Package
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the bonus package
+          example: 200000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 1
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 5
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 1
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 3
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the bonus package
+          example: 123e4567-e89b-12d3-a456-426614174000
+        member_id:
+          type: string
+          format: uuid
+          description: Member ID for the bonus package
+          example: 123e4567-e89b-12d3-a456-426614174001
+    CreateStaffRequest:
+      type: object
+      required:
+        - full_name
+        - username
+        - email
+        - date_of_birth
+        - phone_number
+        - password
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Full name of the staff member
+          example: John Doe
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: ^[a-zA-Z0-9_]+$
+          description: Username for login (letters, numbers, underscores only)
+          example: johndoe
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          description: Email address of the staff member
+          example: john.doe@example.com
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth (YYYY-MM-DD)
+          example: '1990-01-15'
+        phone_number:
+          type: string
+          pattern: ^[0-9+\\-\\s()]+$
           minLength: 10
-          maxLength: 10000
-        picture:
+          maxLength: 20
+          description: Phone number
+          example: +62 812-3456-7890
+        password:
           type: string
-          format: binary
-          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format
-
-    UpdateBlogRequest:
+          minLength: 6
+          maxLength: 100
+          description: Password for login
+          example: password123
+    UpdateStaffRequest:
       type: object
       properties:
-        title:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Full name of the staff member
+          example: John Doe
+        username:
           type: string
           minLength: 3
-          maxLength: 255
-        content:
+          maxLength: 50
+          pattern: ^[a-zA-Z0-9_]+$
+          description: Username for login (letters, numbers, underscores only)
+          example: johndoe
+        email:
           type: string
+          format: email
+          maxLength: 100
+          description: Email address of the staff member
+          example: john.doe@example.com
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth (YYYY-MM-DD)
+          example: '1990-01-15'
+        phone_number:
+          type: string
+          pattern: ^[0-9+\\-\\s()]+$
           minLength: 10
-          maxLength: 10000
-        picture:
+          maxLength: 20
+          description: Phone number
+          example: +62 812-3456-7890
+        password:
           type: string
-          format: binary
-          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format - Optional
-
-    BlogListResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        data:
-          type: object
-          properties:
-            blogs:
-              type: array
-              items:
-                $ref: '#/components/schemas/Blog'
-            pagination:
-              type: object
-              properties:
-                currentPage:
-                  type: integer
-                totalPages:
-                  type: integer
-                totalItems:
-                  type: integer
-                itemsPerPage:
-                  type: integer
-
-    SuccessResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        data:
-          type: object
-
-    ErrorResponse:
-      type: object
-      properties:
-        message:
-          type: string
-
+          minLength: 6
+          maxLength: 100
+          description: Password for login (optional for updates)
+          example: newpassword123
 paths:
   /auth/register:
     post:
@@ -695,7 +1835,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /auth/login:
     post:
       tags:
@@ -708,7 +1847,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
-  
       responses:
         '200':
           description: Login successful
@@ -740,7 +1878,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /auth/forgot-password:
     post:
       tags:
@@ -755,18 +1892,12 @@ paths:
               $ref: '#/components/schemas/ForgotPasswordRequest'
       responses:
         '200':
-          description: Reset link sent successfully
+          description: Password reset email sent
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
           description: Email not found
           content:
             application/json:
@@ -778,13 +1909,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /auth/reset-password:
     post:
       tags:
         - Authentication
-      summary: Reset password with token
-      description: Reset user password using reset token from email
+      summary: Reset password
+      description: Reset password using reset token
       requestBody:
         required: true
         content:
@@ -810,7 +1940,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /auth/refresh-token:
     post:
       tags:
@@ -836,7 +1965,7 @@ paths:
                             type: string
                           refresh_token:
                             type: string
-        '401':
+        '400':
           description: Invalid refresh token
           content:
             application/json:
@@ -848,13 +1977,1089 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Logout user and invalidate tokens
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /banner:
+    get:
+      tags:
+        - Content Management
+      summary: Get all banners
+      description: Retrieve all banners with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Banners retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new banner
+      description: Create a new banner (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateBannerRequest'
+      responses:
+        '201':
+          description: Banner created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Banner'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /banner/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get banner by ID
+      description: Retrieve a specific banner by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Banner ID
+      responses:
+        '200':
+          description: Banner retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Banner'
+        '404':
+          description: Banner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update banner
+      description: Update a banner by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Banner ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateBannerRequest'
+      responses:
+        '200':
+          description: Banner updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Banner'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Banner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete banner
+      description: Delete a banner by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Banner ID
+      responses:
+        '200':
+          description: Banner deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Banner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /blog:
+    get:
+      tags:
+        - Content Management
+      summary: Get all blogs
+      description: Retrieve all blogs with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Blogs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new blog
+      description: Create a new blog (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateBlogRequest'
+      responses:
+        '201':
+          description: Blog created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /blog/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get blog by ID
+      description: Retrieve a specific blog by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      responses:
+        '200':
+          description: Blog retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update blog
+      description: Update a blog by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateBlogRequest'
+      responses:
+        '200':
+          description: Blog updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete blog
+      description: Delete a blog by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      responses:
+        '200':
+          description: Blog deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /faq:
+    get:
+      tags:
+        - Content Management
+      summary: Get all FAQs
+      description: Retrieve all FAQs with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: FAQs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new FAQ
+      description: Create a new FAQ (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFAQRequest'
+      responses:
+        '201':
+          description: FAQ created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FAQ'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /faq/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get FAQ by ID
+      description: Retrieve a specific FAQ by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: FAQ ID
+      responses:
+        '200':
+          description: FAQ retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FAQ'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update FAQ
+      description: Update a FAQ by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: FAQ ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFAQRequest'
+      responses:
+        '200':
+          description: FAQ updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FAQ'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete FAQ
+      description: Delete a FAQ by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: FAQ ID
+      responses:
+        '200':
+          description: FAQ deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gallery:
+    get:
+      tags:
+        - Content Management
+      summary: Get all galleries
+      description: Retrieve all galleries with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Galleries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new gallery
+      description: Create a new gallery (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateGalleryRequest'
+      responses:
+        '201':
+          description: Gallery created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Gallery'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gallery/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get gallery by ID
+      description: Retrieve a specific gallery by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Gallery ID
+      responses:
+        '200':
+          description: Gallery retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Gallery'
+        '404':
+          description: Gallery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update gallery
+      description: Update a gallery by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Gallery ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateGalleryRequest'
+      responses:
+        '200':
+          description: Gallery updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Gallery'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Gallery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete gallery
+      description: Delete a gallery by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Gallery ID
+      responses:
+        '200':
+          description: Gallery deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Gallery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /testimonial:
+    get:
+      tags:
+        - Content Management
+      summary: Get all testimonials
+      description: Retrieve all testimonials with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Testimonials retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new testimonial
+      description: Create a new testimonial (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTestimonialRequest'
+      responses:
+        '201':
+          description: Testimonial created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Testimonial'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /testimonial/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get testimonial by ID
+      description: Retrieve a specific testimonial by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Testimonial ID
+      responses:
+        '200':
+          description: Testimonial retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Testimonial'
+        '404':
+          description: Testimonial not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update testimonial
+      description: Update a testimonial by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Testimonial ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTestimonialRequest'
+      responses:
+        '200':
+          description: Testimonial updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Testimonial'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Testimonial not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete testimonial
+      description: Delete a testimonial by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Testimonial ID
+      responses:
+        '200':
+          description: Testimonial deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Testimonial not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /profile:
     get:
       tags:
-        - Profile
+        - Profile Management
       summary: Get user profile
-      description: Retrieve user profile with member information
+      description: Retrieve current user's profile information
       security:
         - BearerAuth: []
       responses:
@@ -868,15 +3073,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        allOf:
-                          - $ref: '#/components/schemas/User'
-                          - type: object
-                            properties:
-                              Member:
-                                $ref: '#/components/schemas/Member'
-        '404':
-          description: User not found
+                        $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -887,12 +3086,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
-        - Profile
+        - Profile Management
       summary: Update user profile
-      description: Update user profile information and optionally upload profile photo
+      description: Update current user's profile information
       security:
         - BearerAuth: []
       requestBody:
@@ -938,18 +3136,15 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          picture:
-                            type: string
+                        $ref: '#/components/schemas/Member'
         '400':
-          description: Validation error or file upload error
+          description: Validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: User not found
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -960,13 +3155,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /profile/change-password:
     put:
       tags:
-        - Profile
-      summary: Change user password
-      description: Change user password with current password verification
+        - Profile Management
+      summary: Change password
+      description: Change current user's password
       security:
         - BearerAuth: []
       requestBody:
@@ -983,13 +3177,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
-          description: Invalid current password or validation error
+          description: Current password is incorrect
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: User not found
+        '401':
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -1000,11 +3194,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /profile/profile-photo:
     delete:
       tags:
-        - Profile
+        - Profile Management
       summary: Delete profile photo
       description: Remove user's profile photo
       security:
@@ -1028,550 +3221,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /faq:
-    get:
-      tags:
-        - FAQ
-      summary: Get all FAQs
-      description: Retrieve all FAQs with pagination and search functionality
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-          description: Page number for pagination
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            default: 10
-          description: Number of items per page
-        - in: query
-          name: search
-          schema:
-            type: string
-          description: Search term for title and content
-      responses:
-        '200':
-          description: FAQs retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FaqListResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    post:
-      tags:
-        - FAQ
-      summary: Create new FAQ
-      description: Create a new FAQ (Admin only)
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateFaqRequest'
-      responses:
-        '201':
-          description: FAQ created successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Faq'
-        '400':
-          description: Validation error or FAQ with same title exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /faq/{id}:
-    get:
-      tags:
-        - FAQ
-      summary: Get FAQ by ID
-      description: Retrieve a specific FAQ by its ID
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: FAQ ID
-      responses:
-        '200':
-          description: FAQ retrieved successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Faq'
-        '400':
-          description: Invalid FAQ ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: FAQ not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    put:
-      tags:
-        - FAQ
-      summary: Update FAQ
-      description: Update an existing FAQ (Admin only)
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: FAQ ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateFaqRequest'
-      responses:
-        '200':
-          description: FAQ updated successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Faq'
-        '400':
-          description: Validation error, invalid ID format, or FAQ with same title exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: FAQ not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    delete:
-      tags:
-        - FAQ
-      summary: Delete FAQ
-      description: Delete an existing FAQ (Admin only)
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: FAQ ID
-      responses:
-        '200':
-          description: FAQ deleted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: Invalid FAQ ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: FAQ not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /testimonial:
-    get:
-      tags:
-        - Testimonial
-      summary: Get all testimonials
-      description: Retrieve all testimonials with pagination and search functionality
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-            default: 1
-          description: Page number for pagination
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            default: 10
-          description: Number of items per page
-        - in: query
-          name: search
-          schema:
-            type: string
-          description: Search term for name and content
-      responses:
-        '200':
-          description: Testimonials retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TestimonialListResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    post:
-      tags:
-        - Testimonial
-      summary: Create new testimonial
-      description: Create a new testimonial (Admin only)
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateTestimonialRequest'
-      responses:
-        '201':
-          description: Testimonial created successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Testimonial'
-        '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /testimonial/{id}:
-    get:
-      tags:
-        - Testimonial
-      summary: Get testimonial by ID
-      description: Retrieve a specific testimonial by its ID
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Testimonial ID
-      responses:
-        '200':
-          description: Testimonial retrieved successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Testimonial'
-        '400':
-          description: Invalid testimonial ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Testimonial not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    put:
-      tags:
-        - Testimonial
-      summary: Update testimonial
-      description: Update an existing testimonial (Admin only)
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Testimonial ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateTestimonialRequest'
-      responses:
-        '200':
-          description: Testimonial updated successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Testimonial'
-        '400':
-          description: Validation error or invalid ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Testimonial not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-    delete:
-      tags:
-        - Testimonial
-      summary: Delete testimonial
-      description: Delete an existing testimonial (Admin only)
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Testimonial ID
-      responses:
-        '200':
-          description: Testimonial deleted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: Invalid testimonial ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Testimonial not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /trainer:
     get:
       tags:
-        - Trainer
+        - Trainer Management
       summary: Get all trainers
-      description: Retrieve all trainers with pagination and search functionality
+      description: Retrieve all trainers with pagination
       parameters:
         - in: query
           name: page
           schema:
             type: integer
             default: 1
-          description: Page number for pagination
+          description: Page number
         - in: query
           name: limit
           schema:
             type: integer
             default: 10
           description: Number of items per page
-        - in: query
-          name: search
-          schema:
-            type: string
-          description: Search term for title and description
       responses:
         '200':
           description: Trainers retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TrainerListResponse'
+                $ref: '#/components/schemas/PaginationResponse'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
-        - Trainer
+        - Trainer Management
       summary: Create new trainer
-      description: Create a new trainer with optional picture upload (Admin only)
+      description: Create a new trainer (Admin only)
       security:
         - BearerAuth: []
       requestBody:
@@ -1593,7 +3279,7 @@ paths:
                       data:
                         $ref: '#/components/schemas/Trainer'
         '400':
-          description: Validation error or trainer with same title exists
+          description: Validation error
           content:
             application/json:
               schema:
@@ -1604,25 +3290,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /trainer/{id}:
     get:
       tags:
-        - Trainer
+        - Trainer Management
       summary: Get trainer by ID
-      description: Retrieve a specific trainer by its ID
+      description: Retrieve a specific trainer by ID
       parameters:
         - in: path
           name: id
@@ -1643,12 +3322,6 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/Trainer'
-        '400':
-          description: Invalid trainer ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Trainer not found
           content:
@@ -1661,12 +3334,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
-        - Trainer
+        - Trainer Management
       summary: Update trainer
-      description: Update an existing trainer with optional picture upload (Admin only)
+      description: Update a trainer by ID (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -1696,19 +3368,13 @@ paths:
                       data:
                         $ref: '#/components/schemas/Trainer'
         '400':
-          description: Validation error, invalid ID format, or trainer with same title exists
+          description: Validation error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
           content:
             application/json:
               schema:
@@ -1725,12 +3391,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     delete:
       tags:
-        - Trainer
+        - Trainer Management
       summary: Delete trainer
-      description: Delete an existing trainer and its picture (Admin only)
+      description: Delete a trainer by ID (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -1748,20 +3413,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: Invalid trainer ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
           content:
             application/json:
               schema:
@@ -1778,11 +3431,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
   /trainer/{id}/picture:
     delete:
       tags:
-        - Trainer
+        - Trainer Management
       summary: Delete trainer picture
       description: Delete trainer's picture only (Admin only)
       security:
@@ -1802,20 +3454,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
-        '400':
-          description: Invalid trainer ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
           content:
             application/json:
               schema:
@@ -1832,13 +3472,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /banner:
+  /membership-package:
     get:
       tags:
-        - Banner
-      summary: Get all banners
-      description: Retrieve all banners with pagination and search functionality
+        - Membership Package Management
+      summary: Get all membership packages
+      description: Retrieve all membership packages with pagination and search functionality
       parameters:
         - in: query
           name: page
@@ -1856,37 +3495,48 @@ paths:
           name: search
           schema:
             type: string
-          description: Search term for title
+          description: Search term for package name
       responses:
         '200':
-          description: Banners retrieved successfully
+          description: Membership packages retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BannerListResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          packages:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/MembershipPackage'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationResponse'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
-        - Banner
-      summary: Create new banner
-      description: Create a new banner with picture upload (Admin only)
+        - Membership Package Management
+      summary: Create new membership package
+      description: Create a new membership package (Admin only)
       security:
         - BearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/CreateBannerRequest'
+              $ref: '#/components/schemas/CreateMembershipPackageRequest'
       responses:
         '201':
-          description: Banner created successfully
+          description: Membership package created successfully
           content:
             application/json:
               schema:
@@ -1895,9 +3545,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Banner'
+                        $ref: '#/components/schemas/MembershipPackage'
         '400':
-          description: Validation error, missing picture, or banner with same title exists
+          description: Validation error or package with same name exists
           content:
             application/json:
               schema:
@@ -1920,13 +3570,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /banner/{id}:
+  /membership-package/{id}:
     get:
       tags:
-        - Banner
-      summary: Get banner by ID
-      description: Retrieve a specific banner by its ID
+        - Membership Package Management
+      summary: Get membership package by ID
+      description: Retrieve a specific membership package by its ID
       parameters:
         - in: path
           name: id
@@ -1934,10 +3583,10 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Banner ID
+          description: Membership package ID
       responses:
         '200':
-          description: Banner retrieved successfully
+          description: Membership package retrieved successfully
           content:
             application/json:
               schema:
@@ -1946,15 +3595,15 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Banner'
+                        $ref: '#/components/schemas/MembershipPackage'
         '400':
-          description: Invalid banner ID format
+          description: Invalid package ID format
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Banner not found
+          description: Membership package not found
           content:
             application/json:
               schema:
@@ -1965,12 +3614,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
-        - Banner
-      summary: Update banner
-      description: Update an existing banner with optional picture upload (Admin only)
+        - Membership Package Management
+      summary: Update membership package
+      description: Update an existing membership package (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -1980,16 +3628,16 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Banner ID
+          description: Membership package ID
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/UpdateBannerRequest'
+              $ref: '#/components/schemas/UpdateMembershipPackageRequest'
       responses:
         '200':
-          description: Banner updated successfully
+          description: Membership package updated successfully
           content:
             application/json:
               schema:
@@ -1998,9 +3646,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Banner'
+                        $ref: '#/components/schemas/MembershipPackage'
         '400':
-          description: Validation error, invalid ID format, or banner with same title exists
+          description: Validation error, invalid ID format, or package with same name exists
           content:
             application/json:
               schema:
@@ -2018,7 +3666,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Banner not found
+          description: Membership package not found
           content:
             application/json:
               schema:
@@ -2029,12 +3677,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     delete:
       tags:
-        - Banner
-      summary: Delete banner
-      description: Delete an existing banner and its picture (Admin only)
+        - Membership Package Management
+      summary: Delete membership package
+      description: Delete an existing membership package (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -2044,16 +3691,16 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Banner ID
+          description: Membership package ID
       responses:
         '200':
-          description: Banner deleted successfully
+          description: Membership package deleted successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
-          description: Invalid banner ID format
+          description: Invalid package ID format or package is being used in orders
           content:
             application/json:
               schema:
@@ -2071,7 +3718,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Banner not found
+          description: Membership package not found
           content:
             application/json:
               schema:
@@ -2082,13 +3729,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /gallery:
+  /membership-package/categories/list:
     get:
       tags:
-        - Gallery
-      summary: Get all galleries
-      description: Retrieve all galleries with pagination and search functionality
+        - Membership Package Management
+      summary: Get categories for membership package
+      description: Retrieve all categories for membership package creation/update (Admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Category'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /trial-package:
+    get:
+      tags:
+        - Trial Package Management
+      summary: Get all trial packages
+      description: Retrieve all trial packages with pagination and search functionality
       parameters:
         - in: query
           name: page
@@ -2106,37 +3792,48 @@ paths:
           name: search
           schema:
             type: string
-          description: Search term for title
+          description: Search term for package name
       responses:
         '200':
-          description: Galleries retrieved successfully
+          description: Trial packages retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GalleryListResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          packages:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/TrialPackage'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationResponse'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
-        - Gallery
-      summary: Create new gallery
-      description: Create a new gallery with picture upload (Admin only)
+        - Trial Package Management
+      summary: Create new trial package
+      description: Create a new trial package (Admin only)
       security:
         - BearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/CreateGalleryRequest'
+              $ref: '#/components/schemas/CreateTrialPackageRequest'
       responses:
         '201':
-          description: Gallery created successfully
+          description: Trial package created successfully
           content:
             application/json:
               schema:
@@ -2145,9 +3842,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Gallery'
+                        $ref: '#/components/schemas/TrialPackage'
         '400':
-          description: Validation error, missing picture, or gallery with same title exists
+          description: Validation error or package with same name exists
           content:
             application/json:
               schema:
@@ -2170,13 +3867,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /gallery/{id}:
+  /trial-package/{id}:
     get:
       tags:
-        - Gallery
-      summary: Get gallery by ID
-      description: Retrieve a specific gallery by its ID
+        - Trial Package Management
+      summary: Get trial package by ID
+      description: Retrieve a specific trial package by its ID
       parameters:
         - in: path
           name: id
@@ -2184,10 +3880,10 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Gallery ID
+          description: Trial package ID
       responses:
         '200':
-          description: Gallery retrieved successfully
+          description: Trial package retrieved successfully
           content:
             application/json:
               schema:
@@ -2196,15 +3892,15 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Gallery'
+                        $ref: '#/components/schemas/TrialPackage'
         '400':
-          description: Invalid gallery ID format
+          description: Invalid package ID format
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Gallery not found
+          description: Trial package not found
           content:
             application/json:
               schema:
@@ -2215,12 +3911,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
-        - Gallery
-      summary: Update gallery
-      description: Update an existing gallery with optional picture upload (Admin only)
+        - Trial Package Management
+      summary: Update trial package
+      description: Update an existing trial package (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -2230,16 +3925,16 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Gallery ID
+          description: Trial package ID
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/UpdateGalleryRequest'
+              $ref: '#/components/schemas/UpdateTrialPackageRequest'
       responses:
         '200':
-          description: Gallery updated successfully
+          description: Trial package updated successfully
           content:
             application/json:
               schema:
@@ -2248,9 +3943,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Gallery'
+                        $ref: '#/components/schemas/TrialPackage'
         '400':
-          description: Validation error, invalid ID format, or gallery with same title exists
+          description: Validation error, invalid ID format, or package with same name exists
           content:
             application/json:
               schema:
@@ -2268,7 +3963,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Gallery not found
+          description: Trial package not found
           content:
             application/json:
               schema:
@@ -2279,12 +3974,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     delete:
       tags:
-        - Gallery
-      summary: Delete gallery
-      description: Delete an existing gallery and its picture (Admin only)
+        - Trial Package Management
+      summary: Delete trial package
+      description: Delete an existing trial package (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -2294,16 +3988,16 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Gallery ID
+          description: Trial package ID
       responses:
         '200':
-          description: Gallery deleted successfully
+          description: Trial package deleted successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
-          description: Invalid gallery ID format
+          description: Invalid package ID format or package is being used in orders
           content:
             application/json:
               schema:
@@ -2321,7 +4015,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Gallery not found
+          description: Trial package not found
           content:
             application/json:
               schema:
@@ -2332,13 +4026,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /blog:
+  /promo-package:
     get:
       tags:
-        - Blog
-      summary: Get all blogs
-      description: Retrieve all blogs with pagination and search functionality
+        - Promo Package Management
+      summary: Get all promo packages
+      description: Retrieve all promo packages with pagination and search functionality
       parameters:
         - in: query
           name: page
@@ -2356,37 +4049,48 @@ paths:
           name: search
           schema:
             type: string
-          description: Search term for title or content
+          description: Search term for package name
       responses:
         '200':
-          description: Blogs retrieved successfully
+          description: Promo packages retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlogListResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          packages:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PromoPackage'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationResponse'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
-        - Blog
-      summary: Create blog
-      description: Create a new blog with picture upload (Admin only)
+        - Promo Package Management
+      summary: Create new promo package
+      description: Create a new promo package (Admin only)
       security:
         - BearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/CreateBlogRequest'
+              $ref: '#/components/schemas/CreatePromoPackageRequest'
       responses:
         '201':
-          description: Blog created successfully
+          description: Promo package created successfully
           content:
             application/json:
               schema:
@@ -2395,9 +4099,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Blog'
+                        $ref: '#/components/schemas/PromoPackage'
         '400':
-          description: Validation error, missing picture, or blog with same title exists
+          description: Validation error or package with same name exists
           content:
             application/json:
               schema:
@@ -2420,13 +4124,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /blog/{id}:
+  /promo-package/{id}:
     get:
       tags:
-        - Blog
-      summary: Get blog by ID
-      description: Retrieve a specific blog by its ID
+        - Promo Package Management
+      summary: Get promo package by ID
+      description: Retrieve a specific promo package by its ID
       parameters:
         - in: path
           name: id
@@ -2434,10 +4137,10 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Blog ID
+          description: Promo package ID
       responses:
         '200':
-          description: Blog retrieved successfully
+          description: Promo package retrieved successfully
           content:
             application/json:
               schema:
@@ -2446,15 +4149,15 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Blog'
+                        $ref: '#/components/schemas/PromoPackage'
         '400':
-          description: Invalid blog ID format
+          description: Invalid package ID format
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Blog not found
+          description: Promo package not found
           content:
             application/json:
               schema:
@@ -2465,12 +4168,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
-        - Blog
-      summary: Update blog
-      description: Update an existing blog with optional picture upload (Admin only)
+        - Promo Package Management
+      summary: Update promo package
+      description: Update an existing promo package (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -2480,16 +4182,16 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Blog ID
+          description: Promo package ID
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/UpdateBlogRequest'
+              $ref: '#/components/schemas/UpdatePromoPackageRequest'
       responses:
         '200':
-          description: Blog updated successfully
+          description: Promo package updated successfully
           content:
             application/json:
               schema:
@@ -2498,9 +4200,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Blog'
+                        $ref: '#/components/schemas/PromoPackage'
         '400':
-          description: Validation error, invalid ID format, or blog with same title exists
+          description: Validation error, invalid ID format, or package with same name exists
           content:
             application/json:
               schema:
@@ -2518,7 +4220,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Blog not found
+          description: Promo package not found
           content:
             application/json:
               schema:
@@ -2529,12 +4231,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     delete:
       tags:
-        - Blog
-      summary: Delete blog
-      description: Delete an existing blog and its picture (Admin only)
+        - Promo Package Management
+      summary: Delete promo package
+      description: Delete an existing promo package (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -2544,16 +4245,16 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Blog ID
+          description: Promo package ID
       responses:
         '200':
-          description: Blog deleted successfully
+          description: Promo package deleted successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
-          description: Invalid blog ID format
+          description: Invalid package ID format or package is being used in orders
           content:
             application/json:
               schema:
@@ -2571,7 +4272,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Blog not found
+          description: Promo package not found
           content:
             application/json:
               schema:
@@ -2582,21 +4283,1189 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
+  /bonus-package:
+    get:
+      tags:
+        - Bonus Package Management
+      summary: Get all bonus packages
+      description: Retrieve all bonus packages with pagination and search functionality
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term for package name
+      responses:
+        '200':
+          description: Bonus packages retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          packages:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/BonusPackage'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Bonus Package Management
+      summary: Create new bonus package
+      description: Create a new bonus package (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBonusPackageRequest'
+      responses:
+        '201':
+          description: Bonus package created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BonusPackage'
+        '400':
+          description: Validation error or package with same name exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bonus-package/members/search:
+    get:
+      tags:
+        - Bonus Package Management
+      summary: Search members for bonus package
+      description: Search members by name for bonus package assignment
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term for member name
+      responses:
+        '200':
+          description: Members retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Member'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bonus-package/{id}:
+    get:
+      tags:
+        - Bonus Package Management
+      summary: Get bonus package by ID
+      description: Retrieve a specific bonus package by its ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Bonus package ID
+      responses:
+        '200':
+          description: Bonus package retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BonusPackage'
+        '400':
+          description: Invalid package ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bonus package not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Bonus Package Management
+      summary: Update bonus package
+      description: Update an existing bonus package (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Bonus package ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBonusPackageRequest'
+      responses:
+        '200':
+          description: Bonus package updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BonusPackage'
+        '400':
+          description: Validation error, invalid ID format, or package with same name exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bonus package not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Bonus Package Management
+      summary: Delete bonus package
+      description: Delete an existing bonus package (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Bonus package ID
+      responses:
+        '200':
+          description: Bonus package deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid package ID format or package is being used in orders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Bonus package not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /staff:
+    get:
+      tags:
+        - Staff Management
+      summary: Get all staff
+      description: Retrieve all staff members with pagination and search functionality (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term for staff name, username, or email
+      responses:
+        '200':
+          description: Staff retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          staff:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Staff'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Staff Management
+      summary: Create new staff
+      description: Create a new staff member (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStaffRequest'
+      responses:
+        '201':
+          description: Staff created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Staff'
+        '400':
+          description: Validation error or user with same username/email exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /staff/{id}:
+    get:
+      tags:
+        - Staff Management
+      summary: Get staff by ID
+      description: Retrieve a specific staff member by their ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Staff ID
+      responses:
+        '200':
+          description: Staff retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Staff'
+        '400':
+          description: Invalid staff ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Staff not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Staff Management
+      summary: Update staff
+      description: Update an existing staff member (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Staff ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStaffRequest'
+      responses:
+        '200':
+          description: Staff updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Staff'
+        '400':
+          description: Validation error, invalid ID format, or user with same username/email exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Staff not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Staff Management
+      summary: Delete staff
+      description: Delete an existing staff member (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Staff ID
+      responses:
+        '200':
+          description: Staff deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid staff ID format or cannot delete the only admin user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Staff not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /category:
+    get:
+      tags:
+        - Category Management
+      summary: Get all categories
+      description: Retrieve all categories with pagination and search functionality
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term for category name
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          categories:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Category'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Category Management
+      summary: Create new category
+      description: Create a new category (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Category'
+        '400':
+          description: Validation error or category with same name exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /category/{id}:
+    get:
+      tags:
+        - Category Management
+      summary: Get category by ID
+      description: Retrieve a specific category by its ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Category ID
+      responses:
+        '200':
+          description: Category retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Category'
+        '400':
+          description: Invalid category ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Category Management
+      summary: Update category
+      description: Update an existing category (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Category ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Category'
+        '400':
+          description: Validation error, invalid ID format, or category with same name exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Category Management
+      summary: Delete category
+      description: Delete an existing category (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Category ID
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid category ID format or category is being used in packages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/order/create:
+    post:
+      tags:
+        - Order Management
+      summary: Create new order
+      description: Create a new order for package purchase with Midtrans integration
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Package not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/order/my-orders:
+    get:
+      tags:
+        - Order Management
+      summary: Get user orders
+      description: Retrieve paginated list of user's orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: status
+          in: query
+          description: Filter by payment status
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - paid
+              - failed
+              - expired
+              - cancelled
+      responses:
+        '200':
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserOrdersResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/order/{id}:
+    get:
+      tags:
+        - Order Management
+      summary: Get order by ID
+      description: Retrieve specific order details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Order ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetOrderByIdResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/order/{order_id}/status:
+    get:
+      tags:
+        - Order Management
+      summary: Check payment status
+      description: Check payment status from Midtrans and update order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          description: Order ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckPaymentStatusResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/order/{order_id}/cancel:
+    delete:
+      tags:
+        - Order Management
+      summary: Cancel order
+      description: Cancel pending order and Midtrans transaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          description: Order ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Order cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelOrderResponse'
+        '400':
+          description: Order cannot be cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/order/payment/notification:
+    post:
+      tags:
+        - Payment Webhooks
+      summary: Payment notification webhook
+      description: Handle payment notifications from Midtrans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentNotificationRequest'
+      responses:
+        '200':
+          description: Payment notification processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentNotificationResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/order/payment/finish:
+    get:
+      tags:
+        - Payment Callbacks
+      summary: Payment finish callback
+      description: Handle payment finish callback from Midtrans
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID from Midtrans
+          required: true
+          schema:
+            type: string
+        - name: result_code
+          in: query
+          description: Result code from Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_status
+          in: query
+          description: Transaction status from Midtrans
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend
+  /api/order/payment/error:
+    get:
+      tags:
+        - Payment Callbacks
+      summary: Payment error callback
+      description: Handle payment error callback from Midtrans
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID from Midtrans
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend
+  /api/order/payment/pending:
+    get:
+      tags:
+        - Payment Callbacks
+      summary: Payment pending callback
+      description: Handle payment pending callback from Midtrans
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID from Midtrans
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend
 tags:
   - name: Authentication
     description: User authentication and authorization endpoints
-  - name: Profile
+  - name: Content Management
+    description: Banner, blog, FAQ, gallery, and testimonial management endpoints
+  - name: Profile Management
     description: User profile management endpoints
-  - name: FAQ
-    description: FAQ management endpoints
-  - name: Testimonial
-    description: Testimonial management endpoints
-  - name: Trainer
+  - name: Trainer Management
     description: Trainer management endpoints
-  - name: Banner
-    description: Banner management endpoints
-  - name: Gallery
-    description: Gallery management endpoints
-  - name: Blog
-    description: Blog management endpoints
+  - name: Membership Package Management
+    description: Membership package management endpoints
+  - name: Trial Package Management
+    description: Trial package management endpoints
+  - name: Promo Package Management
+    description: Promo package management endpoints
+  - name: Bonus Package Management
+    description: Bonus package management endpoints
+  - name: Staff Management
+    description: Staff management endpoints
+  - name: Category Management
+    description: Category management endpoints
+  - name: Order Management
+    description: Order and payment management endpoints
+  - name: Payment Webhooks
+    description: Payment webhook endpoints for Midtrans integration
+  - name: Payment Callbacks
+    description: Payment callback endpoints for Midtrans integration

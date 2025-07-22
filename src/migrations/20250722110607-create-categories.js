@@ -1,32 +1,17 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('payments', {
+    await queryInterface.createTable('categories', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      member_package_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'member_packages',
-          key: 'id'
-        }
-      },
-      payment_date: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      payment_method: {
-        type: Sequelize.STRING(100),
-        allowNull: false
-      },
-      amount_paid: {
-        type: Sequelize.INTEGER,
+      category_name: {
+        type: Sequelize.STRING,
         allowNull: false
       },
       createdAt: {
@@ -39,7 +24,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('payments');
+    await queryInterface.dropTable('categories');
   }
 };

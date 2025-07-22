@@ -1,7 +1,7 @@
 'use strict';
 const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class MemberPackage extends Model {
+  class Booking extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -9,22 +9,26 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      MemberPackage.belongsTo(models.Member, {
+      Booking.belongsTo(models.Schedule, {
+        foreignKey: 'schedule_id',
+      });
+      Booking.belongsTo(models.Member, {
         foreignKey: 'member_id',
       });
-      MemberPackage.belongsTo(models.Package, {
+      Booking.belongsTo(models.Package, {
         foreignKey: 'package_id',
-      });
-      MemberPackage.belongsTo(models.Order, {
-        foreignKey: 'order_id',
       });
     }
   }
-  MemberPackage.init({
+  Booking.init({
     id: {
       type: DataTypes.UUID,
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4
+    },
+    schedule_id: {
+      type: DataTypes.UUID,
+      allowNull: false
     },
     member_id: {
       type: DataTypes.UUID,
@@ -34,32 +38,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: false
     },
-    order_id: {
-      type: DataTypes.UUID,
-      allowNull: false
-    },
-    start_date: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
-    },
-    end_date: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
-    },
-    total_session: {
+    session_left: {
       type: DataTypes.INTEGER,
       allowNull: false
-    },
-    used_session: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0
     }
   }, {
     sequelize,
-    modelName: 'MemberPackage',
-    tableName: 'member_packages',
+    modelName: 'Booking',
+    tableName: 'bookings',
     timestamps: true
   });
-  return MemberPackage;
+  return Booking;
 }; 

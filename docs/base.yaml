@@ -1,0 +1,752 @@
+openapi: 3.0.0
+info:
+  title: Oblix Pilates API
+  description: API untuk aplikasi Oblix Pilates - sistem manajemen studio pilates
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@oblixpilates.com
+
+servers:
+  - url: http://34.101.143.2:3020/api
+    description: Testing server
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Common Response Schemas
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation successful"
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    PaginationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Data retrieved successfully"
+        data:
+          type: array
+        pagination:
+          type: object
+          properties:
+            current_page:
+              type: integer
+              example: 1
+            total_pages:
+              type: integer
+              example: 5
+            total_items:
+              type: integer
+              example: 100
+            per_page:
+              type: integer
+              example: 20
+            has_next:
+              type: boolean
+              example: true
+            has_prev:
+              type: boolean
+              example: false
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, user]
+        refresh_token:
+          type: string
+          nullable: true
+
+    # Member Schemas
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_code:
+          type: string
+        username:
+          type: string
+        full_name:
+          type: string
+        phone_number:
+          type: string
+        dob:
+          type: string
+          format: date
+        address:
+          type: string
+        date_of_join:
+          type: string
+          format: date
+        picture:
+          type: string
+          nullable: true
+        status:
+          type: string
+
+    # Category Schemas
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+
+    # Class Schemas
+    Class:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class_name:
+          type: string
+        color_sign:
+          type: string
+
+
+
+    # Schedule Schemas
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          nullable: true
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+        type:
+          type: string
+          enum: [group, semi_private, private]
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+        booking_deadline_hour:
+          type: integer
+        waitlist_lock_minutes:
+          type: integer
+        min_signup:
+          type: integer
+        cancel_buffer_minutes:
+          type: integer
+
+    # Order Schemas
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+        price:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [pending, paid, failed, expired]
+        payment_type:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        expire_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    # Payment Schemas
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        payment_type:
+          type: string
+        payment_status:
+          type: string
+          enum: [pending, success, failed]
+        transaction_time:
+          type: string
+          format: date-time
+          nullable: true
+        settlement_time:
+          type: string
+          format: date-time
+          nullable: true
+        midtrans_response:
+          type: object
+          nullable: true
+
+    # Booking Schemas
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        session_left:
+          type: integer
+
+    # MemberPackage Schemas
+    MemberPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        total_session:
+          type: integer
+        used_session:
+          type: integer
+
+    # Banner Schemas
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Blog Schemas
+    Blog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          nullable: true
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # FAQ Schemas
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Gallery Schemas
+    Gallery:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Testimonial Schemas
+    Testimonial:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        age:
+          type: integer
+          minimum: 1
+          maximum: 150
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Trainer Schemas
+    Trainer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          nullable: true
+        description:
+          type: string
+        instagram:
+          type: string
+          nullable: true
+        tiktok:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Package Schemas
+    Package:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+        price:
+          type: number
+          format: decimal
+        type:
+          type: string
+          enum: [membership, first_trial, promo, bonus]
+        duration_value:
+          type: integer
+        duration_unit:
+          type: string
+          enum: [week, month]
+        reminder_day:
+          type: integer
+          nullable: true
+        reminder_session:
+          type: integer
+          nullable: true
+        membership:
+          $ref: '#/components/schemas/PackageMembership'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Membership Package Schemas
+    MembershipPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the membership package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the membership package
+        price:
+          type: number
+          format: decimal
+          description: Price of the membership package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - duration_value
+        - duration_unit
+
+    # Trial Package Schemas
+    TrialPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the trial package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the trial package
+        price:
+          type: number
+          format: decimal
+          description: Price of the trial package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - duration_value
+        - duration_unit
+
+    # Promo Package Schemas
+    PromoPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the promo package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the promo package
+        price:
+          type: number
+          format: decimal
+          description: Price of the promo package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - duration_value
+        - duration_unit
+
+    # Bonus Package Schemas
+    BonusPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the bonus package
+        name:
+          type: string
+          maxLength: 100
+          description: Name of the bonus package
+        price:
+          type: number
+          format: decimal
+          description: Price of the bonus package
+        session:
+          type: integer
+          description: Number of sessions included
+        category:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Category ID
+            name:
+              type: string
+              description: Category name
+        member:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Member ID
+            name:
+              type: string
+              description: Member name
+        duration_value:
+          type: integer
+          description: Duration value
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+        reminder_day:
+          type: integer
+          nullable: true
+          description: Reminder day
+        reminder_session:
+          type: integer
+          nullable: true
+          description: Reminder session
+      required:
+        - id
+        - name
+        - price
+        - session
+        - category
+        - member
+        - duration_value
+        - duration_unit
+
+    # Staff Schemas
+    Staff:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the staff member
+        full_name:
+          type: string
+          maxLength: 100
+          description: Full name of the staff member
+        username:
+          type: string
+          maxLength: 50
+          description: Username for login
+        email:
+          type: string
+          format: email
+          description: Email address of the staff member
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth
+        phone_number:
+          type: string
+          maxLength: 20
+          description: Phone number
+      required:
+        - id
+        - full_name
+        - username
+        - email
+        - date_of_birth
+        - phone_number
+
+    # PackageMembership Schemas
+    PackageMembership:
+      type: object
+      properties:
+        package_id:
+          type: string
+          format: uuid
+        session:
+          type: integer
+        category:
+          $ref: '#/components/schemas/Category'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time 

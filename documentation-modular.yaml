@@ -1,0 +1,2651 @@
+openapi: 3.0.0
+info:
+  title: Oblix Pilates API
+  description: API untuk aplikasi Oblix Pilates - sistem manajemen studio pilates
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@oblixpilates.com
+servers:
+  - url: http://34.101.143.2:3020/api
+    description: Testing server
+  - url: http://localhost:3000/api
+    description: Development server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation successful
+        data:
+          type: object
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Error message
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    PaginationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Data retrieved successfully
+        data:
+          type: array
+        pagination:
+          type: object
+          properties:
+            current_page:
+              type: integer
+              example: 1
+            total_pages:
+              type: integer
+              example: 5
+            total_items:
+              type: integer
+              example: 100
+            per_page:
+              type: integer
+              example: 20
+            has_next:
+              type: boolean
+              example: true
+            has_prev:
+              type: boolean
+              example: false
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum:
+            - admin
+            - user
+        refresh_token:
+          type: string
+          nullable: true
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_code:
+          type: string
+        username:
+          type: string
+        full_name:
+          type: string
+        phone_number:
+          type: string
+        dob:
+          type: string
+          format: date
+        address:
+          type: string
+        date_of_join:
+          type: string
+          format: date
+        picture:
+          type: string
+          nullable: true
+        status:
+          type: string
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+    Class:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class_name:
+          type: string
+        color_sign:
+          type: string
+    Package:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        price:
+          type: number
+          format: decimal
+        type:
+          type: string
+          enum:
+            - membership
+            - first_trial
+            - promo
+            - bonus
+        duration_value:
+          type: integer
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+        reminder_day:
+          type: integer
+          nullable: true
+        reminder_session:
+          type: integer
+          nullable: true
+    Schedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          nullable: true
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+        type:
+          type: string
+          enum:
+            - group
+            - semi_private
+            - private
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum:
+            - none
+            - weekly
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+        booking_deadline_hour:
+          type: integer
+        waitlist_lock_minutes:
+          type: integer
+        min_signup:
+          type: integer
+        cancel_buffer_minutes:
+          type: integer
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+        price:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - failed
+            - expired
+        payment_type:
+          type: string
+          nullable: true
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        expire_at:
+          type: string
+          format: date-time
+          nullable: true
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        payment_type:
+          type: string
+        payment_status:
+          type: string
+          enum:
+            - pending
+            - success
+            - failed
+        transaction_time:
+          type: string
+          format: date-time
+          nullable: true
+        settlement_time:
+          type: string
+          format: date-time
+          nullable: true
+        midtrans_response:
+          type: object
+          nullable: true
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        session_left:
+          type: integer
+    MemberPackage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        total_session:
+          type: integer
+        used_session:
+          type: integer
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Blog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          nullable: true
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Gallery:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Testimonial:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 150
+        age:
+          type: integer
+          minimum: 1
+          maximum: 150
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Trainer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        picture:
+          type: string
+          nullable: true
+        description:
+          type: string
+        instagram:
+          type: string
+          nullable: true
+        tiktok:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RegisterRequest:
+      type: object
+      required:
+        - full_name
+        - username
+        - email
+        - dob
+        - phone_number
+        - password
+      properties:
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        dob:
+          type: string
+          format: date
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        password:
+          type: string
+          minLength: 6
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+    CreateBannerRequest:
+      type: object
+      required:
+        - title
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB)
+    UpdateBannerRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+    CreateBlogRequest:
+      type: object
+      required:
+        - title
+        - content
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        picture:
+          type: string
+          format: binary
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format
+    UpdateBlogRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        picture:
+          type: string
+          format: binary
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format - Optional
+    CreateFAQRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+    UpdateFAQRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+    CreateGalleryRequest:
+      type: object
+      required:
+        - title
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB)
+    UpdateGalleryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+    UpdateProfileRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        address:
+          type: string
+        picture:
+          type: string
+          format: uri
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+    CreateTestimonialRequest:
+      type: object
+      required:
+        - name
+        - age
+        - content
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        age:
+          type: integer
+          minimum: 1
+          maximum: 120
+        content:
+          type: string
+    UpdateTestimonialRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        age:
+          type: integer
+          minimum: 1
+          maximum: 120
+        content:
+          type: string
+    CreateTrainerRequest:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        instagram:
+          type: string
+          format: uri
+        tiktok:
+          type: string
+          format: uri
+        picture:
+          type: string
+          format: binary
+          description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB)
+    UpdateTrainerRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        instagram:
+          type: string
+          format: uri
+        tiktok:
+          type: string
+          format: uri
+        picture:
+          type: string
+          format: binary
+          description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+    CreateCategoryRequest:
+      type: object
+      required:
+        - category_name
+      properties:
+        category_name:
+          type: string
+          maxLength: 255
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        category_name:
+          type: string
+          maxLength: 255
+    CreateClassRequest:
+      type: object
+      required:
+        - class_name
+        - color_sign
+      properties:
+        class_name:
+          type: string
+          maxLength: 255
+        color_sign:
+          type: string
+          maxLength: 7
+    UpdateClassRequest:
+      type: object
+      properties:
+        class_name:
+          type: string
+          maxLength: 255
+        color_sign:
+          type: string
+          maxLength: 7
+    CreatePackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - type
+        - duration_value
+        - duration_unit
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        price:
+          type: number
+          minimum: 0
+        type:
+          type: string
+          enum:
+            - membership
+            - first_trial
+            - promo
+            - bonus
+        duration_value:
+          type: integer
+          minimum: 1
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 31
+        reminder_session:
+          type: integer
+          minimum: 1
+    UpdatePackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        price:
+          type: number
+          minimum: 0
+        type:
+          type: string
+          enum:
+            - membership
+            - first_trial
+            - promo
+            - bonus
+        duration_value:
+          type: integer
+          minimum: 1
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 31
+        reminder_session:
+          type: integer
+          minimum: 1
+    CreateScheduleRequest:
+      type: object
+      required:
+        - class_id
+        - coach_id
+        - pax
+        - type
+        - date_start
+        - time_start
+        - time_end
+        - repeat_type
+        - booking_deadline_hour
+        - waitlist_lock_minutes
+        - min_signup
+        - cancel_buffer_minutes
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          format: uri
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+          minimum: 1
+        type:
+          type: string
+          enum:
+            - group
+            - semi_private
+            - private
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum:
+            - none
+            - weekly
+        schedule_until:
+          type: string
+          format: date
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+        min_signup:
+          type: integer
+          minimum: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+    UpdateScheduleRequest:
+      type: object
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          format: uri
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+          minimum: 1
+        type:
+          type: string
+          enum:
+            - group
+            - semi_private
+            - private
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum:
+            - none
+            - weekly
+        schedule_until:
+          type: string
+          format: date
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+        min_signup:
+          type: integer
+          minimum: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+    CreateBookingRequest:
+      type: object
+      required:
+        - schedule_id
+        - package_id
+      properties:
+        schedule_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+    CreateOrderRequest:
+      type: object
+      required:
+        - package_id
+        - payment_type
+      properties:
+        package_id:
+          type: string
+          format: uuid
+        payment_type:
+          type: string
+          enum:
+            - bank_transfer
+            - qris
+            - gopay
+            - ovo
+            - dana
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Register a new user and create member profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user and return access tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          access_token:
+                            type: string
+                          refresh_token:
+                            type: string
+                          user:
+                            $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset link to user's email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Email not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password
+      description: Reset password using reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          access_token:
+                            type: string
+                          refresh_token:
+                            type: string
+        '400':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Logout user and invalidate tokens
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /banner:
+    get:
+      tags:
+        - Content Management
+      summary: Get all banners
+      description: Retrieve all banners with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Banners retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new banner
+      description: Create a new banner (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateBannerRequest'
+      responses:
+        '201':
+          description: Banner created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Banner'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /banner/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get banner by ID
+      description: Retrieve a specific banner by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Banner ID
+      responses:
+        '200':
+          description: Banner retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Banner'
+        '404':
+          description: Banner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update banner
+      description: Update a banner by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Banner ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateBannerRequest'
+      responses:
+        '200':
+          description: Banner updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Banner'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Banner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete banner
+      description: Delete a banner by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Banner ID
+      responses:
+        '200':
+          description: Banner deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Banner not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /blog:
+    get:
+      tags:
+        - Content Management
+      summary: Get all blogs
+      description: Retrieve all blogs with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Blogs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new blog
+      description: Create a new blog (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateBlogRequest'
+      responses:
+        '201':
+          description: Blog created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /blog/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get blog by ID
+      description: Retrieve a specific blog by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      responses:
+        '200':
+          description: Blog retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update blog
+      description: Update a blog by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateBlogRequest'
+      responses:
+        '200':
+          description: Blog updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Blog'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete blog
+      description: Delete a blog by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Blog ID
+      responses:
+        '200':
+          description: Blog deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /faq:
+    get:
+      tags:
+        - Content Management
+      summary: Get all FAQs
+      description: Retrieve all FAQs with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: FAQs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new FAQ
+      description: Create a new FAQ (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFAQRequest'
+      responses:
+        '201':
+          description: FAQ created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FAQ'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /faq/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get FAQ by ID
+      description: Retrieve a specific FAQ by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: FAQ ID
+      responses:
+        '200':
+          description: FAQ retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FAQ'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update FAQ
+      description: Update a FAQ by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: FAQ ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFAQRequest'
+      responses:
+        '200':
+          description: FAQ updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/FAQ'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete FAQ
+      description: Delete a FAQ by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: FAQ ID
+      responses:
+        '200':
+          description: FAQ deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gallery:
+    get:
+      tags:
+        - Content Management
+      summary: Get all galleries
+      description: Retrieve all galleries with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Galleries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new gallery
+      description: Create a new gallery (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateGalleryRequest'
+      responses:
+        '201':
+          description: Gallery created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Gallery'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gallery/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get gallery by ID
+      description: Retrieve a specific gallery by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Gallery ID
+      responses:
+        '200':
+          description: Gallery retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Gallery'
+        '404':
+          description: Gallery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update gallery
+      description: Update a gallery by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Gallery ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateGalleryRequest'
+      responses:
+        '200':
+          description: Gallery updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Gallery'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Gallery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete gallery
+      description: Delete a gallery by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Gallery ID
+      responses:
+        '200':
+          description: Gallery deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Gallery not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /testimonial:
+    get:
+      tags:
+        - Content Management
+      summary: Get all testimonials
+      description: Retrieve all testimonials with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Testimonials retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Content Management
+      summary: Create new testimonial
+      description: Create a new testimonial (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTestimonialRequest'
+      responses:
+        '201':
+          description: Testimonial created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Testimonial'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /testimonial/{id}:
+    get:
+      tags:
+        - Content Management
+      summary: Get testimonial by ID
+      description: Retrieve a specific testimonial by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Testimonial ID
+      responses:
+        '200':
+          description: Testimonial retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Testimonial'
+        '404':
+          description: Testimonial not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Content Management
+      summary: Update testimonial
+      description: Update a testimonial by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Testimonial ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTestimonialRequest'
+      responses:
+        '200':
+          description: Testimonial updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Testimonial'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Testimonial not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Content Management
+      summary: Delete testimonial
+      description: Delete a testimonial by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Testimonial ID
+      responses:
+        '200':
+          description: Testimonial deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Testimonial not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /profile:
+    get:
+      tags:
+        - Profile Management
+      summary: Get user profile
+      description: Retrieve current user's profile information
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Profile Management
+      summary: Update user profile
+      description: Update current user's profile information
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                full_name:
+                  type: string
+                  minLength: 3
+                  maxLength: 150
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                phone_number:
+                  type: string
+                  minLength: 10
+                  maxLength: 15
+                dob:
+                  type: string
+                  format: date
+                address:
+                  type: string
+                  maxLength: 500
+                picture:
+                  type: string
+                  format: binary
+                  description: Profile photo (JPG, PNG, GIF, WebP, max 5MB)
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /profile/change-password:
+    put:
+      tags:
+        - Profile Management
+      summary: Change password
+      description: Change current user's password
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /profile/profile-photo:
+    delete:
+      tags:
+        - Profile Management
+      summary: Delete profile photo
+      description: Remove user's profile photo
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile photo deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /trainer:
+    get:
+      tags:
+        - Trainer Management
+      summary: Get all trainers
+      description: Retrieve all trainers with pagination
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+      responses:
+        '200':
+          description: Trainers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Trainer Management
+      summary: Create new trainer
+      description: Create a new trainer (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTrainerRequest'
+      responses:
+        '201':
+          description: Trainer created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Trainer'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /trainer/{id}:
+    get:
+      tags:
+        - Trainer Management
+      summary: Get trainer by ID
+      description: Retrieve a specific trainer by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Trainer ID
+      responses:
+        '200':
+          description: Trainer retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Trainer'
+        '404':
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Trainer Management
+      summary: Update trainer
+      description: Update a trainer by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Trainer ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateTrainerRequest'
+      responses:
+        '200':
+          description: Trainer updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Trainer'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Trainer Management
+      summary: Delete trainer
+      description: Delete a trainer by ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Trainer ID
+      responses:
+        '200':
+          description: Trainer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /trainer/{id}/picture:
+    delete:
+      tags:
+        - Trainer Management
+      summary: Delete trainer picture
+      description: Delete trainer's picture only (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Trainer ID
+      responses:
+        '200':
+          description: Trainer picture deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trainer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Content Management
+    description: Banner, blog, FAQ, gallery, and testimonial management endpoints
+  - name: Profile Management
+    description: User profile management endpoints
+  - name: Trainer Management
+    description: Trainer management endpoints

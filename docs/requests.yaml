@@ -1,0 +1,1086 @@
+components:
+  schemas:
+    # Authentication Request Schemas
+    RegisterRequest:
+      type: object
+      required:
+        - full_name
+        - username
+        - email
+        - dob
+        - phone_number
+        - password
+      properties:
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        dob:
+          type: string
+          format: date
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        password:
+          type: string
+          minLength: 6
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+
+    # Banner Request Schemas
+    CreateBannerRequest:
+      type: object
+      required:
+        - title
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB)
+
+    UpdateBannerRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+
+    # Blog Request Schemas
+    CreateBlogRequest:
+      type: object
+      required:
+        - title
+        - content
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        picture:
+          type: string
+          format: binary
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format
+
+    UpdateBlogRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        content:
+          type: string
+          minLength: 10
+          maxLength: 10000
+        picture:
+          type: string
+          format: binary
+          description: Blog picture (JPG, PNG, GIF, WebP, max 5MB) - Will be converted to WebP format - Optional
+
+    # FAQ Request Schemas
+    CreateFAQRequest:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+
+    UpdateFAQRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+
+    # Gallery Request Schemas
+    CreateGalleryRequest:
+      type: object
+      required:
+        - title
+        - picture
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB)
+
+    UpdateGalleryRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        picture:
+          type: string
+          format: binary
+          description: Gallery picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+
+    # Profile Request Schemas
+    UpdateProfileRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 3
+          maxLength: 150
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        address:
+          type: string
+        picture:
+          type: string
+          format: uri
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    # Testimonial Request Schemas
+    CreateTestimonialRequest:
+      type: object
+      required:
+        - name
+        - age
+        - content
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        age:
+          type: integer
+          minimum: 1
+          maximum: 120
+        content:
+          type: string
+
+    UpdateTestimonialRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 150
+        age:
+          type: integer
+          minimum: 1
+          maximum: 120
+        content:
+          type: string
+
+    # Trainer Request Schemas
+    CreateTrainerRequest:
+      type: object
+      required:
+        - title
+        - description
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        instagram:
+          type: string
+          format: uri
+        tiktok:
+          type: string
+          format: uri
+        picture:
+          type: string
+          format: binary
+          description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB)
+
+    UpdateTrainerRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        instagram:
+          type: string
+          format: uri
+        tiktok:
+          type: string
+          format: uri
+        picture:
+          type: string
+          format: binary
+          description: Trainer picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+
+
+
+
+
+    # Class Request Schemas
+    CreateClassRequest:
+      type: object
+      required:
+        - class_name
+        - color_sign
+      properties:
+        class_name:
+          type: string
+          maxLength: 255
+        color_sign:
+          type: string
+          maxLength: 7
+
+    UpdateClassRequest:
+      type: object
+      properties:
+        class_name:
+          type: string
+          maxLength: 255
+        color_sign:
+          type: string
+          maxLength: 7
+
+    # Package Request Schemas
+    CreatePackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - type
+        - duration_value
+        - duration_unit
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        price:
+          type: number
+          minimum: 0
+        type:
+          type: string
+          enum: [membership, first_trial, promo, bonus]
+        duration_value:
+          type: integer
+          minimum: 1
+        duration_unit:
+          type: string
+          enum: [week, month]
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 31
+        reminder_session:
+          type: integer
+          minimum: 1
+
+    UpdatePackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        price:
+          type: number
+          minimum: 0
+        type:
+          type: string
+          enum: [membership, first_trial, promo, bonus]
+        duration_value:
+          type: integer
+          minimum: 1
+        duration_unit:
+          type: string
+          enum: [week, month]
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 31
+        reminder_session:
+          type: integer
+          minimum: 1
+
+    # Schedule Request Schemas
+    CreateScheduleRequest:
+      type: object
+      required:
+        - class_id
+        - coach_id
+        - pax
+        - type
+        - date_start
+        - time_start
+        - time_end
+        - repeat_type
+        - booking_deadline_hour
+        - waitlist_lock_minutes
+        - min_signup
+        - cancel_buffer_minutes
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          format: uri
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+          minimum: 1
+        type:
+          type: string
+          enum: [group, semi_private, private]
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+        schedule_until:
+          type: string
+          format: date
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+        min_signup:
+          type: integer
+          minimum: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+
+    UpdateScheduleRequest:
+      type: object
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        photo_url:
+          type: string
+          format: uri
+        coach_id:
+          type: string
+          format: uuid
+        pax:
+          type: integer
+          minimum: 1
+        type:
+          type: string
+          enum: [group, semi_private, private]
+        date_start:
+          type: string
+          format: date
+        time_start:
+          type: string
+          format: time
+        time_end:
+          type: string
+          format: time
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+        schedule_until:
+          type: string
+          format: date
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+        min_signup:
+          type: integer
+          minimum: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+
+    # Booking Request Schemas
+    CreateBookingRequest:
+      type: object
+      required:
+        - schedule_id
+        - package_id
+      properties:
+        schedule_id:
+          type: string
+          format: uuid
+        package_id:
+          type: string
+          format: uuid
+
+    # Order Request Schemas
+    CreateOrderRequest:
+      type: object
+      required:
+        - package_id
+        - payment_type
+      properties:
+        package_id:
+          type: string
+          format: uuid
+        payment_type:
+          type: string
+          enum: [bank_transfer, qris, gopay, ovo, dana]
+
+    # Membership Package Request Schemas
+    CreateMembershipPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the membership package
+          example: "Premium Membership 3 Months"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the membership package
+          example: 1500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 3
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "month"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 12
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the membership package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    UpdateMembershipPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the membership package
+          example: "Premium Membership 3 Months"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the membership package
+          example: 1500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 3
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "month"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 12
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the membership package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    # Trial Package Request Schemas
+    CreateTrialPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the trial package
+          example: "10 Session Group"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the trial package
+          example: 630000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 10
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "week"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 10
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 10
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the trial package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    UpdateTrialPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the trial package
+          example: "10 Session Group"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the trial package
+          example: 630000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 10
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "week"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 10
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 10
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the trial package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    # Category Request Schemas
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Name of the category
+          example: "Group"
+        description:
+          type: string
+          maxLength: 500
+          description: Description of the category (optional)
+          example: "Group session category"
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Name of the category
+          example: "Group"
+        description:
+          type: string
+          maxLength: 500
+          description: Description of the category (optional)
+          example: "Group session category"
+
+    # Promo Package Request Schemas
+    CreatePromoPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the promo package
+          example: "Summer Promo Package"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the promo package
+          example: 500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 2
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "month"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 8
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the promo package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    UpdatePromoPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the promo package
+          example: "Summer Promo Package"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the promo package
+          example: 500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 2
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "month"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 8
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the promo package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    # Bonus Package Request Schemas
+    CreateBonusPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - session
+        - category_id
+        - member_id
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the bonus package
+          example: "Bonus Session Package"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the bonus package
+          example: 200000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 1
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "month"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 5
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 1
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 3
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the bonus package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        member_id:
+          type: string
+          format: uuid
+          description: Member ID for the bonus package
+          example: "123e4567-e89b-12d3-a456-426614174001"
+
+    UpdateBonusPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the bonus package
+          example: "Bonus Session Package"
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the bonus package
+          example: 200000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 1
+        duration_unit:
+          type: string
+          enum: [week, month]
+          description: Duration unit
+          example: "month"
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 5
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 1
+        session:
+          type: integer
+          minimum: 1
+          description: Number of sessions included
+          example: 3
+        category_id:
+          type: string
+          format: uuid
+          description: Category ID for the bonus package
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        member_id:
+          type: string
+          format: uuid
+          description: Member ID for the bonus package
+          example: "123e4567-e89b-12d3-a456-426614174001"
+
+    # Staff Request Schemas
+    CreateStaffRequest:
+      type: object
+      required:
+        - full_name
+        - username
+        - email
+        - date_of_birth
+        - phone_number
+        - password
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Full name of the staff member
+          example: "John Doe"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_]+$'
+          description: Username for login (letters, numbers, underscores only)
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          description: Email address of the staff member
+          example: "john.doe@example.com"
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth (YYYY-MM-DD)
+          example: "1990-01-15"
+        phone_number:
+          type: string
+          pattern: '^[0-9+\\-\\s()]+$'
+          minLength: 10
+          maxLength: 20
+          description: Phone number
+          example: "+62 812-3456-7890"
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+          description: Password for login
+          example: "password123"
+
+    UpdateStaffRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Full name of the staff member
+          example: "John Doe"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_]+$'
+          description: Username for login (letters, numbers, underscores only)
+          example: "johndoe"
+        email:
+          type: string
+          format: email
+          maxLength: 100
+          description: Email address of the staff member
+          example: "john.doe@example.com"
+        date_of_birth:
+          type: string
+          format: date
+          description: Date of birth (YYYY-MM-DD)
+          example: "1990-01-15"
+        phone_number:
+          type: string
+          pattern: '^[0-9+\\-\\s()]+$'
+          minLength: 10
+          maxLength: 20
+          description: Phone number
+          example: "+62 812-3456-7890"
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+          description: Password for login (optional for updates)
+          example: "newpassword123" 

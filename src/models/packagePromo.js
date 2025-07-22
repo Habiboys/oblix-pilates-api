@@ -1,9 +1,7 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class ClassType extends Model {
+  class PackagePromo extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,36 +9,38 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      ClassType.hasMany(models.Package, { foreignKey: 'class_type_id' });
-      ClassType.hasMany(models.Session, { foreignKey: 'class_type_id' });
+      PackagePromo.belongsTo(models.Package, {
+        foreignKey: 'package_id',
+      });
     }
   }
-  ClassType.init({
-    id: {
+  PackagePromo.init({
+    package_id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-    },
-    name: {
-      type: DataTypes.STRING(100),
       allowNull: false
     },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: false
-    },
-    max_participant: {
+    group_session: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    image_name: {
-      type: DataTypes.STRING(255),
+    private_categories: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    start_time: {
+      type: DataTypes.DATE,
+      allowNull: false
+    },
+    end_time: {
+      type: DataTypes.DATE,
       allowNull: false
     }
   }, {
     sequelize,
-    modelName: 'ClassType',
-    tableName: 'class_types',
+    modelName: 'PackagePromo',
+    tableName: 'package_promo',
+    timestamps: true
   });
-  return ClassType;
-};
+  return PackagePromo;
+}; 

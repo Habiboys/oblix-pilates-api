@@ -1,32 +1,34 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('packages', {
-      id: {
+    await queryInterface.createTable('package_promo', {
+      package_id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4
+        references: {
+          model: 'packages',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      name: {
-        type: Sequelize.STRING(100),
-        allowNull: false
-      },
-      duration_sessions: {
+      group_session: {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      class_type_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'class_types',
-          key: 'id'
-        }
+      private_categories: {
+        type: Sequelize.INTEGER,
+        allowNull: false
       },
-      is_trial: {
-        type: Sequelize.BOOLEAN,
+      start_time: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      end_time: {
+        type: Sequelize.DATE,
         allowNull: false
       },
       createdAt: {
@@ -39,7 +41,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('packages');
+    await queryInterface.dropTable('package_promo');
   }
 };

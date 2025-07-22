@@ -1,7 +1,5 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Payment extends Model {
     /**
@@ -11,35 +9,48 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Payment.belongsTo(models.MemberPackage, { foreignKey: 'member_package_id' });
+      Payment.belongsTo(models.Order, {
+        foreignKey: 'order_id',
+      });
     }
   }
   Payment.init({
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      defaultValue: DataTypes.UUIDV4
     },
-    member_package_id: {
+    order_id: {
       type: DataTypes.UUID,
+      allowNull: false,
+      unique: true
+    },
+    payment_type: {
+      type: DataTypes.STRING,
       allowNull: false
     },
-    payment_date: {
+    payment_status: {
+      type: DataTypes.ENUM('pending', 'success', 'failed'),
+      allowNull: false,
+      defaultValue: 'pending'
+    },
+    transaction_time: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: true
     },
-    payment_method: {
-      type: DataTypes.STRING(100),
-      allowNull: false
+    settlement_time: {
+      type: DataTypes.DATE,
+      allowNull: true
     },
-    amount_paid: {
-      type: DataTypes.INTEGER,
-      allowNull: false
+    midtrans_response: {
+      type: DataTypes.JSON,
+      allowNull: true
     }
   }, {
     sequelize,
     modelName: 'Payment',
     tableName: 'payments',
+    timestamps: true
   });
   return Payment;
-};
+}; 

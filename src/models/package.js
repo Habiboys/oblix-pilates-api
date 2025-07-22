@@ -1,7 +1,5 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Package extends Model {
     /**
@@ -11,37 +9,68 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Package.belongsTo(models.ClassType, { foreignKey: 'class_type_id' });
-      Package.hasMany(models.PriceList, { foreignKey: 'package_id' });
-      Package.hasMany(models.MemberPackage, { foreignKey: 'package_id' });
+      Package.hasOne(models.PackageMembership, {
+        foreignKey: 'package_id'
+      });
+      Package.hasOne(models.PackageFirstTrial, {
+        foreignKey: 'package_id',
+      });
+      Package.hasOne(models.PackagePromo, {
+        foreignKey: 'package_id',
+      });
+      Package.hasMany(models.PackageBonus, {
+        foreignKey: 'package_id',
+      });
+      Package.hasMany(models.Order, {
+        foreignKey: 'package_id',
+      });
+      Package.hasMany(models.MemberPackage, {
+        foreignKey: 'package_id',
+      });
+      Package.hasMany(models.Booking, {
+        foreignKey: 'package_id',
+      });
     }
   }
   Package.init({
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      defaultValue: DataTypes.UUIDV4
     },
     name: {
       type: DataTypes.STRING(100),
       allowNull: false
     },
-    duration_sessions: {
+    price: {
+      type: DataTypes.DECIMAL(12, 2),
+      allowNull: false
+    },
+    type: {
+      type: DataTypes.ENUM('membership', 'first_trial', 'promo', 'bonus'),
+      allowNull: false
+    },
+    duration_value: {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    class_type_id: {
-      type: DataTypes.UUID,
+    duration_unit: {
+      type: DataTypes.ENUM('week', 'month'),
       allowNull: false
     },
-    is_trial: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false
+    reminder_day: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    reminder_session: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     }
   }, {
     sequelize,
     modelName: 'Package',
     tableName: 'packages',
+    timestamps: true
   });
   return Package;
-};
+}; 

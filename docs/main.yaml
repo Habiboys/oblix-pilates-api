@@ -1,0 +1,61 @@
+# Main OpenAPI documentation file
+# This file combines all modular documentation files
+
+# Import base configuration and schemas
+$ref: './base.yaml'
+
+# Import request schemas
+$ref: './requests.yaml'
+
+# Import authentication endpoints
+$ref: './auth.yaml'
+
+# Import content management endpoints
+$ref: './content.yaml'
+
+# Import profile management endpoints
+$ref: './profile.yaml'
+
+# Import trainer management endpoints
+$ref: './trainer.yaml'
+
+# Import membership package management endpoints
+$ref: './membershipPackage.yaml'
+
+# Import trial package management endpoints
+$ref: './trialPackage.yaml'
+
+# Import promo package management endpoints
+$ref: './promoPackage.yaml'
+
+# Import bonus package management endpoints
+$ref: './bonusPackage.yaml'
+
+# Import staff management endpoints
+$ref: './staff.yaml'
+
+# Import category management endpoints
+$ref: './category.yaml'
+
+# Add tags for better organization
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Content Management
+    description: Banner, blog, FAQ, gallery, and testimonial management endpoints
+  - name: Profile Management
+    description: User profile management endpoints
+  - name: Trainer Management
+    description: Trainer management endpoints
+  - name: Membership Package Management
+    description: Membership package management endpoints
+  - name: Trial Package Management
+    description: Trial package management endpoints
+  - name: Promo Package Management
+    description: Promo package management endpoints
+  - name: Bonus Package Management
+    description: Bonus package management endpoints
+  - name: Staff Management
+    description: Staff management endpoints
+  - name: Category Management
+    description: Category management endpoints 

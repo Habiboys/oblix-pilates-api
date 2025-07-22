@@ -11,7 +11,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Member.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+      Member.belongsTo(models.User, { foreignKey: 'user_id' });
+      Member.hasMany(models.Order, {
+        foreignKey: 'member_id',
+      });
+      Member.hasMany(models.MemberPackage, {
+        foreignKey: 'member_id',
+      });
+      Member.hasMany(models.Booking, {
+        foreignKey: 'member_id',
+      });
     }
   }
   Member.init({

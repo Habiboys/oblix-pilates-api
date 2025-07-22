@@ -12,6 +12,13 @@ const trainerRoutes = require('./routes/trainer.route');
 const bannerRoutes = require('./routes/banner.route');
 const galleryRoutes = require('./routes/gallery.route');
 const blogRoutes = require('./routes/blog.route');
+const membershipPackageRoutes = require('./routes/membershipPackage.route');
+const trialPackageRoutes = require('./routes/trialPackage.route');
+const promoPackageRoutes = require('./routes/promoPackage.route');
+const bonusPackageRoutes = require('./routes/bonusPackage.route');
+const categoryRoutes = require('./routes/category.route');
+const staffRoutes = require('./routes/staff.route');
+const orderRoutes = require('./routes/order.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
@@ -46,6 +53,13 @@ app.use('/api/trainer', trainerRoutes);
 app.use('/api/banner', bannerRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/blog', blogRoutes);
+app.use('/api/membership-package', membershipPackageRoutes);
+app.use('/api/trial-package', trialPackageRoutes);
+app.use('/api/promo-package', promoPackageRoutes);
+app.use('/api/bonus-package', bonusPackageRoutes);
+app.use('/api/category', categoryRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/order', orderRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World');

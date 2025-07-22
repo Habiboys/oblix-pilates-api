@@ -24,5 +24,16 @@ module.exports = {
         host: process.env.DB_HOST,
         dialect: process.env.DB_DIALECT,
         port: process.env.DB_PORT,
+    },
+    // Midtrans configuration
+    midtrans: {
+        isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+        serverKey: process.env.MIDTRANS_SERVER_KEY,
+        clientKey: process.env.MIDTRANS_CLIENT_KEY
+    },
+    // App configuration
+    app: {
+        baseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
+        port: process.env.PORT || 3000
     }
 }

@@ -1,52 +1,47 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('sessions', {
+    await queryInterface.createTable('bookings', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
+      schedule_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'schedules',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
       member_id: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'users',
+          model: 'members',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      coach_id: {
+      package_id: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'coaches',
+          model: 'packages',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      class_type_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'class_types',
-          key: 'id'
-        }
-      },
-      session_date: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      session_time: {
-        type: Sequelize.TIME,
-        allowNull: false
-      },
-      spot: {
+      session_left: {
         type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      status: {
-        type: Sequelize.STRING(50),
         allowNull: false
       },
       createdAt: {
@@ -59,7 +54,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('sessions');
+    await queryInterface.dropTable('bookings');
   }
 };

@@ -1,24 +1,21 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('reviews', {
+    await queryInterface.createTable('class', {
       id: {
         allowNull: false,
         primaryKey: true,
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
-      member_id: {
-        type: Sequelize.UUID,
-        allowNull: false,
-        references: {
-          model: 'users',
-          key: 'id'
-        }
+      class_name: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
-      rating: {
-        type: Sequelize.FLOAT,
+      color_sign: {
+        type: Sequelize.STRING,
         allowNull: false
       },
       createdAt: {
@@ -31,7 +28,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('reviews');
+    await queryInterface.dropTable('class');
   }
 };

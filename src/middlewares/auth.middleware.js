@@ -15,7 +15,9 @@ const validateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findByPk(decoded.id, {
+      include: [{ model: Member }]
+    });
 
     if (!user) {
       return res.status(401).json({
@@ -31,11 +33,11 @@ const validateToken = async (req, res, next) => {
     //   });
     // }
 
-    req.user = user;
     req.user = {
       id: user.id,
       email: user.email,
-      role: user.role
+      role: user.role,
+      member_id: user.Member ? user.Member.id : null
     };
     console.log(req.user);
     next();

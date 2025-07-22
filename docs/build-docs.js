@@ -1,0 +1,236 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+const yaml = require('js-yaml');
+
+/**
+ * Script untuk menggabungkan semua file dokumentasi modular menjadi satu file
+ * Usage: node build-docs.js
+ */
+
+function loadYamlFile(filePath) {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    return yaml.load(content);
+  } catch (error) {
+    console.error(`Error loading ${filePath}:`, error.message);
+    return null;
+  }
+}
+
+function mergeSchemas(baseDoc, requestsDoc) {
+  if (!requestsDoc || !requestsDoc.components || !requestsDoc.components.schemas) {
+    return baseDoc;
+  }
+
+  if (!baseDoc.components) {
+    baseDoc.components = {};
+  }
+  if (!baseDoc.components.schemas) {
+    baseDoc.components.schemas = {};
+  }
+
+  // Merge request schemas
+  Object.assign(baseDoc.components.schemas, requestsDoc.components.schemas);
+  
+  return baseDoc;
+}
+
+function mergePaths(baseDoc, pathsDoc) {
+  if (!pathsDoc || !pathsDoc.paths) {
+    return baseDoc;
+  }
+
+  if (!baseDoc.paths) {
+    baseDoc.paths = {};
+  }
+
+  // Merge paths
+  Object.assign(baseDoc.paths, pathsDoc.paths);
+  
+  return baseDoc;
+}
+
+function buildDocumentation() {
+  console.log('🔨 Building documentation from modular files...');
+
+  // Load base configuration
+  const baseDoc = loadYamlFile(path.join(__dirname, 'base.yaml'));
+  if (!baseDoc) {
+    console.error('❌ Failed to load base.yaml');
+    process.exit(1);
+  }
+
+  // Load and merge request schemas
+  const requestsDoc = loadYamlFile(path.join(__dirname, 'requests.yaml'));
+  if (requestsDoc) {
+    mergeSchemas(baseDoc, requestsDoc);
+    console.log('✅ Merged request schemas');
+  }
+
+  // Load and merge authentication endpoints
+  const authDoc = loadYamlFile(path.join(__dirname, 'auth.yaml'));
+  if (authDoc) {
+    mergePaths(baseDoc, authDoc);
+    console.log('✅ Merged authentication endpoints');
+  }
+
+  // Load and merge content management endpoints
+  const contentDoc = loadYamlFile(path.join(__dirname, 'content.yaml'));
+  if (contentDoc) {
+    mergePaths(baseDoc, contentDoc);
+    console.log('✅ Merged content management endpoints');
+  }
+
+  // Load and merge profile management endpoints
+  const profileDoc = loadYamlFile(path.join(__dirname, 'profile.yaml'));
+  if (profileDoc) {
+    mergePaths(baseDoc, profileDoc);
+    console.log('✅ Merged profile management endpoints');
+  }
+
+  // Load and merge trainer management endpoints
+  const trainerDoc = loadYamlFile(path.join(__dirname, 'trainer.yaml'));
+  if (trainerDoc) {
+    mergePaths(baseDoc, trainerDoc);
+    console.log('✅ Merged trainer management endpoints');
+  }
+
+  // Load and merge membership package management endpoints
+const membershipPackageDoc = loadYamlFile(path.join(__dirname, 'membershipPackage.yaml'));
+if (membershipPackageDoc) {
+  mergePaths(baseDoc, membershipPackageDoc);
+  console.log('✅ Merged membership package management endpoints');
+}
+
+// Load and merge trial package management endpoints
+const trialPackageDoc = loadYamlFile(path.join(__dirname, 'trialPackage.yaml'));
+if (trialPackageDoc) {
+  mergePaths(baseDoc, trialPackageDoc);
+  console.log('✅ Merged trial package management endpoints');
+}
+
+// Load and merge promo package management endpoints
+const promoPackageDoc = loadYamlFile(path.join(__dirname, 'promoPackage.yaml'));
+if (promoPackageDoc) {
+  mergePaths(baseDoc, promoPackageDoc);
+  console.log('✅ Merged promo package management endpoints');
+}
+
+// Load and merge bonus package management endpoints
+const bonusPackageDoc = loadYamlFile(path.join(__dirname, 'bonusPackage.yaml'));
+if (bonusPackageDoc) {
+  mergePaths(baseDoc, bonusPackageDoc);
+  console.log('✅ Merged bonus package management endpoints');
+}
+
+// Load and merge staff management endpoints
+const staffDoc = loadYamlFile(path.join(__dirname, 'staff.yaml'));
+if (staffDoc) {
+  mergePaths(baseDoc, staffDoc);
+  console.log('✅ Merged staff management endpoints');
+}
+
+// Load and merge category management endpoints
+const categoryDoc = loadYamlFile(path.join(__dirname, 'category.yaml'));
+if (categoryDoc) {
+  mergePaths(baseDoc, categoryDoc);
+  console.log('✅ Merged category management endpoints');
+}
+
+// Load and merge order management endpoints
+const orderDoc = loadYamlFile(path.join(__dirname, 'order.yaml'));
+if (orderDoc) {
+  mergePaths(baseDoc, orderDoc);
+  console.log('✅ Merged order management endpoints');
+}
+
+  // Add tags
+  baseDoc.tags = [
+    {
+      name: 'Authentication',
+      description: 'User authentication and authorization endpoints'
+    },
+    {
+      name: 'Content Management',
+      description: 'Banner, blog, FAQ, gallery, and testimonial management endpoints'
+    },
+    {
+      name: 'Profile Management',
+      description: 'User profile management endpoints'
+    },
+    {
+      name: 'Trainer Management',
+      description: 'Trainer management endpoints'
+    },
+      {
+    name: 'Membership Package Management',
+    description: 'Membership package management endpoints'
+  },
+  {
+    name: 'Trial Package Management',
+    description: 'Trial package management endpoints'
+  },
+  {
+    name: 'Promo Package Management',
+    description: 'Promo package management endpoints'
+  },
+  {
+    name: 'Bonus Package Management',
+    description: 'Bonus package management endpoints'
+  },
+  {
+    name: 'Staff Management',
+    description: 'Staff management endpoints'
+  },
+  {
+    name: 'Category Management',
+    description: 'Category management endpoints'
+  },
+  {
+    name: 'Order Management',
+    description: 'Order and payment management endpoints'
+  },
+  {
+    name: 'Payment Webhooks',
+    description: 'Payment webhook endpoints for Midtrans integration'
+  },
+  {
+    name: 'Payment Callbacks',
+    description: 'Payment callback endpoints for Midtrans integration'
+  }
+  ];
+
+  // Write the combined documentation
+  const outputPath = path.join(__dirname, '..', 'documentation.yaml');
+  try {
+    const yamlOutput = yaml.dump(baseDoc, {
+      indent: 2,
+      lineWidth: 120,
+      noRefs: true
+    });
+    
+    fs.writeFileSync(outputPath, yamlOutput, 'utf8');
+    console.log(`✅ Documentation built successfully: ${outputPath}`);
+    
+    // Count endpoints
+    const endpointCount = Object.keys(baseDoc.paths || {}).length;
+    console.log(`📊 Total endpoints: ${endpointCount}`);
+    
+    // Count schemas
+    const schemaCount = Object.keys(baseDoc.components?.schemas || {}).length;
+    console.log(`📋 Total schemas: ${schemaCount}`);
+    
+  } catch (error) {
+    console.error('❌ Failed to write documentation:', error.message);
+    process.exit(1);
+  }
+}
+
+// Run the build process
+if (require.main === module) {
+  buildDocumentation();
+}
+
+module.exports = { buildDocumentation }; 

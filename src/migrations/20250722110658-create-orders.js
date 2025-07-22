@@ -1,8 +1,9 @@
 'use strict';
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('member_packages', {
+    await queryInterface.createTable('orders', {
       id: {
         allowNull: false,
         primaryKey: true,
@@ -13,9 +14,11 @@ module.exports = {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
-          model: 'users',
+          model: 'members',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       package_id: {
         type: Sequelize.UUID,
@@ -23,31 +26,35 @@ module.exports = {
         references: {
           model: 'packages',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
-      join_date: {
+      order_id: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true
+      },
+      price: {
+        type: Sequelize.DECIMAL(12, 2),
+        allowNull: false
+      },
+      status: {
+        type: Sequelize.ENUM('pending', 'paid', 'failed', 'expired'),
+        allowNull: false,
+        defaultValue: 'pending'
+      },
+      payment_type: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      paid_at: {
         type: Sequelize.DATE,
-        allowNull: false
+        allowNull: true
       },
-      expired_date: {
+      expire_at: {
         type: Sequelize.DATE,
-        allowNull: false
-      },
-      session_used: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      session_left: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      extra_sessions: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      notes: {
-        type: Sequelize.TEXT,
-        allowNull: false
+        allowNull: true
       },
       createdAt: {
         allowNull: false,
@@ -59,7 +66,8 @@ module.exports = {
       }
     });
   },
+
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('membership');
+    await queryInterface.dropTable('orders');
   }
 };
