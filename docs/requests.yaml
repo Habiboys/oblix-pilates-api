@@ -42,8 +42,10 @@ components:
         email:
           type: string
           format: email
+          example: "admin@oblix.com"
         password:
           type: string
+          example: "admin123"
 
     ForgotPasswordRequest:
       type: object
