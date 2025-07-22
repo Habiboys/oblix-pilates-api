@@ -1,0 +1,114 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: oblix-pilates-api
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/startup-cpu-boost: "true"
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/target: "80"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/PROJECT_ID/oblix-pilates-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: host
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          value: "oblix"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: password
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: db-secrets
+              key: host
+        - name: DB_DIALECT
+          value: "mysql"
+        - name: DB_PORT
+          value: "3306"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: jwt-secret
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: jwt-refresh-secret
+        - name: MIDTRANS_IS_PRODUCTION
+          value: "true"
+        - name: MIDTRANS_SERVER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: midtrans-secrets
+              key: server-key
+        - name: MIDTRANS_CLIENT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: midtrans-secrets
+              key: client-key
+        - name: FRONTEND_URL
+          value: "https://your-frontend-domain.com"
+        - name: EMAIL_USER
+          valueFrom:
+            secretKeyRef:
+              name: email-secrets
+              key: user
+        - name: EMAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: email-secrets
+              key: password
+        resources:
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3 
