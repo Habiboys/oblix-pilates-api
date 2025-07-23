@@ -37,6 +37,9 @@ $ref: './staff.yaml'
 # Import category management endpoints
 $ref: './category.yaml'
 
+# Import payment endpoints
+$ref: './payment-endpoints.yaml'
+
 # Add tags for better organization
 tags:
   - name: Authentication
@@ -58,4 +61,6 @@ tags:
   - name: Staff Management
     description: Staff management endpoints
   - name: Category Management
-    description: Category management endpoints 
+    description: Category management endpoints
+  - name: Payment
+    description: Payment-related endpoints for Midtrans integration 

@@ -8,12 +8,13 @@ info:
     email: support@oblixpilates.com
 
 servers:
+  - url: https://oblix-pilates-api-439190874535.us-central1.run.app/api
+    description: Cloud Run Test server
   - url: http://34.101.143.2:3020/api
     description: Testing server
   - url: http://localhost:3000/api
     description: Development server
-  - url: https://oblix-pilates-api-439190874535.us-central1.run.app/api
-    description: Cloud Run Test server
+
 
 components:
   securitySchemes:
@@ -204,38 +205,7 @@ components:
         cancel_buffer_minutes:
           type: integer
 
-    # Order Schemas
-    Order:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        member_id:
-          type: string
-          format: uuid
-        package_id:
-          type: string
-          format: uuid
-        order_id:
-          type: string
-        price:
-          type: number
-          format: decimal
-        status:
-          type: string
-          enum: [pending, paid, failed, expired]
-        payment_type:
-          type: string
-          nullable: true
-        paid_at:
-          type: string
-          format: date-time
-          nullable: true
-        expire_at:
-          type: string
-          format: date-time
-          nullable: true
+
 
     # Payment Schemas
     Payment:
@@ -751,4 +721,301 @@ components:
           format: date-time
         updatedAt:
           type: string
-          format: date-time 
+          format: date-time
+
+    # Payment Schemas
+    PaymentNotification:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: Order ID dari Midtrans
+        transaction_status:
+          type: string
+          enum: [capture, settlement, pending, deny, expire, cancel, refund, partial_refund, chargeback, partial_chargeback, authorize]
+          description: Status transaksi dari Midtrans
+        transaction_id:
+          type: string
+          description: Transaction ID dari Midtrans
+        fraud_status:
+          type: string
+          description: Status fraud check
+        payment_type:
+          type: string
+          description: Tipe pembayaran
+        va_numbers:
+          type: array
+          items:
+            type: object
+            properties:
+              bank:
+                type: string
+              va_number:
+                type: string
+        pdf_url:
+          type: string
+          description: URL untuk invoice PDF
+
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+            transaction_status:
+              type: string
+            payment_status:
+              type: string
+
+    # Order Response Schemas
+    CreateOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Order created successfully
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+              format: uuid
+              description: Order ID
+            order_number:
+              type: string
+              description: Order number
+            total_amount:
+              type: number
+              description: Total amount
+            payment_url:
+              type: string
+              format: uri
+              description: Midtrans payment URL
+            token:
+              type: string
+              description: Midtrans token for frontend integration
+
+    GetUserOrdersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Orders retrieved successfully
+        data:
+          type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: '#/components/schemas/Order'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    GetOrderByIdResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Order retrieved successfully
+        data:
+          $ref: '#/components/schemas/OrderDetail'
+
+    CheckPaymentStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Payment status retrieved successfully
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+              format: uuid
+            order_number:
+              type: string
+            payment_status:
+              type: string
+              enum: [pending, paid, failed, expired, cancelled]
+            midtrans_status:
+              type: string
+            fraud_status:
+              type: string
+            amount:
+              type: number
+            payment_type:
+              type: string
+            va_numbers:
+              type: array
+              items:
+                type: object
+                properties:
+                  bank:
+                    type: string
+                  va_number:
+                    type: string
+            pdf_url:
+              type: string
+              format: uri
+
+    CancelOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Order cancelled successfully
+
+    PaymentNotificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Payment notification processed successfully
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_number:
+          type: string
+        total_amount:
+          type: number
+        payment_status:
+          type: string
+          enum: [pending, paid, failed, expired, cancelled]
+        package_name:
+          type: string
+        package_type:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        session_count:
+          type: integer
+        duration_value:
+          type: integer
+        duration_unit:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        package:
+          $ref: '#/components/schemas/Package'
+
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_number:
+          type: string
+        total_amount:
+          type: number
+        payment_status:
+          type: string
+          enum: [pending, paid, failed, expired, cancelled]
+        payment_method:
+          type: string
+        midtrans_order_id:
+          type: string
+        midtrans_payment_type:
+          type: string
+        midtrans_transaction_id:
+          type: string
+        midtrans_transaction_status:
+          type: string
+        midtrans_fraud_status:
+          type: string
+        midtrans_va_numbers:
+          type: array
+          items:
+            type: object
+            properties:
+              bank:
+                type: string
+              va_number:
+                type: string
+        midtrans_pdf_url:
+          type: string
+          format: uri
+        midtrans_redirect_url:
+          type: string
+          format: uri
+        paid_at:
+          type: string
+          format: date-time
+        expired_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        package_name:
+          type: string
+        package_type:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        session_count:
+          type: integer
+        duration_value:
+          type: integer
+        duration_unit:
+          type: string
+        package:
+          $ref: '#/components/schemas/Package'
+        member:
+          $ref: '#/components/schemas/Member'
+        member_package:
+          $ref: '#/components/schemas/MemberPackage'
+
+
+
+
+
+    Pagination:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+        totalPages:
+          type: integer
+        totalItems:
+          type: integer
+        itemsPerPage:
+          type: integer 

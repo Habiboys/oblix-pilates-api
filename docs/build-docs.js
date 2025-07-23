@@ -146,6 +146,13 @@ if (orderDoc) {
   console.log('✅ Merged order management endpoints');
 }
 
+// Load and merge payment endpoints
+const paymentEndpointsDoc = loadYamlFile(path.join(__dirname, 'payment-endpoints.yaml'));
+if (paymentEndpointsDoc) {
+  mergePaths(baseDoc, paymentEndpointsDoc);
+  console.log('✅ Merged payment endpoints');
+}
+
   // Add tags
   baseDoc.tags = [
     {
@@ -193,12 +200,8 @@ if (orderDoc) {
     description: 'Order and payment management endpoints'
   },
   {
-    name: 'Payment Webhooks',
-    description: 'Payment webhook endpoints for Midtrans integration'
-  },
-  {
-    name: 'Payment Callbacks',
-    description: 'Payment callback endpoints for Midtrans integration'
+    name: 'Payment',
+    description: 'Payment-related endpoints for Midtrans integration'
   }
   ];
 

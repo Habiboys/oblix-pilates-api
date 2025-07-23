@@ -13,7 +13,6 @@ servers:
     description: Testing server
   - url: http://localhost:3000/api
     description: Development server
-
 components:
   securitySchemes:
     BearerAuth:
@@ -193,41 +192,6 @@ components:
           type: integer
         cancel_buffer_minutes:
           type: integer
-    Order:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        member_id:
-          type: string
-          format: uuid
-        package_id:
-          type: string
-          format: uuid
-        order_id:
-          type: string
-        price:
-          type: number
-          format: decimal
-        status:
-          type: string
-          enum:
-            - pending
-            - paid
-            - failed
-            - expired
-        payment_type:
-          type: string
-          nullable: true
-        paid_at:
-          type: string
-          format: date-time
-          nullable: true
-        expire_at:
-          type: string
-          format: date-time
-          nullable: true
     Payment:
       type: object
       properties:
@@ -729,6 +693,312 @@ components:
         updatedAt:
           type: string
           format: date-time
+    PaymentNotification:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: Order ID dari Midtrans
+        transaction_status:
+          type: string
+          enum:
+            - capture
+            - settlement
+            - pending
+            - deny
+            - expire
+            - cancel
+            - refund
+            - partial_refund
+            - chargeback
+            - partial_chargeback
+            - authorize
+          description: Status transaksi dari Midtrans
+        transaction_id:
+          type: string
+          description: Transaction ID dari Midtrans
+        fraud_status:
+          type: string
+          description: Status fraud check
+        payment_type:
+          type: string
+          description: Tipe pembayaran
+        va_numbers:
+          type: array
+          items:
+            type: object
+            properties:
+              bank:
+                type: string
+              va_number:
+                type: string
+        pdf_url:
+          type: string
+          description: URL untuk invoice PDF
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+            transaction_status:
+              type: string
+            payment_status:
+              type: string
+    CreateOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Order created successfully
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+              format: uuid
+              description: Order ID
+            order_number:
+              type: string
+              description: Order number
+            total_amount:
+              type: number
+              description: Total amount
+            payment_url:
+              type: string
+              format: uri
+              description: Midtrans payment URL
+            token:
+              type: string
+              description: Midtrans token for frontend integration
+    GetUserOrdersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Orders retrieved successfully
+        data:
+          type: object
+          properties:
+            orders:
+              type: array
+              items:
+                $ref: '#/components/schemas/Order'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+    GetOrderByIdResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Order retrieved successfully
+        data:
+          $ref: '#/components/schemas/OrderDetail'
+    CheckPaymentStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Payment status retrieved successfully
+        data:
+          type: object
+          properties:
+            order_id:
+              type: string
+              format: uuid
+            order_number:
+              type: string
+            payment_status:
+              type: string
+              enum:
+                - pending
+                - paid
+                - failed
+                - expired
+                - cancelled
+            midtrans_status:
+              type: string
+            fraud_status:
+              type: string
+            amount:
+              type: number
+            payment_type:
+              type: string
+            va_numbers:
+              type: array
+              items:
+                type: object
+                properties:
+                  bank:
+                    type: string
+                  va_number:
+                    type: string
+            pdf_url:
+              type: string
+              format: uri
+    CancelOrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Order cancelled successfully
+    PaymentNotificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Payment notification processed successfully
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_number:
+          type: string
+        total_amount:
+          type: number
+        payment_status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - failed
+            - expired
+            - cancelled
+        package_name:
+          type: string
+        package_type:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        session_count:
+          type: integer
+        duration_value:
+          type: integer
+        duration_unit:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        package:
+          $ref: '#/components/schemas/Package'
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_number:
+          type: string
+        total_amount:
+          type: number
+        payment_status:
+          type: string
+          enum:
+            - pending
+            - paid
+            - failed
+            - expired
+            - cancelled
+        payment_method:
+          type: string
+        midtrans_order_id:
+          type: string
+        midtrans_payment_type:
+          type: string
+        midtrans_transaction_id:
+          type: string
+        midtrans_transaction_status:
+          type: string
+        midtrans_fraud_status:
+          type: string
+        midtrans_va_numbers:
+          type: array
+          items:
+            type: object
+            properties:
+              bank:
+                type: string
+              va_number:
+                type: string
+        midtrans_pdf_url:
+          type: string
+          format: uri
+        midtrans_redirect_url:
+          type: string
+          format: uri
+        paid_at:
+          type: string
+          format: date-time
+        expired_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        package_name:
+          type: string
+        package_type:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+        session_count:
+          type: integer
+        duration_value:
+          type: integer
+        duration_unit:
+          type: string
+        package:
+          $ref: '#/components/schemas/Package'
+        member:
+          $ref: '#/components/schemas/Member'
+        member_package:
+          $ref: '#/components/schemas/MemberPackage'
+    Pagination:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+        totalPages:
+          type: integer
+        totalItems:
+          type: integer
+        itemsPerPage:
+          type: integer
     RegisterRequest:
       type: object
       required:
@@ -1220,19 +1490,55 @@ components:
       type: object
       required:
         - package_id
-        - payment_type
       properties:
         package_id:
           type: string
           format: uuid
+          description: ID of the package to purchase
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 1
+          description: Quantity of packages to purchase
+        notes:
+          type: string
+          maxLength: 500
+          description: Additional notes for the order
+    PaymentNotificationRequest:
+      type: object
+      required:
+        - transaction_status
+        - order_id
+      properties:
+        transaction_status:
+          type: string
+          description: Transaction status from Midtrans
+        order_id:
+          type: string
+          description: Order ID from Midtrans
+        transaction_id:
+          type: string
+          description: Transaction ID from Midtrans
+        fraud_status:
+          type: string
+          description: Fraud status from Midtrans
         payment_type:
           type: string
-          enum:
-            - bank_transfer
-            - qris
-            - gopay
-            - ovo
-            - dana
+          description: Payment type from Midtrans
+        va_numbers:
+          type: array
+          items:
+            type: object
+            properties:
+              bank:
+                type: string
+              va_number:
+                type: string
+        pdf_url:
+          type: string
+          format: uri
+          description: PDF URL from Midtrans
     CreateMembershipPackageRequest:
       type: object
       required:
@@ -5119,7 +5425,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/order/create:
+  /order/create:
     post:
       tags:
         - Order Management
@@ -5164,7 +5470,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/order/my-orders:
+  /order/my-orders:
     get:
       tags:
         - Order Management
@@ -5221,7 +5527,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/order/{id}:
+  /order/{id}:
     get:
       tags:
         - Order Management
@@ -5262,7 +5568,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/order/{order_id}/status:
+  /order/{order_id}/status:
     get:
       tags:
         - Order Management
@@ -5309,7 +5615,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/order/{order_id}/cancel:
+  /order/{order_id}/cancel:
     delete:
       tags:
         - Order Management
@@ -5356,25 +5662,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/order/payment/notification:
+  /order/payment/notification:
     post:
       tags:
-        - Payment Webhooks
-      summary: Payment notification webhook
-      description: Handle payment notifications from Midtrans
+        - Payment
+      summary: Payment notification from Midtrans
+      description: Endpoint untuk menerima notifikasi pembayaran dari Midtrans
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PaymentNotificationRequest'
+              $ref: '#/components/schemas/PaymentNotification'
       responses:
         '200':
-          description: Payment notification processed successfully
+          description: Notification processed successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentNotificationResponse'
+                $ref: '#/components/schemas/PaymentResponse'
         '404':
           description: Order not found
           content:
@@ -5387,66 +5693,143 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /api/order/payment/finish:
+  /order/payment/recurring:
+    post:
+      tags:
+        - Payment
+      summary: Recurring payment notification
+      description: Endpoint untuk menerima notifikasi pembayaran berulang dari Midtrans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentNotification'
+      responses:
+        '200':
+          description: Recurring notification processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /order/payment/pay-account:
+    post:
+      tags:
+        - Payment
+      summary: Pay Account notification
+      description: Endpoint untuk menerima notifikasi status Pay Account dari Midtrans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentNotification'
+      responses:
+        '200':
+          description: Pay Account notification processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /order/payment/finish:
     get:
       tags:
-        - Payment Callbacks
-      summary: Payment finish callback
-      description: Handle payment finish callback from Midtrans
+        - Payment
+      summary: Payment success redirect
+      description: Redirect endpoint setelah pembayaran berhasil
       parameters:
         - name: order_id
           in: query
-          description: Order ID from Midtrans
-          required: true
+          description: Order ID
+          required: false
           schema:
             type: string
         - name: result_code
           in: query
-          description: Result code from Midtrans
+          description: Result code dari Midtrans
           required: false
           schema:
             type: string
         - name: transaction_status
           in: query
-          description: Transaction status from Midtrans
+          description: Status transaksi
           required: false
           schema:
             type: string
       responses:
         '302':
-          description: Redirect to frontend
-  /api/order/payment/error:
+          description: Redirect to frontend success page
+          headers:
+            Location:
+              description: Frontend success URL
+              schema:
+                type: string
+  /order/payment/error:
     get:
       tags:
-        - Payment Callbacks
-      summary: Payment error callback
-      description: Handle payment error callback from Midtrans
+        - Payment
+      summary: Payment error redirect
+      description: Redirect endpoint jika terjadi error dalam pembayaran
       parameters:
         - name: order_id
           in: query
-          description: Order ID from Midtrans
-          required: true
+          description: Order ID
+          required: false
           schema:
             type: string
       responses:
         '302':
-          description: Redirect to frontend
-  /api/order/payment/pending:
+          description: Redirect to frontend error page
+          headers:
+            Location:
+              description: Frontend error URL
+              schema:
+                type: string
+  /order/payment/pending:
     get:
       tags:
-        - Payment Callbacks
-      summary: Payment pending callback
-      description: Handle payment pending callback from Midtrans
+        - Payment
+      summary: Payment pending redirect
+      description: Redirect endpoint jika pembayaran masih pending
       parameters:
         - name: order_id
           in: query
-          description: Order ID from Midtrans
-          required: true
+          description: Order ID
+          required: false
           schema:
             type: string
       responses:
         '302':
-          description: Redirect to frontend
+          description: Redirect to frontend pending page
+          headers:
+            Location:
+              description: Frontend pending URL
+              schema:
+                type: string
 tags:
   - name: Authentication
     description: User authentication and authorization endpoints
@@ -5470,7 +5853,5 @@ tags:
     description: Category management endpoints
   - name: Order Management
     description: Order and payment management endpoints
-  - name: Payment Webhooks
-    description: Payment webhook endpoints for Midtrans integration
-  - name: Payment Callbacks
-    description: Payment callback endpoints for Midtrans integration
+  - name: Payment
+    description: Payment-related endpoints for Midtrans integration

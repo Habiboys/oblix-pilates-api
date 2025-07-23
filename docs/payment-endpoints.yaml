@@ -1,0 +1,176 @@
+# Payment Endpoints API Documentation
+
+paths:
+  /order/payment/notification:
+    post:
+      tags:
+        - Payment
+      summary: Payment notification from Midtrans
+      description: Endpoint untuk menerima notifikasi pembayaran dari Midtrans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentNotification'
+      responses:
+        '200':
+          description: Notification processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /order/payment/recurring:
+    post:
+      tags:
+        - Payment
+      summary: Recurring payment notification
+      description: Endpoint untuk menerima notifikasi pembayaran berulang dari Midtrans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentNotification'
+      responses:
+        '200':
+          description: Recurring notification processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /order/payment/pay-account:
+    post:
+      tags:
+        - Payment
+      summary: Pay Account notification
+      description: Endpoint untuk menerima notifikasi status Pay Account dari Midtrans
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentNotification'
+      responses:
+        '200':
+          description: Pay Account notification processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /order/payment/finish:
+    get:
+      tags:
+        - Payment
+      summary: Payment success redirect
+      description: Redirect endpoint setelah pembayaran berhasil
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID
+          required: false
+          schema:
+            type: string
+        - name: result_code
+          in: query
+          description: Result code dari Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_status
+          in: query
+          description: Status transaksi
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend success page
+          headers:
+            Location:
+              description: Frontend success URL
+              schema:
+                type: string
+
+  /order/payment/error:
+    get:
+      tags:
+        - Payment
+      summary: Payment error redirect
+      description: Redirect endpoint jika terjadi error dalam pembayaran
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend error page
+          headers:
+            Location:
+              description: Frontend error URL
+              schema:
+                type: string
+
+  /order/payment/pending:
+    get:
+      tags:
+        - Payment
+      summary: Payment pending redirect
+      description: Redirect endpoint jika pembayaran masih pending
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend pending page
+          headers:
+            Location:
+              description: Frontend pending URL
+              schema:
+                type: string 
