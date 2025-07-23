@@ -22,6 +22,8 @@ router.delete('/:order_id/cancel', validateToken, validate(cancelOrderSchema, 'p
 
 // Payment callback routes (no authentication required)
 router.post('/payment/notification', validate(paymentNotificationSchema), orderController.paymentNotification);
+router.post('/payment/recurring', validate(paymentNotificationSchema), orderController.recurringNotification);
+router.post('/payment/pay-account', validate(paymentNotificationSchema), orderController.payAccountNotification);
 router.get('/payment/finish', validate(paymentCallbackSchema, 'query'), orderController.paymentFinish);
 router.get('/payment/error', validate(paymentCallbackSchema, 'query'), orderController.paymentError);
 router.get('/payment/pending', validate(paymentCallbackSchema, 'query'), orderController.paymentPending);

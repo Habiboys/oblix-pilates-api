@@ -536,6 +536,94 @@ const paymentPending = async (req, res) => {
   }
 };
 
+// Recurring notification handler
+const recurringNotification = async (req, res) => {
+  try {
+    const notification = req.body;
+    
+    // Verify notification from Midtrans
+    const status = await MidtransService.handleNotification(notification);
+    
+    // Find order by Midtrans order ID
+    const order = await Order.findOne({
+      where: { midtrans_order_id: status.order_id }
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update order with recurring payment status
+    await order.update({
+      payment_status: MidtransService.mapPaymentStatus(status.transaction_status),
+      midtrans_transaction_id: status.transaction_id,
+      midtrans_transaction_status: status.transaction_status,
+      midtrans_fraud_status: status.fraud_status,
+      midtrans_payment_type: status.payment_type,
+      paid_at: status.transaction_status === 'capture' || status.transaction_status === 'settlement' ? new Date() : null
+    });
+
+    res.json({
+      success: true,
+      message: 'Recurring notification processed successfully'
+    });
+
+  } catch (error) {
+    console.error('Error processing recurring notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Pay Account notification handler
+const payAccountNotification = async (req, res) => {
+  try {
+    const notification = req.body;
+    
+    // Verify notification from Midtrans
+    const status = await MidtransService.handleNotification(notification);
+    
+    // Find order by Midtrans order ID
+    const order = await Order.findOne({
+      where: { midtrans_order_id: status.order_id }
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Update order with pay account status
+    await order.update({
+      payment_status: MidtransService.mapPaymentStatus(status.transaction_status),
+      midtrans_transaction_id: status.transaction_id,
+      midtrans_transaction_status: status.transaction_status,
+      midtrans_fraud_status: status.fraud_status,
+      midtrans_payment_type: status.payment_type,
+      paid_at: status.transaction_status === 'capture' || status.transaction_status === 'settlement' ? new Date() : null
+    });
+
+    res.json({
+      success: true,
+      message: 'Pay Account notification processed successfully'
+    });
+
+  } catch (error) {
+    console.error('Error processing pay account notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getUserOrders,
@@ -545,5 +633,7 @@ module.exports = {
   paymentNotification,
   paymentFinish,
   paymentError,
-  paymentPending
+  paymentPending,
+  recurringNotification,
+  payAccountNotification
 }; 
