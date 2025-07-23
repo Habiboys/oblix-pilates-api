@@ -28,6 +28,7 @@ module.exports = {
     // Midtrans configuration
     midtrans: {
         isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+        merchantId: process.env.MIDTRANS_MERCHANT_ID,
         serverKey: process.env.MIDTRANS_SERVER_KEY,
         clientKey: process.env.MIDTRANS_CLIENT_KEY
     },
