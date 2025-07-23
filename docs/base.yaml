@@ -8,6 +8,8 @@ info:
     email: support@oblixpilates.com
 
 servers:
+  - url: https://api-oblix.metro-software.com/api
+    description: Metro Test server
   - url: https://oblix-pilates-api-439190874535.us-central1.run.app/api
     description: Cloud Run Test server
   - url: http://34.101.143.2:3020/api
@@ -721,7 +723,7 @@ components:
           format: date-time
         updatedAt:
           type: string
-          format: date-time
+          format: date-time 
 
     # Payment Schemas
     PaymentNotification:

@@ -88,23 +88,23 @@ gcloud run deploy $SERVICE_NAME \
 # Check if deployment was successful
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
-    
-    # Get service URL
-    SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')
-    
-    if [ -n "$SERVICE_URL" ]; then
-        echo -e "${GREEN}🌐 Service URL: $SERVICE_URL${NC}"
-        echo -e "${GREEN}📊 API Documentation: $SERVICE_URL/api-docs${NC}"
-        echo -e "${GREEN}❤️  Health Check: $SERVICE_URL/health${NC}"
 
-        # Test health endpoint
-        echo -e "${YELLOW}🏥 Testing health endpoint...${NC}"
-        sleep 10
+# Get service URL
+SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region=$REGION --format='value(status.url)')
+
+    if [ -n "$SERVICE_URL" ]; then
+echo -e "${GREEN}🌐 Service URL: $SERVICE_URL${NC}"
+echo -e "${GREEN}📊 API Documentation: $SERVICE_URL/api-docs${NC}"
+echo -e "${GREEN}❤️  Health Check: $SERVICE_URL/health${NC}"
+
+# Test health endpoint
+echo -e "${YELLOW}🏥 Testing health endpoint...${NC}"
+sleep 10
         curl -f "$SERVICE_URL/health"
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✅ Health check passed!${NC}"
-        else
-            echo -e "${RED}❌ Health check failed!${NC}"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Health check passed!${NC}"
+else
+    echo -e "${RED}❌ Health check failed!${NC}"
         fi
     else
         echo -e "${RED}❌ Failed to get service URL${NC}"

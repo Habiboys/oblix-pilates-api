@@ -44,6 +44,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
+      status: {
+        type: Sequelize.ENUM('signup', 'waiting_list', 'cancelled'),
+        allowNull: false,
+        defaultValue: 'signup'
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

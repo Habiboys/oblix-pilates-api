@@ -10,6 +10,11 @@ module.exports = {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4
       },
+      order_number: {
+        type: Sequelize.STRING(50),
+        allowNull: false,
+        unique: true
+      },
       member_id: {
         type: Sequelize.UUID,
         allowNull: false,
@@ -30,22 +35,81 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      order_id: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
-      },
-      price: {
-        type: Sequelize.DECIMAL(12, 2),
+      package_name: {
+        type: Sequelize.STRING(100),
         allowNull: false
       },
-      status: {
-        type: Sequelize.ENUM('pending', 'paid', 'failed', 'expired'),
+      package_type: {
+        type: Sequelize.STRING(50),
+        allowNull: false
+      },
+      quantity: {
+        type: Sequelize.INTEGER,
         allowNull: false,
+        defaultValue: 1
+      },
+      unit_price: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
+      },
+      total_amount: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false
+      },
+      session_count: {
+        type: Sequelize.INTEGER,
+        allowNull: true
+      },
+      duration_value: {
+        type: Sequelize.INTEGER,
+        allowNull: true
+      },
+      duration_unit: {
+        type: Sequelize.STRING(20),
+        allowNull: true
+      },
+      payment_method: {
+        type: Sequelize.STRING(50),
+        allowNull: true
+      },
+      payment_status: {
+        type: Sequelize.ENUM('pending', 'paid', 'failed', 'expired', 'cancelled'),
         defaultValue: 'pending'
       },
-      payment_type: {
-        type: Sequelize.STRING,
+      midtrans_order_id: {
+        type: Sequelize.STRING(100),
+        allowNull: true
+      },
+      midtrans_payment_type: {
+        type: Sequelize.STRING(50),
+        allowNull: true
+      },
+      midtrans_transaction_id: {
+        type: Sequelize.STRING(100),
+        allowNull: true
+      },
+      midtrans_transaction_status: {
+        type: Sequelize.STRING(50),
+        allowNull: true
+      },
+      midtrans_fraud_status: {
+        type: Sequelize.STRING(50),
+        allowNull: true
+      },
+      midtrans_va_numbers: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
+      midtrans_payment_code: {
+        type: Sequelize.STRING(100),
+        allowNull: true
+      },
+      midtrans_redirect_url: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      midtrans_token: {
+        type: Sequelize.TEXT,
         allowNull: true
       },
       paid_at: {
@@ -54,6 +118,26 @@ module.exports = {
       },
       expire_at: {
         type: Sequelize.DATE,
+        allowNull: true
+      },
+      cancelled_at: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      cancelled_by: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        references: {
+          model: 'users',
+          key: 'id'
+        }
+      },
+      cancel_reason: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      notes: {
+        type: Sequelize.TEXT,
         allowNull: true
       },
       createdAt: {
@@ -65,9 +149,17 @@ module.exports = {
         type: Sequelize.DATE
       }
     });
+
+    // Add indexes for better performance
+    await queryInterface.addIndex('orders', ['order_number']);
+    await queryInterface.addIndex('orders', ['member_id']);
+    await queryInterface.addIndex('orders', ['package_id']);
+    await queryInterface.addIndex('orders', ['payment_status']);
+    await queryInterface.addIndex('orders', ['midtrans_order_id']);
+    await queryInterface.addIndex('orders', ['createdAt']);
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('orders');
   }
-};
+}; 

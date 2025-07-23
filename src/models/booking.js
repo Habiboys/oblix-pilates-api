@@ -41,6 +41,11 @@ module.exports = (sequelize, DataTypes) => {
     session_left: {
       type: DataTypes.INTEGER,
       allowNull: false
+    },
+    status: {
+      type: DataTypes.ENUM('signup', 'waiting_list', 'cancelled'),
+      allowNull: false,
+      defaultValue: 'pending'
     }
   }, {
     sequelize,
