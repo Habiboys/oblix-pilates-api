@@ -7,12 +7,13 @@ info:
     name: API Support
     email: support@oblixpilates.com
 servers:
+  - url: https://oblix-pilates-api-439190874535.us-central1.run.app/api
+    description: Cloud Run Test server
   - url: http://34.101.143.2:3020/api
     description: Testing server
   - url: http://localhost:3000/api
     description: Development server
-  - url: https://oblix-pilates-api-439190874535.us-central1.run.app/api
-    description: Cloud Run Test server
+
 components:
   securitySchemes:
     BearerAuth:
