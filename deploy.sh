@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-PROJECT_ID="your-project-id"
+PROJECT_ID="billing-system-new"
 REGION="us-central1"
 SERVICE_NAME="oblix-pilates-api"
 IMAGE_NAME="gcr.io/$PROJECT_ID/$SERVICE_NAME"
