@@ -17,7 +17,10 @@
     "docker:run": "docker run -p 3000:8080 oblix-pilates-api",
     "docker:compose": "docker-compose up -d",
     "docker:compose:down": "docker-compose down",
-    "deploy": "chmod +x deploy.sh && ./deploy.sh"
+    "deploy": "chmod +x deploy.sh && ./deploy.sh",
+    "deploy:secure": "chmod +x deploy-secure.sh && ./deploy-secure.sh",
+    "setup:secrets": "chmod +x setup-secrets.sh && ./setup-secrets.sh",
+    "cleanup:secrets": "chmod +x cleanup-secrets.sh && ./cleanup-secrets.sh"
   },
   "keywords": [],
   "author": "",
