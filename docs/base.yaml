@@ -12,6 +12,8 @@ servers:
     description: Testing server
   - url: http://localhost:3000/api
     description: Development server
+  - url: https://oblix-pilates-api-439190874535.us-central1.run.app/api
+    description: Cloud Run Test server
 
 components:
   securitySchemes:
