@@ -1127,4 +1127,473 @@ components:
           minLength: 6
           maxLength: 100
           description: Password for login (optional for updates)
-          example: "newpassword123" 
+          example: "newpassword123"
+
+    # Schedule Request Schemas
+    CreateGroupScheduleRequest:
+      type: object
+      required:
+        - class_id
+        - trainer_id
+        - pax
+        - date_start
+        - time_start
+        - time_end
+        - booking_deadline_hour
+        - waitlist_lock_minutes
+        - min_signup
+        - cancel_buffer_minutes
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        pax:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: Maximum number of participants
+          example: 8
+        date_start:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2025-07-17"
+        time_start:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time (HH:MM)
+          example: "07:10"
+        time_end:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time (HH:MM)
+          example: "08:00"
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          default: none
+          description: Repeat type for the schedule
+          example: "weekly"
+        schedule_until:
+          type: string
+          format: date
+          description: End date for repeated schedules (YYYY-MM-DD) - Required if repeat_type is weekly
+          example: "2025-10-17"
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+          maximum: 72
+          description: Hours before class starts that students must book by
+          example: 2
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+          maximum: 480
+          description: Minutes before class start to auto-add waitlisted students
+          example: 120
+        min_signup:
+          type: integer
+          minimum: 1
+          description: Minimum number of students required for class to run
+          example: 6
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+          maximum: 480
+          description: Minutes before class to auto-cancel if minimum not met
+          example: 120
+        picture:
+          type: string
+          format: binary
+          description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+
+    UpdateGroupScheduleRequest:
+      type: object
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        pax:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: Maximum number of participants
+          example: 8
+        date_start:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2025-07-17"
+        time_start:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time (HH:MM)
+          example: "07:10"
+        time_end:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time (HH:MM)
+          example: "08:00"
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          description: Repeat type for the schedule
+          example: "weekly"
+        schedule_until:
+          type: string
+          format: date
+          description: End date for repeated schedules (YYYY-MM-DD) - Required if repeat_type is weekly
+          example: "2025-10-17"
+        booking_deadline_hour:
+          type: integer
+          minimum: 0
+          maximum: 72
+          description: Hours before class starts that students must book by
+          example: 2
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 0
+          maximum: 480
+          description: Minutes before class start to auto-add waitlisted students
+          example: 120
+        min_signup:
+          type: integer
+          minimum: 1
+          description: Minimum number of students required for class to run
+          example: 6
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 0
+          maximum: 480
+          description: Minutes before class to auto-cancel if minimum not met
+          example: 120
+        picture:
+          type: string
+          format: binary
+          description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional 
+
+    CreateSemiPrivateScheduleRequest:
+      type: object
+      required:
+        - class_id
+        - trainer_id
+        - pax
+        - date_start
+        - time_start
+        - time_end
+        - booking_deadline_hour
+        - waitlist_lock_minutes
+        - min_signup
+        - cancel_buffer_minutes
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+          example: "770e8400-e29b-41d4-a716-446655440001"
+        pax:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Maximum number of participants (max 20 for semi-private)
+          example: 8
+        date_start:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2025-07-25"
+        time_start:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time (HH:MM)
+          example: "10:00"
+        time_end:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time (HH:MM)
+          example: "11:00"
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          default: none
+          description: Repeat type for the schedule
+          example: "weekly"
+        schedule_until:
+          type: string
+          format: date
+          description: End date for repeated schedules (YYYY-MM-DD) - Required if repeat_type is weekly
+          example: "2025-10-25"
+        booking_deadline_hour:
+          type: integer
+          minimum: 1
+          maximum: 72
+          description: Hours before class starts that students must book by
+          example: 2
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 30
+          maximum: 480
+          description: Minutes before class start to auto-add waitlisted students
+          example: 120
+        min_signup:
+          type: integer
+          minimum: 1
+          description: Minimum number of students required for class to run
+          example: 3
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 30
+          maximum: 1440
+          description: Minutes before class to auto-cancel if minimum not met
+          example: 120
+        picture:
+          type: string
+          format: binary
+          description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+
+    UpdateSemiPrivateScheduleRequest:
+      type: object
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+          example: "770e8400-e29b-41d4-a716-446655440001"
+        pax:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Maximum number of participants (max 20 for semi-private)
+          example: 8
+        date_start:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2025-07-25"
+        time_start:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time (HH:MM)
+          example: "10:00"
+        time_end:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time (HH:MM)
+          example: "11:00"
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          description: Repeat type for the schedule
+          example: "none"
+        schedule_until:
+          type: string
+          format: date
+          description: End date for repeated schedules (YYYY-MM-DD) - Required if repeat_type is weekly
+          example: "2025-10-25"
+        booking_deadline_hour:
+          type: integer
+          minimum: 1
+          maximum: 72
+          description: Hours before class starts that students must book by
+          example: 2
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 30
+          maximum: 480
+          description: Minutes before class start to auto-add waitlisted students
+          example: 120
+        min_signup:
+          type: integer
+          minimum: 1
+          description: Minimum number of students required for class to run
+          example: 3
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 30
+          maximum: 1440
+          description: Minutes before class to auto-cancel if minimum not met
+          example: 120
+        picture:
+          type: string
+          format: binary
+          description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional 
+
+    CreatePrivateScheduleRequest:
+      type: object
+      required:
+        - class_id
+        - trainer_id
+        - member_id
+        - date_start
+        - time_start
+        - time_end
+        - booking_deadline_hour
+        - waitlist_lock_minutes
+        - min_signup
+        - cancel_buffer_minutes
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+          example: "770e8400-e29b-41d4-a716-446655440001"
+        member_id:
+          type: string
+          format: uuid
+          description: Member ID to be assigned (auto booking)
+          example: "880e8400-e29b-41d4-a716-446655440001"
+        date_start:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2025-07-25"
+        time_start:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time (HH:MM)
+          example: "14:00"
+        time_end:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time (HH:MM)
+          example: "15:00"
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          default: none
+          description: Repeat type for the schedule
+          example: "weekly"
+        schedule_until:
+          type: string
+          format: date
+          description: End date for repeated schedules (YYYY-MM-DD) - Required if repeat_type is weekly
+          example: "2025-10-25"
+        booking_deadline_hour:
+          type: integer
+          minimum: 1
+          maximum: 72
+          description: Hours before class starts that students must book by
+          example: 2
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 30
+          maximum: 480
+          description: Minutes before class start to auto-add waitlisted students
+          example: 120
+        min_signup:
+          type: integer
+          minimum: 1
+          maximum: 2
+          description: Minimum number of students required for class to run (max 2 for private)
+          example: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 30
+          maximum: 1440
+          description: Minutes before class to auto-cancel if minimum not met
+          example: 120
+        picture:
+          type: string
+          format: binary
+          description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+
+    UpdatePrivateScheduleRequest:
+      type: object
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+          example: "770e8400-e29b-41d4-a716-446655440001"
+        member_id:
+          type: string
+          format: uuid
+          description: Member ID to be assigned (auto booking)
+          example: "880e8400-e29b-41d4-a716-446655440001"
+        date_start:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2025-07-25"
+        time_start:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: Start time (HH:MM)
+          example: "14:00"
+        time_end:
+          type: string
+          pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          description: End time (HH:MM)
+          example: "15:00"
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          description: Repeat type for the schedule
+          example: "none"
+        schedule_until:
+          type: string
+          format: date
+          description: End date for repeated schedules (YYYY-MM-DD) - Required if repeat_type is weekly
+          example: "2025-10-25"
+        booking_deadline_hour:
+          type: integer
+          minimum: 1
+          maximum: 72
+          description: Hours before class starts that students must book by
+          example: 2
+        waitlist_lock_minutes:
+          type: integer
+          minimum: 30
+          maximum: 480
+          description: Minutes before class start to auto-add waitlisted students
+          example: 120
+        min_signup:
+          type: integer
+          minimum: 1
+          maximum: 2
+          description: Minimum number of students required for class to run (max 2 for private)
+          example: 1
+        cancel_buffer_minutes:
+          type: integer
+          minimum: 30
+          maximum: 1440
+          description: Minutes before class to auto-cancel if minimum not met
+          example: 120
+        picture:
+          type: string
+          format: binary
+          description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional 

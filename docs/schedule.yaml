@@ -1,0 +1,830 @@
+paths:
+  /schedule/group:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get all group schedules
+      description: Retrieve all group schedules with pagination and search
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by class name
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          description: Filter by specific date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Group schedules retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          schedules:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/GroupSchedule'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Schedule Management
+      summary: Create new group schedule
+      description: Create a new group schedule (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateGroupScheduleRequest'
+      responses:
+        '201':
+          description: Group schedule created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          schedule:
+                            $ref: '#/components/schemas/GroupSchedule'
+                          totalSchedules:
+                            type: integer
+                            example: 14
+                          repeatType:
+                            type: string
+                            example: weekly
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /schedule/group/{id}:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get group schedule by ID
+      description: Retrieve a specific group schedule by its ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      responses:
+        '200':
+          description: Group schedule retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GroupSchedule'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Schedule Management
+      summary: Update group schedule
+      description: Update an existing group schedule (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateGroupScheduleRequest'
+      responses:
+        '200':
+          description: Group schedule updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GroupSchedule'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Schedule Management
+      summary: Delete group schedule
+      description: Delete a group schedule (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      responses:
+        '200':
+          description: Group schedule deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /schedule/semi-private:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get all semi-private schedules
+      description: Retrieve all semi-private schedules with pagination and search
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+          description: Number of items per page
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by class name
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by specific date
+      responses:
+        '200':
+          description: Semi-private schedules retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Semi-private schedules retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      schedules:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GroupSchedule'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Schedule Management
+      summary: Create new semi-private schedule
+      description: Create a new semi-private schedule (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateSemiPrivateScheduleRequest'
+      responses:
+        '201':
+          description: Semi-private schedule created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Semi-private schedule created successfully (14 schedules generated)
+                  data:
+                    type: object
+                    properties:
+                      schedule:
+                        $ref: '#/components/schemas/GroupSchedule'
+                      totalSchedules:
+                        type: integer
+                        example: 14
+                      repeatType:
+                        type: string
+                        example: weekly
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /schedule/semi-private/{id}:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get semi-private schedule by ID
+      description: Retrieve a specific semi-private schedule by its ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      responses:
+        '200':
+          description: Semi-private schedule retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Semi-private schedule retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/GroupSchedule'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Schedule Management
+      summary: Update semi-private schedule
+      description: Update an existing semi-private schedule (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateSemiPrivateScheduleRequest'
+      responses:
+        '200':
+          description: Semi-private schedule updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Semi-private schedule updated successfully
+                  data:
+                    $ref: '#/components/schemas/GroupSchedule'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Schedule Management
+      summary: Delete semi-private schedule
+      description: Delete a semi-private schedule (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      responses:
+        '200':
+          description: Semi-private schedule deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Semi-private schedule deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /schedule/private:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get all private schedules
+      description: Retrieve all private schedules with pagination and search
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+          description: Number of items per page
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by class name
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter by specific date
+      responses:
+        '200':
+          description: Private schedules retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Private schedules retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      schedules:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PrivateSchedule'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Schedule Management
+      summary: Create new private schedule with auto booking
+      description: Create a new private schedule with automatic booking for assigned member (admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreatePrivateScheduleRequest'
+      responses:
+        '201':
+          description: Private schedule created successfully with auto booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Private schedule created successfully (14 schedules generated)
+                  data:
+                    type: object
+                    properties:
+                      schedule:
+                        $ref: '#/components/schemas/PrivateSchedule'
+                      totalSchedules:
+                        type: integer
+                        example: 14
+                      totalBookings:
+                        type: integer
+                        example: 14
+                      repeatType:
+                        type: string
+                        example: weekly
+                      assignedMember:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          full_name:
+                            type: string
+                          email:
+                            type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /schedule/private/{id}:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get private schedule by ID
+      description: Retrieve a specific private schedule by its ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      responses:
+        '200':
+          description: Private schedule retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Private schedule retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/PrivateSchedule'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Schedule Management
+      summary: Update private schedule
+      description: Update an existing private schedule (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdatePrivateScheduleRequest'
+      responses:
+        '200':
+          description: Private schedule updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Private schedule updated successfully
+                  data:
+                    $ref: '#/components/schemas/PrivateSchedule'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Schedule Management
+      summary: Delete private schedule
+      description: Delete a private schedule and its associated bookings (admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Schedule ID
+      responses:
+        '200':
+          description: Private schedule deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Private schedule deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Schedule not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse' 

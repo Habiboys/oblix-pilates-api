@@ -15,33 +15,34 @@ const getProfile = async (req, res) => {
     
             }]
         });
+        console.log(user);
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (!user.member) {
+        if (!user.Member) {
             return res.status(404).json({ message: 'Member profile not found' });
         }
         
+        // Format response sesuai yang diminta
+        const memberData = {
+            id: user.Member.id,
+            member_code: user.Member.member_code,
+            username: user.Member.username,
+            full_name: user.Member.full_name,
+            phone_number: user.Member.phone_number,
+            dob: user.Member.dob,
+            address: user.Member.address,
+            date_of_join: user.Member.date_of_join,
+            picture: user.Member.picture,
+            status: user.Member.status
+        };
 
-        // const userData = user.get({ plain: true });
-        // const { member: memberData, ...userFields } = userData;
-        
-        // // Hapus user_id dari memberData
-        // const { user_id: memberUserId, ...memberFields } = memberData;
-        
-        // const data = {
-        //     ...userFields, // Semua field user kecuali Member
-        //     member: {
-        //         ...memberFields // Semua field dari Member kecuali user_id
-        //     }
-        // };
-      
-    
         res.status(200).json({
-            message: 'User profile fetched successfully',
-            data: user
+            success: true,
+            message: 'Operation successful',
+            data: memberData
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

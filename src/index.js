@@ -19,6 +19,7 @@ const bonusPackageRoutes = require('./routes/bonusPackage.route');
 const categoryRoutes = require('./routes/category.route');
 const staffRoutes = require('./routes/staff.route');
 const orderRoutes = require('./routes/order.route');
+const scheduleRoutes = require('./routes/schedule.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
@@ -60,6 +61,7 @@ app.use('/api/bonus-package', bonusPackageRoutes);
 app.use('/api/category', categoryRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/order', orderRoutes);
+app.use('/api/schedule', scheduleRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World');

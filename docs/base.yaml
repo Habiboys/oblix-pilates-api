@@ -1020,4 +1020,153 @@ components:
         totalItems:
           type: integer
         itemsPerPage:
-          type: integer 
+          type: integer
+
+    # Schedule Response Schemas
+    GroupSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Schedule ID
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+        pax:
+          type: integer
+          description: Maximum number of participants
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          description: Schedule type
+        date_start:
+          type: string
+          format: date
+          description: Start date
+        time_start:
+          type: string
+          description: Start time
+        time_end:
+          type: string
+          description: End time
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          description: Repeat type
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+          description: End date for repeated schedules
+        booking_deadline_hour:
+          type: integer
+          description: Hours before class starts that students must book by
+        waitlist_lock_minutes:
+          type: integer
+          description: Minutes before class start to auto-add waitlisted students
+        min_signup:
+          type: integer
+          description: Minimum number of students required for class to run
+        cancel_buffer_minutes:
+          type: integer
+          description: Minutes before class to auto-cancel if minimum not met
+        picture:
+          type: string
+          nullable: true
+          description: Schedule picture filename
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        Class:
+          $ref: '#/components/schemas/Class'
+        Trainer:
+          $ref: '#/components/schemas/Trainer'
+
+    PrivateSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Schedule ID
+        class_id:
+          type: string
+          format: uuid
+          description: Class ID
+        trainer_id:
+          type: string
+          format: uuid
+          description: Trainer ID
+        member_id:
+          type: string
+          format: uuid
+          description: Assigned member ID
+        pax:
+          type: integer
+          description: Maximum number of participants (always 1 for private)
+        type:
+          type: string
+          enum: [private]
+          description: Schedule type
+        date_start:
+          type: string
+          format: date
+          description: Start date
+        time_start:
+          type: string
+          description: Start time
+        time_end:
+          type: string
+          description: End time
+        repeat_type:
+          type: string
+          enum: [none, weekly]
+          description: Repeat type
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+          description: End date for repeated schedules
+        booking_deadline_hour:
+          type: integer
+          description: Hours before class starts that students must book by
+        waitlist_lock_minutes:
+          type: integer
+          description: Minutes before class start to auto-add waitlisted students
+        min_signup:
+          type: integer
+          description: Minimum number of students required for class to run
+        cancel_buffer_minutes:
+          type: integer
+          description: Minutes before class to auto-cancel if minimum not met
+        picture:
+          type: string
+          nullable: true
+          description: Schedule picture filename
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        Class:
+          $ref: '#/components/schemas/Class'
+        Trainer:
+          $ref: '#/components/schemas/Trainer'
+        assignedMember:
+          $ref: '#/components/schemas/Member'
+
+ 

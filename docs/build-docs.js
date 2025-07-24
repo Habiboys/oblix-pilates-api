@@ -153,6 +153,16 @@ if (paymentEndpointsDoc) {
   console.log('✅ Merged payment endpoints');
 }
 
+// Load and merge schedule management endpoints
+const scheduleDoc = loadYamlFile(path.join(__dirname, 'schedule.yaml'));
+if (scheduleDoc) {
+  console.log('📋 Schedule doc paths:', Object.keys(scheduleDoc.paths || {}));
+  mergePaths(baseDoc, scheduleDoc);
+  console.log('✅ Merged schedule management endpoints');
+} else {
+  console.log('❌ Failed to load schedule.yaml');
+}
+
   // Add tags
   baseDoc.tags = [
     {
@@ -202,6 +212,10 @@ if (paymentEndpointsDoc) {
   {
     name: 'Payment',
     description: 'Payment-related endpoints for Midtrans integration'
+  },
+  {
+    name: 'Schedule Management',
+    description: 'Schedule management endpoints for group, semi-private, and private classes'
   }
   ];
 

@@ -18,6 +18,21 @@ module.exports = (sequelize, DataTypes) => {
       Schedule.hasMany(models.Booking, {
         foreignKey: 'schedule_id',
       });
+      // Self-referencing association untuk repeat schedules
+      Schedule.belongsTo(models.Schedule, {
+        foreignKey: 'parent_schedule_id',
+        as: 'parent'
+      });
+      Schedule.hasMany(models.Schedule, {
+        foreignKey: 'parent_schedule_id',
+        as: 'children'
+      });
+
+      // Association dengan Member untuk private schedule
+      Schedule.belongsTo(models.Member, {
+        foreignKey: 'member_id',
+        as: 'assignedMember'
+      });
     }
   }
   Schedule.init({
@@ -30,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: false
     },
-    photo_url: {
+    picture: {
       type: DataTypes.TEXT,
       allowNull: true
     },
@@ -82,7 +97,15 @@ module.exports = (sequelize, DataTypes) => {
     cancel_buffer_minutes: {
       type: DataTypes.INTEGER,
       allowNull: false
-    }
+    },
+            parent_schedule_id: {
+          type: DataTypes.UUID,
+          allowNull: true
+        },
+        member_id: {
+          type: DataTypes.UUID,
+          allowNull: true
+        }
   }, {
     sequelize,
     modelName: 'Schedule',
