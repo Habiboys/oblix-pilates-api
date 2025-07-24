@@ -28,7 +28,7 @@ const getProfile = async (req, res) => {
         // Format response sesuai yang diminta
         const MemberData = {
             id: user.Member.id,
-            Member_code: user.Member.Member_code,
+            member_code: user.Member.member_code,
             username: user.Member.username,
             full_name: user.Member.full_name,
             email: user.email, // Tambahkan email dari user
