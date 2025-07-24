@@ -523,9 +523,9 @@ components:
         group_session:
           type: integer
           description: Group session
-        private_categories:
+        private_session:
           type: integer
-          description: Private categories
+          description: Private session
         duration_value:
           type: integer
           description: Duration value
@@ -546,7 +546,7 @@ components:
         - name
         - price
         - group_session
-        - private_categories
+        - private_session
         - duration_value
         - duration_unit
 

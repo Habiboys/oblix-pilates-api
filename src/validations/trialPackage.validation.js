@@ -72,15 +72,15 @@ const createTrialPackageSchema = Joi.object({
       'number.min': 'Group session must be at least 0',
       'any.required': 'Group session is required'
     }),
-  private_categories: Joi.number()
+  private_session: Joi.number()
     .integer()
     .min(0)
     .required()
     .messages({
-      'number.base': 'Private categories must be a number',
-      'number.integer': 'Private categories must be an integer',
-      'number.min': 'Private categories must be at least 0',
-      'any.required': 'Private categories is required'
+      'number.base': 'Private session must be a number',
+      'number.integer': 'Private session must be an integer',
+      'number.min': 'Private session must be at least 0',
+      'any.required': 'Private session is required'
     })
 });
 
@@ -151,14 +151,14 @@ const updateTrialPackageSchema = Joi.object({
       'number.integer': 'Group session must be an integer',
       'number.min': 'Group session must be at least 0'
     }),
-  private_categories: Joi.number()
+  private_session: Joi.number()
     .integer()
     .min(0)
     .optional()
     .messages({
-      'number.base': 'Private categories must be a number',
-      'number.integer': 'Private categories must be an integer',
-      'number.min': 'Private categories must be at least 0'
+      'number.base': 'Private session must be a number',
+      'number.integer': 'Private session must be an integer',
+      'number.min': 'Private session must be at least 0'
     })
 });
 

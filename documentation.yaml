@@ -496,9 +496,9 @@ components:
         group_session:
           type: integer
           description: Group session
-        private_categories:
+        private_session:
           type: integer
-          description: Private categories
+          description: Private session
         duration_value:
           type: integer
           description: Duration value
@@ -521,7 +521,7 @@ components:
         - name
         - price
         - group_session
-        - private_categories
+        - private_session
         - duration_value
         - duration_unit
     PromoPackage:
@@ -1785,7 +1785,7 @@ components:
         - duration_value
         - duration_unit
         - group_session
-        - private_categories
+        - private_session
       properties:
         name:
           type: string
@@ -1830,7 +1830,7 @@ components:
           minimum: 0
           description: Group session
           example: 5
-        private_categories:
+        private_session:
           type: integer
           minimum: 0
           description: Private categories
@@ -1881,7 +1881,7 @@ components:
           minimum: 0
           description: Group session
           example: 5
-        private_categories:
+        private_session:
           type: integer
           minimum: 0
           description: Private categories

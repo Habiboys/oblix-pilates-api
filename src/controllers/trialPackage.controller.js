@@ -35,7 +35,7 @@ const getAllTrialPackages = async (req, res) => {
       name: pkg.name,
       price: pkg.price,
       group_session: pkg.PackageFirstTrial ? pkg.PackageFirstTrial.group_session : null,
-      private_categories: pkg.PackageFirstTrial ? pkg.PackageFirstTrial.private_categories : null,
+      private_session: pkg.PackageFirstTrial ? pkg.PackageFirstTrial.private_session : null,
       duration_value: pkg.duration_value,
       duration_unit: pkg.duration_unit,
       reminder_day: pkg.reminder_day,
@@ -96,7 +96,7 @@ const getTrialPackageById = async (req, res) => {
       name: package.name,
       price: package.price,
       group_session: package.PackageFirstTrial ? package.PackageFirstTrial.group_session : null,
-      private_categories: package.PackageFirstTrial ? package.PackageFirstTrial.private_categories : null,
+      private_session: package.PackageFirstTrial ? package.PackageFirstTrial.private_session : null,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
       reminder_day: package.reminder_day,
@@ -128,7 +128,7 @@ const createTrialPackage = async (req, res) => {
       reminder_day,
       reminder_session,
       group_session,
-      private_categories
+      private_session
     } = req.body;
 
     // Check if package with same name exists
@@ -161,7 +161,7 @@ const createTrialPackage = async (req, res) => {
     await PackageFirstTrial.create({
       package_id: newPackage.id,
       group_session: group_session,
-      private_categories: private_categories
+      private_session: private_session
     });
 
     // Fetch the created package with associations
@@ -179,7 +179,7 @@ const createTrialPackage = async (req, res) => {
       name: createdPackage.name,
       price: createdPackage.price,
       group_session: createdPackage.PackageFirstTrial ? createdPackage.PackageFirstTrial.group_session : null,
-      private_categories: createdPackage.PackageFirstTrial ? createdPackage.PackageFirstTrial.private_categories : null,
+      private_session: createdPackage.PackageFirstTrial ? createdPackage.PackageFirstTrial.private_session : null,
       duration_value: createdPackage.duration_value,
       duration_unit: createdPackage.duration_unit,
       reminder_day: createdPackage.reminder_day,
@@ -212,7 +212,7 @@ const updateTrialPackage = async (req, res) => {
       reminder_day,
       reminder_session,
       group_session,
-      private_categories
+      private_session
     } = req.body;
 
     const package = await Package.findOne({
@@ -258,20 +258,20 @@ const updateTrialPackage = async (req, res) => {
     });
 
     // Update package first trial
-    if (group_session !== undefined || private_categories !== undefined) {
+    if (group_session !== undefined || private_session !== undefined) {
       const existingTrial = await PackageFirstTrial.findOne({
         where: { package_id: package.id }
       });
       if (existingTrial) {
         await existingTrial.update({
           group_session: group_session,
-          private_categories: private_categories
+          private_session: private_session
         });
       } else {
         await PackageFirstTrial.create({
           package_id: package.id,
           group_session: group_session,
-          private_categories: private_categories
+          private_session: private_session
         });
       }
     }
@@ -291,7 +291,7 @@ const updateTrialPackage = async (req, res) => {
       name: updatedPackage.name,
       price: updatedPackage.price,
       group_session: updatedPackage.PackageFirstTrial ? updatedPackage.PackageFirstTrial.group_session : null,
-      private_categories: updatedPackage.PackageFirstTrial ? updatedPackage.PackageFirstTrial.private_categories : null,
+      private_session: updatedPackage.PackageFirstTrial ? updatedPackage.PackageFirstTrial.private_session : null,
       duration_value: updatedPackage.duration_value,
       duration_unit: updatedPackage.duration_unit,
       reminder_day: updatedPackage.reminder_day,
