@@ -562,9 +562,20 @@ components:
           type: number
           format: decimal
           description: Price of the promo package
-        session:
+        group_session:
           type: integer
-          description: Number of sessions included
+          description: Group session
+        private_session:
+          type: integer
+          description: Private session
+        start_time:
+          type: string
+          format: date-time
+          description: Start time
+        end_time:
+          type: string
+          format: date-time
+          description: End time
         duration_value:
           type: integer
           description: Duration value
@@ -584,7 +595,10 @@ components:
         - id
         - name
         - price
-        - session
+        - group_session
+        - private_session
+        - start_time
+        - end_time
         - duration_value
         - duration_unit
 
@@ -604,9 +618,6 @@ components:
           type: number
           format: decimal
           description: Price of the bonus package
-        session:
-          type: integer
-          description: Number of sessions included
         member:
           type: object
           properties:
@@ -636,7 +647,6 @@ components:
         - id
         - name
         - price
-        - session
         - member
         - duration_value
         - duration_unit
@@ -901,83 +911,6 @@ components:
         package:
           $ref: '#/components/schemas/Package'
 
-    OrderDetail:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        order_number:
-          type: string
-        total_amount:
-          type: number
-        payment_status:
-          type: string
-          enum: [pending, paid, failed, expired, cancelled]
-        payment_method:
-          type: string
-        midtrans_order_id:
-          type: string
-        midtrans_payment_type:
-          type: string
-        midtrans_transaction_id:
-          type: string
-        midtrans_transaction_status:
-          type: string
-        midtrans_fraud_status:
-          type: string
-        midtrans_va_numbers:
-          type: array
-          items:
-            type: object
-            properties:
-              bank:
-                type: string
-              va_number:
-                type: string
-        midtrans_pdf_url:
-          type: string
-          format: uri
-        midtrans_redirect_url:
-          type: string
-          format: uri
-        paid_at:
-          type: string
-          format: date-time
-        expired_at:
-          type: string
-          format: date-time
-        notes:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        package_name:
-          type: string
-        package_type:
-          type: string
-        quantity:
-          type: integer
-        unit_price:
-          type: number
-        session_count:
-          type: integer
-        duration_value:
-          type: integer
-        duration_unit:
-          type: string
-        package:
-          $ref: '#/components/schemas/Package'
-        member:
-          $ref: '#/components/schemas/Member'
-        member_package:
-          $ref: '#/components/schemas/MemberPackage'
-
-
-
 
 
     Pagination:
@@ -1139,4 +1072,28 @@ components:
         assignedMember:
           $ref: '#/components/schemas/Member'
 
- 
+    CreatePromoPackageRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the promo package
+        price:
+          type: number
+          description: Price of the promo package
+        group_session:
+          type: integer
+          nullable: true
+          description: Group session
+        private_session:
+          type: integer
+          nullable: true
+          description: Private session
+        start_time:
+          type: string
+          format: date-time
+          description: Start time
+        end_time:
+          type: string
+          format: date-time
+          description: End time

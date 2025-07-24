@@ -63,6 +63,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePromoPackageRequest'
+            example:
+              name: "Summer Promo Package"
+              price: 500000
+              duration_value: 2
+              duration_unit: "month"
+              reminder_day: 7
+              reminder_session: 2
+              group_session: 5
+              private_session: 2
+              start_time: "2024-07-25T08:00:00Z"
+              end_time: "2024-07-25T10:00:00Z"
       responses:
         '201':
           description: Promo package created successfully

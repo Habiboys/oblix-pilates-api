@@ -19,7 +19,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      private_categories: {
+      private_session: {
         type: Sequelize.INTEGER,
         allowNull: false
       },

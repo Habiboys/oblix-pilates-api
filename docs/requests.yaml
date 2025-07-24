@@ -820,8 +820,10 @@ components:
         - price
         - duration_value
         - duration_unit
-        - session
-        - category_id
+        - group_session
+        - private_session
+        - start_time
+        - end_time
       properties:
         name:
           type: string
@@ -859,16 +861,26 @@ components:
           nullable: true
           description: Reminder session (optional)
           example: 2
-        session:
+        group_session:
           type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 8
-        category_id:
+          minimum: 0
+          description: Group session
+          example: 5
+        private_session:
+          type: integer
+          minimum: 0
+          description: Private session
+          example: 2
+        start_time:
           type: string
-          format: uuid
-          description: Category ID for the promo package
-          example: "123e4567-e89b-12d3-a456-426614174000"
+          format: date-time
+          description: Start time
+          example: "2024-07-25T08:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: End time
+          example: "2024-07-25T10:00:00Z"
 
     UpdatePromoPackageRequest:
       type: object
@@ -909,16 +921,26 @@ components:
           nullable: true
           description: Reminder session (optional)
           example: 2
-        session:
+        group_session:
           type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 8
-        category_id:
+          minimum: 0
+          description: Group session
+          example: 5
+        private_session:
+          type: integer
+          minimum: 0
+          description: Private session
+          example: 2
+        start_time:
           type: string
-          format: uuid
-          description: Category ID for the promo package
-          example: "123e4567-e89b-12d3-a456-426614174000"
+          format: date-time
+          description: Start time
+          example: "2024-07-25T08:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: End time
+          example: "2024-07-25T10:00:00Z"
 
     # Bonus Package Request Schemas
     CreateBonusPackageRequest:

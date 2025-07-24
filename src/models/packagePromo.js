@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    private_categories: {
+    private_session: {
       type: DataTypes.INTEGER,
       allowNull: false
     },

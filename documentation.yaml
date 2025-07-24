@@ -535,9 +535,20 @@ components:
           type: number
           format: decimal
           description: Price of the promo package
-        session:
+        group_session:
           type: integer
-          description: Number of sessions included
+          description: Group session
+        private_session:
+          type: integer
+          description: Private session
+        start_time:
+          type: string
+          format: date-time
+          description: Start time
+        end_time:
+          type: string
+          format: date-time
+          description: End time
         duration_value:
           type: integer
           description: Duration value
@@ -559,7 +570,10 @@ components:
         - id
         - name
         - price
-        - session
+        - group_session
+        - private_session
+        - start_time
+        - end_time
         - duration_value
         - duration_unit
     BonusPackage:
@@ -577,9 +591,6 @@ components:
           type: number
           format: decimal
           description: Price of the bonus package
-        session:
-          type: integer
-          description: Number of sessions included
         member:
           type: object
           properties:
@@ -611,7 +622,6 @@ components:
         - id
         - name
         - price
-        - session
         - member
         - duration_value
         - duration_unit
@@ -881,85 +891,6 @@ components:
           format: date-time
         package:
           $ref: '#/components/schemas/Package'
-    OrderDetail:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        order_number:
-          type: string
-        total_amount:
-          type: number
-        payment_status:
-          type: string
-          enum:
-            - pending
-            - paid
-            - failed
-            - expired
-            - cancelled
-        payment_method:
-          type: string
-        midtrans_order_id:
-          type: string
-        midtrans_payment_type:
-          type: string
-        midtrans_transaction_id:
-          type: string
-        midtrans_transaction_status:
-          type: string
-        midtrans_fraud_status:
-          type: string
-        midtrans_va_numbers:
-          type: array
-          items:
-            type: object
-            properties:
-              bank:
-                type: string
-              va_number:
-                type: string
-        midtrans_pdf_url:
-          type: string
-          format: uri
-        midtrans_redirect_url:
-          type: string
-          format: uri
-        paid_at:
-          type: string
-          format: date-time
-        expired_at:
-          type: string
-          format: date-time
-        notes:
-          type: string
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-        package_name:
-          type: string
-        package_type:
-          type: string
-        quantity:
-          type: integer
-        unit_price:
-          type: number
-        session_count:
-          type: integer
-        duration_value:
-          type: integer
-        duration_unit:
-          type: string
-        package:
-          $ref: '#/components/schemas/Package'
-        member:
-          $ref: '#/components/schemas/Member'
-        member_package:
-          $ref: '#/components/schemas/MemberPackage'
     Pagination:
       type: object
       properties:
@@ -1123,6 +1054,76 @@ components:
           $ref: '#/components/schemas/Trainer'
         assignedMember:
           $ref: '#/components/schemas/Member'
+    CreatePromoPackageRequest:
+      type: object
+      required:
+        - name
+        - price
+        - duration_value
+        - duration_unit
+        - group_session
+        - private_session
+        - start_time
+        - end_time
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Name of the promo package
+          example: Summer Promo Package
+        price:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          description: Price of the promo package
+          example: 500000
+        duration_value:
+          type: integer
+          minimum: 1
+          description: Duration value
+          example: 2
+        duration_unit:
+          type: string
+          enum:
+            - week
+            - month
+          description: Duration unit
+          example: month
+        reminder_day:
+          type: integer
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: Reminder day (optional)
+          example: 7
+        reminder_session:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+          description: Reminder session (optional)
+          example: 2
+        group_session:
+          type: integer
+          minimum: 0
+          description: Group session
+          example: 5
+        private_session:
+          type: integer
+          minimum: 0
+          description: Private session
+          example: 2
+        start_time:
+          type: string
+          format: date-time
+          description: Start time
+          example: '2024-07-25T08:00:00Z'
+        end_time:
+          type: string
+          format: date-time
+          description: End time
+          example: '2024-07-25T10:00:00Z'
     RegisterRequest:
       type: object
       required:
@@ -1911,64 +1912,6 @@ components:
           maxLength: 500
           description: Description of the category (optional)
           example: Group session category
-    CreatePromoPackageRequest:
-      type: object
-      required:
-        - name
-        - price
-        - duration_value
-        - duration_unit
-        - session
-        - category_id
-      properties:
-        name:
-          type: string
-          minLength: 3
-          maxLength: 100
-          description: Name of the promo package
-          example: Summer Promo Package
-        price:
-          type: number
-          minimum: 0
-          multipleOf: 0.01
-          description: Price of the promo package
-          example: 500000
-        duration_value:
-          type: integer
-          minimum: 1
-          description: Duration value
-          example: 2
-        duration_unit:
-          type: string
-          enum:
-            - week
-            - month
-          description: Duration unit
-          example: month
-        reminder_day:
-          type: integer
-          minimum: 1
-          maximum: 365
-          nullable: true
-          description: Reminder day (optional)
-          example: 7
-        reminder_session:
-          type: integer
-          minimum: 1
-          maximum: 100
-          nullable: true
-          description: Reminder session (optional)
-          example: 2
-        session:
-          type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 8
-        category_id:
-          type: string
-          format: uuid
-          description: Category ID for the promo package
-          example: 123e4567-e89b-12d3-a456-426614174000
     UpdatePromoPackageRequest:
       type: object
       properties:
@@ -2010,16 +1953,26 @@ components:
           nullable: true
           description: Reminder session (optional)
           example: 2
-        session:
+        group_session:
           type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 8
-        category_id:
+          minimum: 0
+          description: Group session
+          example: 5
+        private_session:
+          type: integer
+          minimum: 0
+          description: Private session
+          example: 2
+        start_time:
           type: string
-          format: uuid
-          description: Category ID for the promo package
-          example: 123e4567-e89b-12d3-a456-426614174000
+          format: date-time
+          description: Start time
+          example: '2024-07-25T08:00:00Z'
+        end_time:
+          type: string
+          format: date-time
+          description: End time
+          example: '2024-07-25T10:00:00Z'
     CreateBonusPackageRequest:
       type: object
       required:
@@ -4997,6 +4950,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreatePromoPackageRequest'
+            example:
+              name: Summer Promo Package
+              price: 500000
+              duration_value: 2
+              duration_unit: month
+              reminder_day: 7
+              reminder_session: 2
+              group_session: 5
+              private_session: 2
+              start_time: '2024-07-25T08:00:00Z'
+              end_time: '2024-07-25T10:00:00Z'
       responses:
         '201':
           description: Promo package created successfully

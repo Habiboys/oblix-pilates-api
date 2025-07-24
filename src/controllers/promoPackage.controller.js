@@ -34,7 +34,10 @@ const getAllPromoPackages = async (req, res) => {
       id: pkg.id,
       name: pkg.name,
       price: pkg.price,
-      session: pkg.PackagePromo ? pkg.PackagePromo.session : null,
+      group_session: pkg.PackagePromo ? pkg.PackagePromo.group_session : null,
+      private_session: pkg.PackagePromo ? pkg.PackagePromo.private_session : null,
+      start_time: pkg.PackagePromo ? pkg.PackagePromo.start_time : null,
+      end_time: pkg.PackagePromo ? pkg.PackagePromo.end_time : null,
       duration_value: pkg.duration_value,
       duration_unit: pkg.duration_unit,
       reminder_day: pkg.reminder_day,
@@ -94,7 +97,10 @@ const getPromoPackageById = async (req, res) => {
       id: package.id,
       name: package.name,
       price: package.price,
-      session: package.PackagePromo ? package.PackagePromo.session : null,
+      group_session: package.PackagePromo ? package.PackagePromo.group_session : null,
+      private_session: package.PackagePromo ? package.PackagePromo.private_session : null,
+      start_time: package.PackagePromo ? package.PackagePromo.start_time : null,
+      end_time: package.PackagePromo ? package.PackagePromo.end_time : null,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
       reminder_day: package.reminder_day,
@@ -125,7 +131,10 @@ const createPromoPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session
+      group_session,
+      private_session,
+      time_start,
+      time_end,
     } = req.body;
 
     // Check if package with same name exists
@@ -151,13 +160,16 @@ const createPromoPackage = async (req, res) => {
       duration_value: parseInt(duration_value),
       duration_unit,
       reminder_day: reminder_day ? parseInt(reminder_day) : null,
-      reminder_session: reminder_session ? parseInt(reminder_session) : null
+      reminder_session: reminder_session ? parseInt(reminder_session) : null,
     });
 
     // Create package promo
     await PackagePromo.create({
       package_id: newPackage.id,
-      session: parseInt(session)
+      group_session: group_session ? parseInt(group_session) : null,
+      private_session: private_session ? parseInt(private_session) : null,
+      start_time: time_start,
+      end_time: time_end
     });
 
     // Fetch the created package with associations
@@ -174,7 +186,10 @@ const createPromoPackage = async (req, res) => {
       id: createdPackage.id,
       name: createdPackage.name,
       price: createdPackage.price,
-      session: createdPackage.PackagePromo ? createdPackage.PackagePromo.session : null,
+      group_session: createdPackage.PackagePromo ? createdPackage.PackagePromo.group_session : null,
+      private_session: createdPackage.PackagePromo ? createdPackage.PackagePromo.private_session : null,
+      start_time: createdPackage.PackagePromo ? createdPackage.PackagePromo.start_time : null,
+      end_time: createdPackage.PackagePromo ? createdPackage.PackagePromo.end_time : null,
       duration_value: createdPackage.duration_value,
       duration_unit: createdPackage.duration_unit,
       reminder_day: createdPackage.reminder_day,
@@ -206,7 +221,10 @@ const updatePromoPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session
+      group_session,
+      private_session,
+      time_start,
+      time_end
     } = req.body;
 
     const package = await Package.findOne({
@@ -248,25 +266,20 @@ const updatePromoPackage = async (req, res) => {
       duration_value: duration_value ? parseInt(duration_value) : package.duration_value,
       duration_unit: duration_unit || package.duration_unit,
       reminder_day: reminder_day !== undefined ? (reminder_day ? parseInt(reminder_day) : null) : package.reminder_day,
-      reminder_session: reminder_session !== undefined ? (reminder_session ? parseInt(reminder_session) : null) : package.reminder_session
+      reminder_session: reminder_session !== undefined ? (reminder_session ? parseInt(reminder_session) : null) : package.reminder_session,
     });
-
-    // Update package promo
-    if (session) {
-      const existingPromo = await PackagePromo.findOne({
-        where: { package_id: package.id }
+    const packagePromo = await PackagePromo.findOne({
+      where: { package_id: package.id }
+    });
+    if (packagePromo) {
+      await packagePromo.update({
+        group_session: group_session ? parseInt(group_session) : null,
+        private_session: private_session ? parseInt(private_session) : null,
+        start_time: time_start,
+        end_time: time_end
       });
-      if (existingPromo) {
-        await existingPromo.update({
-          session: parseInt(session)
-        });
-      } else {
-        await PackagePromo.create({
-          package_id: package.id,
-          session: parseInt(session)
-        });
-      }
     }
+
 
     // Fetch the updated package with associations
     const updatedPackage = await Package.findByPk(id, {
@@ -282,7 +295,10 @@ const updatePromoPackage = async (req, res) => {
       id: updatedPackage.id,
       name: updatedPackage.name,
       price: updatedPackage.price,
-      session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.session : null,
+      group_session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.group_session : null,
+      private_session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.private_session : null,
+      start_time: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.start_time : null,
+      end_time: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.end_time : null,
       duration_value: updatedPackage.duration_value,
       duration_unit: updatedPackage.duration_unit,
       reminder_day: updatedPackage.reminder_day,
@@ -333,6 +349,9 @@ const deletePromoPackage = async (req, res) => {
 
     // Delete package (this will also delete related package_promo due to CASCADE)
     await package.destroy();
+    await PackagePromo.destroy({
+      where: { package_id: id }
+    });
 
     res.json({
       success: true,

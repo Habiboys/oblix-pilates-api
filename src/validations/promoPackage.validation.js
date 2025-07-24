@@ -62,22 +62,41 @@ const createPromoPackageSchema = Joi.object({
       'number.min': 'Reminder session must be at least 1',
       'number.max': 'Reminder session cannot exceed 100'
     }),
-  session: Joi.number()
+  group_session: Joi.number()
     .integer()
-    .positive()
+    .min(0)
     .required()
     .messages({
-      'number.base': 'Session must be a number',
-      'number.integer': 'Session must be an integer',
-      'number.positive': 'Session must be positive',
-      'any.required': 'Session is required'
+      'number.base': 'Group session must be a number',
+      'number.integer': 'Group session must be an integer',
+      'number.min': 'Group session must be at least 0',
+      'any.required': 'Group session is required'
     }),
-  category_id: Joi.string()
-    .uuid()
+  private_session: Joi.number()
+    .integer()
+    .min(0)
     .required()
     .messages({
-      'string.guid': 'Category ID must be a valid UUID',
-      'any.required': 'Category ID is required'
+      'number.base': 'Private session must be a number',
+      'number.integer': 'Private session must be an integer',
+      'number.min': 'Private session must be at least 0',
+      'any.required': 'Private session is required'
+    }),
+  start_time: Joi.date()
+    .iso()
+    .required()
+    .messages({
+      'date.base': 'Start time must be a valid date',
+      'date.format': 'Start time must be in ISO format',
+      'any.required': 'Start time is required'
+    }),
+  end_time: Joi.date()
+    .iso()
+    .required()
+    .messages({
+      'date.base': 'End time must be a valid date',
+      'date.format': 'End time must be in ISO format',
+      'any.required': 'End time is required'
     })
 });
 
@@ -139,20 +158,37 @@ const updatePromoPackageSchema = Joi.object({
       'number.min': 'Reminder session must be at least 1',
       'number.max': 'Reminder session cannot exceed 100'
     }),
-  session: Joi.number()
+  group_session: Joi.number()
     .integer()
-    .positive()
+    .min(0)
     .optional()
     .messages({
-      'number.base': 'Session must be a number',
-      'number.integer': 'Session must be an integer',
-      'number.positive': 'Session must be positive'
+      'number.base': 'Group session must be a number',
+      'number.integer': 'Group session must be an integer',
+      'number.min': 'Group session must be at least 0'
     }),
-  category_id: Joi.string()
-    .uuid()
+  private_session: Joi.number()
+    .integer()
+    .min(0)
     .optional()
     .messages({
-      'string.guid': 'Category ID must be a valid UUID'
+      'number.base': 'Private session must be a number',
+      'number.integer': 'Private session must be an integer',
+      'number.min': 'Private session must be at least 0'
+    }),
+  start_time: Joi.date()
+    .iso()
+    .optional()
+    .messages({
+      'date.base': 'Start time must be a valid date',
+      'date.format': 'Start time must be in ISO format'
+    }),
+  end_time: Joi.date()
+    .iso()
+    .optional()
+    .messages({
+      'date.base': 'End time must be a valid date',
+      'date.format': 'End time must be in ISO format'
     })
 });
 
