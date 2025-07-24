@@ -121,6 +121,9 @@ components:
           type: string
         full_name:
           type: string
+        email:
+          type: string
+          format: email
         phone_number:
           type: string
         dob:

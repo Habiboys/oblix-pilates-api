@@ -31,6 +31,7 @@ const getProfile = async (req, res) => {
             member_code: user.Member.member_code,
             username: user.Member.username,
             full_name: user.Member.full_name,
+            email: user.email, // Tambahkan email dari user
             phone_number: user.Member.phone_number,
             dob: user.Member.dob,
             address: user.Member.address,
