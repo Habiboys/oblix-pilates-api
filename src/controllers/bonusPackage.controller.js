@@ -1,4 +1,4 @@
-const { Package, PackageBonus, Category, Member } = require('../models');
+const { Package, PackageBonus, Member } = require('../models');
 const { Op } = require('sequelize');
 
 // Get all bonus packages with pagination and search
@@ -24,9 +24,6 @@ const getAllBonusPackages = async (req, res) => {
           model: PackageBonus,
           include: [
             {
-              model: Category
-            },
-            {
               model: Member,
               as: 'member'
             }
@@ -44,10 +41,6 @@ const getAllBonusPackages = async (req, res) => {
       name: pkg.name,
       price: pkg.price,
       session: pkg.PackageBonus ? pkg.PackageBonus.session : null,
-      category: pkg.PackageBonus && pkg.PackageBonus.Category ? {
-        id: pkg.PackageBonus.Category.id,
-        name: pkg.PackageBonus.Category.category_name
-      } : null,
       member: pkg.PackageBonus && pkg.PackageBonus.member ? {
         id: pkg.PackageBonus.member.id,
         name: pkg.PackageBonus.member.full_name
@@ -97,9 +90,6 @@ const getBonusPackageById = async (req, res) => {
           model: PackageBonus,
           include: [
             {
-              model: Category
-            },
-            {
               model: Member,
               as: 'member'
             }
@@ -121,10 +111,6 @@ const getBonusPackageById = async (req, res) => {
       name: package.name,
       price: package.price,
       session: package.PackageBonus ? package.PackageBonus.session : null,
-      category: package.PackageBonus && package.PackageBonus.Category ? {
-        id: package.PackageBonus.Category.id,
-        name: package.PackageBonus.Category.category_name
-      } : null,
       member: package.PackageBonus && package.PackageBonus.member ? {
         id: package.PackageBonus.member.id,
         name: package.PackageBonus.member.full_name
@@ -160,7 +146,6 @@ const createBonusPackage = async (req, res) => {
       reminder_day,
       reminder_session,
       session,
-      category_id,
       member_id
     } = req.body;
 
@@ -176,15 +161,6 @@ const createBonusPackage = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Bonus package with this name already exists'
-      });
-    }
-
-    // Validate category exists
-    const category = await Category.findByPk(category_id);
-    if (!category) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category not found'
       });
     }
 
@@ -212,7 +188,6 @@ const createBonusPackage = async (req, res) => {
     await PackageBonus.create({
       package_id: newPackage.id,
       session: parseInt(session),
-      category_id,
       member_id
     });
 
@@ -222,9 +197,6 @@ const createBonusPackage = async (req, res) => {
         {
           model: PackageBonus,
           include: [
-            {
-              model: Category
-            },
             {
               model: Member,
               as: 'member'
@@ -240,10 +212,6 @@ const createBonusPackage = async (req, res) => {
       name: createdPackage.name,
       price: createdPackage.price,
       session: createdPackage.PackageBonus ? createdPackage.PackageBonus.session : null,
-      category: createdPackage.PackageBonus && createdPackage.PackageBonus.Category ? {
-        id: createdPackage.PackageBonus.Category.id,
-        name: createdPackage.PackageBonus.Category.category_name
-      } : null,
       member: createdPackage.PackageBonus && createdPackage.PackageBonus.member ? {
         id: createdPackage.PackageBonus.member.id,
         name: createdPackage.PackageBonus.member.full_name
@@ -280,7 +248,6 @@ const updateBonusPackage = async (req, res) => {
       reminder_day,
       reminder_session,
       session,
-      category_id,
       member_id
     } = req.body;
 
@@ -316,17 +283,6 @@ const updateBonusPackage = async (req, res) => {
       }
     }
 
-    // Validate category exists if provided
-    if (category_id) {
-      const category = await Category.findByPk(category_id);
-      if (!category) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category not found'
-        });
-      }
-    }
-
     // Validate member exists if provided
     if (member_id) {
       const member = await Member.findByPk(member_id);
@@ -349,21 +305,19 @@ const updateBonusPackage = async (req, res) => {
     });
 
     // Update package bonus
-    if (session && category_id && member_id) {
+    if (session && member_id) {
       const existingBonus = await PackageBonus.findOne({
         where: { package_id: package.id }
       });
       if (existingBonus) {
         await existingBonus.update({
           session: parseInt(session),
-          category_id,
           member_id
         });
       } else {
         await PackageBonus.create({
           package_id: package.id,
           session: parseInt(session),
-          category_id,
           member_id
         });
       }
@@ -375,9 +329,6 @@ const updateBonusPackage = async (req, res) => {
         {
           model: PackageBonus,
           include: [
-            {
-              model: Category
-            },
             {
               model: Member,
               as: 'member'
@@ -393,10 +344,6 @@ const updateBonusPackage = async (req, res) => {
       name: updatedPackage.name,
       price: updatedPackage.price,
       session: updatedPackage.PackageBonus ? updatedPackage.PackageBonus.session : null,
-      category: updatedPackage.PackageBonus && updatedPackage.PackageBonus.Category ? {
-        id: updatedPackage.PackageBonus.Category.id,
-        name: updatedPackage.PackageBonus.Category.category_name
-      } : null,
       member: updatedPackage.PackageBonus && updatedPackage.PackageBonus.member ? {
         id: updatedPackage.PackageBonus.member.id,
         name: updatedPackage.PackageBonus.member.full_name

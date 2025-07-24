@@ -1,4 +1,4 @@
-const { Package, PackagePromo, Category } = require('../models');
+const { Package, PackagePromo } = require('../models');
 const { Op } = require('sequelize');
 
 // Get all promo packages with pagination and search
@@ -21,12 +21,7 @@ const getAllPromoPackages = async (req, res) => {
       where: whereClause,
       include: [
         {
-          model: PackagePromo,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackagePromo
         }
       ],
       limit: parseInt(limit),
@@ -40,10 +35,6 @@ const getAllPromoPackages = async (req, res) => {
       name: pkg.name,
       price: pkg.price,
       session: pkg.PackagePromo ? pkg.PackagePromo.session : null,
-      category: pkg.PackagePromo && pkg.PackagePromo.Category ? {
-        id: pkg.PackagePromo.Category.id,
-        name: pkg.PackagePromo.Category.category_name
-      } : null,
       duration_value: pkg.duration_value,
       duration_unit: pkg.duration_unit,
       reminder_day: pkg.reminder_day,
@@ -86,12 +77,7 @@ const getPromoPackageById = async (req, res) => {
       },
       include: [
         {
-          model: PackagePromo,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackagePromo
         }
       ]
     });
@@ -109,10 +95,6 @@ const getPromoPackageById = async (req, res) => {
       name: package.name,
       price: package.price,
       session: package.PackagePromo ? package.PackagePromo.session : null,
-      category: package.PackagePromo && package.PackagePromo.Category ? {
-        id: package.PackagePromo.Category.id,
-        name: package.PackagePromo.Category.category_name
-      } : null,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
       reminder_day: package.reminder_day,
@@ -143,8 +125,7 @@ const createPromoPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session,
-      category_id
+      session
     } = req.body;
 
     // Check if package with same name exists
@@ -162,15 +143,6 @@ const createPromoPackage = async (req, res) => {
       });
     }
 
-    // Validate category exists
-    const category = await Category.findByPk(category_id);
-    if (!category) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-
     // Create promo package
     const newPackage = await Package.create({
       name,
@@ -185,20 +157,14 @@ const createPromoPackage = async (req, res) => {
     // Create package promo
     await PackagePromo.create({
       package_id: newPackage.id,
-      session: parseInt(session),
-      category_id
+      session: parseInt(session)
     });
 
     // Fetch the created package with associations
     const createdPackage = await Package.findByPk(newPackage.id, {
       include: [
         {
-          model: PackagePromo,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackagePromo
         }
       ]
     });
@@ -209,10 +175,6 @@ const createPromoPackage = async (req, res) => {
       name: createdPackage.name,
       price: createdPackage.price,
       session: createdPackage.PackagePromo ? createdPackage.PackagePromo.session : null,
-      category: createdPackage.PackagePromo && createdPackage.PackagePromo.Category ? {
-        id: createdPackage.PackagePromo.Category.id,
-        name: createdPackage.PackagePromo.Category.category_name
-      } : null,
       duration_value: createdPackage.duration_value,
       duration_unit: createdPackage.duration_unit,
       reminder_day: createdPackage.reminder_day,
@@ -244,8 +206,7 @@ const updatePromoPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session,
-      category_id
+      session
     } = req.body;
 
     const package = await Package.findOne({
@@ -280,17 +241,6 @@ const updatePromoPackage = async (req, res) => {
       }
     }
 
-    // Validate category exists if provided
-    if (category_id) {
-      const category = await Category.findByPk(category_id);
-      if (!category) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category not found'
-        });
-      }
-    }
-
     // Update package
     await package.update({
       name: name || package.name,
@@ -302,20 +252,18 @@ const updatePromoPackage = async (req, res) => {
     });
 
     // Update package promo
-    if (session && category_id) {
+    if (session) {
       const existingPromo = await PackagePromo.findOne({
         where: { package_id: package.id }
       });
       if (existingPromo) {
         await existingPromo.update({
-          session: parseInt(session),
-          category_id
+          session: parseInt(session)
         });
       } else {
         await PackagePromo.create({
           package_id: package.id,
-          session: parseInt(session),
-          category_id
+          session: parseInt(session)
         });
       }
     }
@@ -324,12 +272,7 @@ const updatePromoPackage = async (req, res) => {
     const updatedPackage = await Package.findByPk(id, {
       include: [
         {
-          model: PackagePromo,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackagePromo
         }
       ]
     });
@@ -340,10 +283,6 @@ const updatePromoPackage = async (req, res) => {
       name: updatedPackage.name,
       price: updatedPackage.price,
       session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.session : null,
-      category: updatedPackage.PackagePromo && updatedPackage.PackagePromo.Category ? {
-        id: updatedPackage.PackagePromo.Category.id,
-        name: updatedPackage.PackagePromo.Category.category_name
-      } : null,
       duration_value: updatedPackage.duration_value,
       duration_unit: updatedPackage.duration_unit,
       reminder_day: updatedPackage.reminder_day,

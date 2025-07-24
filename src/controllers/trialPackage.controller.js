@@ -1,4 +1,4 @@
-const { Package, PackageFirstTrial, Category } = require('../models');
+const { Package, PackageFirstTrial } = require('../models');
 const { Op } = require('sequelize');
 
 // Get all trial packages with pagination and search
@@ -21,12 +21,7 @@ const getAllTrialPackages = async (req, res) => {
       where: whereClause,
       include: [
         {
-          model: PackageFirstTrial,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackageFirstTrial
         }
       ],
       limit: parseInt(limit),
@@ -40,10 +35,6 @@ const getAllTrialPackages = async (req, res) => {
       name: pkg.name,
       price: pkg.price,
       session: pkg.PackageFirstTrial ? pkg.PackageFirstTrial.session : null,
-      category: pkg.PackageFirstTrial && pkg.PackageFirstTrial.Category ? {
-        id: pkg.PackageFirstTrial.Category.id,
-        name: pkg.PackageFirstTrial.Category.category_name
-      } : null,
       duration_value: pkg.duration_value,
       duration_unit: pkg.duration_unit,
       reminder_day: pkg.reminder_day,
@@ -86,12 +77,7 @@ const getTrialPackageById = async (req, res) => {
       },
       include: [
         {
-          model: PackageFirstTrial,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackageFirstTrial
         }
       ]
     });
@@ -109,10 +95,6 @@ const getTrialPackageById = async (req, res) => {
       name: package.name,
       price: package.price,
       session: package.PackageFirstTrial ? package.PackageFirstTrial.session : null,
-      category: package.PackageFirstTrial && package.PackageFirstTrial.Category ? {
-        id: package.PackageFirstTrial.Category.id,
-        name: package.PackageFirstTrial.Category.category_name
-      } : null,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
       reminder_day: package.reminder_day,
@@ -143,8 +125,7 @@ const createTrialPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session,
-      category_id
+      session
     } = req.body;
 
     // Check if package with same name exists
@@ -162,15 +143,6 @@ const createTrialPackage = async (req, res) => {
       });
     }
 
-    // Validate category exists
-    const category = await Category.findByPk(category_id);
-    if (!category) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category not found'
-      });
-    }
-
     // Create trial package
     const newPackage = await Package.create({
       name,
@@ -185,20 +157,14 @@ const createTrialPackage = async (req, res) => {
     // Create package first trial
     await PackageFirstTrial.create({
       package_id: newPackage.id,
-      session: parseInt(session),
-      category_id
+      session: parseInt(session)
     });
 
     // Fetch the created package with associations
     const createdPackage = await Package.findByPk(newPackage.id, {
       include: [
         {
-          model: PackageFirstTrial,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackageFirstTrial
         }
       ]
     });
@@ -209,10 +175,6 @@ const createTrialPackage = async (req, res) => {
       name: createdPackage.name,
       price: createdPackage.price,
       session: createdPackage.PackageFirstTrial ? createdPackage.PackageFirstTrial.session : null,
-      category: createdPackage.PackageFirstTrial && createdPackage.PackageFirstTrial.Category ? {
-        id: createdPackage.PackageFirstTrial.Category.id,
-        name: createdPackage.PackageFirstTrial.Category.category_name
-      } : null,
       duration_value: createdPackage.duration_value,
       duration_unit: createdPackage.duration_unit,
       reminder_day: createdPackage.reminder_day,
@@ -244,8 +206,7 @@ const updateTrialPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session,
-      category_id
+      session
     } = req.body;
 
     const package = await Package.findOne({
@@ -280,17 +241,6 @@ const updateTrialPackage = async (req, res) => {
       }
     }
 
-    // Validate category exists if provided
-    if (category_id) {
-      const category = await Category.findByPk(category_id);
-      if (!category) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category not found'
-        });
-      }
-    }
-
     // Update package
     await package.update({
       name: name || package.name,
@@ -302,20 +252,18 @@ const updateTrialPackage = async (req, res) => {
     });
 
     // Update package first trial
-    if (session && category_id) {
+    if (session) {
       const existingTrial = await PackageFirstTrial.findOne({
         where: { package_id: package.id }
       });
       if (existingTrial) {
         await existingTrial.update({
-          session: parseInt(session),
-          category_id
+          session: parseInt(session)
         });
       } else {
         await PackageFirstTrial.create({
           package_id: package.id,
-          session: parseInt(session),
-          category_id
+          session: parseInt(session)
         });
       }
     }
@@ -324,12 +272,7 @@ const updateTrialPackage = async (req, res) => {
     const updatedPackage = await Package.findByPk(id, {
       include: [
         {
-          model: PackageFirstTrial,
-          include: [
-            {
-              model: Category
-            }
-          ]
+          model: PackageFirstTrial
         }
       ]
     });
@@ -340,10 +283,6 @@ const updateTrialPackage = async (req, res) => {
       name: updatedPackage.name,
       price: updatedPackage.price,
       session: updatedPackage.PackageFirstTrial ? updatedPackage.PackageFirstTrial.session : null,
-      category: updatedPackage.PackageFirstTrial && updatedPackage.PackageFirstTrial.Category ? {
-        id: updatedPackage.PackageFirstTrial.Category.id,
-        name: updatedPackage.PackageFirstTrial.Category.category_name
-      } : null,
       duration_value: updatedPackage.duration_value,
       duration_unit: updatedPackage.duration_unit,
       reminder_day: updatedPackage.reminder_day,

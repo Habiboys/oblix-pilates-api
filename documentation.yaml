@@ -496,16 +496,6 @@ components:
         session:
           type: integer
           description: Number of sessions included
-        category:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-              description: Category ID
-            name:
-              type: string
-              description: Category name
         duration_value:
           type: integer
           description: Duration value
@@ -528,7 +518,6 @@ components:
         - name
         - price
         - session
-        - category
         - duration_value
         - duration_unit
     PromoPackage:
@@ -549,16 +538,6 @@ components:
         session:
           type: integer
           description: Number of sessions included
-        category:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-              description: Category ID
-            name:
-              type: string
-              description: Category name
         duration_value:
           type: integer
           description: Duration value
@@ -581,7 +560,6 @@ components:
         - name
         - price
         - session
-        - category
         - duration_value
         - duration_unit
     BonusPackage:
@@ -602,16 +580,6 @@ components:
         session:
           type: integer
           description: Number of sessions included
-        category:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-              description: Category ID
-            name:
-              type: string
-              description: Category name
         member:
           type: object
           properties:
@@ -644,7 +612,6 @@ components:
         - name
         - price
         - session
-        - category
         - member
         - duration_value
         - duration_unit
