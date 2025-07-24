@@ -1,4 +1,4 @@
-const { Package, PackageBonus, Member, MemberPackage, sequelize } = require('../models');
+const { Package, PackageBonus, Member, MemberPackage, sequelize, User} = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
 
@@ -447,14 +447,21 @@ const searchMembers = async (req, res) => {
     const members = await Member.findAll({
       where: whereClause,
       limit: 10,
-      order: [['full_name', 'ASC']]
+      order: [['full_name', 'ASC']],
+      include: [
+        {
+          model: User,
+        }
+      ]
     });
 
+   
     // Transform data to simple format
     const transformedMembers = members.map(member => ({
       id: member.id,
       full_name: member.full_name,
-      email: member.email
+      username: member.username,
+      email: member.User.email
     }));
 
     res.json({
