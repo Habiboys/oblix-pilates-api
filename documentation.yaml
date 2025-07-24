@@ -493,9 +493,12 @@ components:
           type: number
           format: decimal
           description: Price of the trial package
-        session:
+        group_session:
           type: integer
-          description: Number of sessions included
+          description: Group session
+        private_categories:
+          type: integer
+          description: Private categories
         duration_value:
           type: integer
           description: Duration value
@@ -517,7 +520,8 @@ components:
         - id
         - name
         - price
-        - session
+        - group_session
+        - private_categories
         - duration_value
         - duration_unit
     PromoPackage:
@@ -1780,8 +1784,8 @@ components:
         - price
         - duration_value
         - duration_unit
-        - session
-        - category_id
+        - group_session
+        - private_categories
       properties:
         name:
           type: string
@@ -1821,16 +1825,16 @@ components:
           nullable: true
           description: Reminder session (optional)
           example: 2
-        session:
+        group_session:
           type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 10
-        category_id:
-          type: string
-          format: uuid
-          description: Category ID for the trial package
-          example: 123e4567-e89b-12d3-a456-426614174000
+          minimum: 0
+          description: Group session
+          example: 5
+        private_categories:
+          type: integer
+          minimum: 0
+          description: Private categories
+          example: 2
     UpdateTrialPackageRequest:
       type: object
       properties:
@@ -1872,16 +1876,16 @@ components:
           nullable: true
           description: Reminder session (optional)
           example: 2
-        session:
+        group_session:
           type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 10
-        category_id:
-          type: string
-          format: uuid
-          description: Category ID for the trial package
-          example: 123e4567-e89b-12d3-a456-426614174000
+          minimum: 0
+          description: Group session
+          example: 5
+        private_categories:
+          type: integer
+          minimum: 0
+          description: Private categories
+          example: 2
     CreateCategoryRequest:
       type: object
       required:

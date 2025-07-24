@@ -520,9 +520,12 @@ components:
           type: number
           format: decimal
           description: Price of the trial package
-        session:
+        group_session:
           type: integer
-          description: Number of sessions included
+          description: Group session
+        private_categories:
+          type: integer
+          description: Private categories
         duration_value:
           type: integer
           description: Duration value
@@ -542,7 +545,8 @@ components:
         - id
         - name
         - price
-        - session
+        - group_session
+        - private_categories
         - duration_value
         - duration_unit
 

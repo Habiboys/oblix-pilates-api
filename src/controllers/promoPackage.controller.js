@@ -1,4 +1,4 @@
-const { Package, PackagePromo } = require('../models');
+const { Package, PackagePromo, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 // Get all promo packages with pagination and search
@@ -123,6 +123,7 @@ const getPromoPackageById = async (req, res) => {
 
 // Create new promo package
 const createPromoPackage = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const {
       name,
@@ -133,8 +134,8 @@ const createPromoPackage = async (req, res) => {
       reminder_session,
       group_session,
       private_session,
-      time_start,
-      time_end,
+      start_time,
+      end_time,
     } = req.body;
 
     // Check if package with same name exists
@@ -142,10 +143,12 @@ const createPromoPackage = async (req, res) => {
       where: { 
         name,
         type: 'promo'
-      }
+      },
+      transaction: t
     });
 
     if (existingPackage) {
+      await t.rollback();
       return res.status(400).json({
         success: false,
         message: 'Promo package with this name already exists'
@@ -161,16 +164,18 @@ const createPromoPackage = async (req, res) => {
       duration_unit,
       reminder_day: reminder_day ? parseInt(reminder_day) : null,
       reminder_session: reminder_session ? parseInt(reminder_session) : null,
-    });
+    }, { transaction: t });
 
     // Create package promo
     await PackagePromo.create({
       package_id: newPackage.id,
       group_session: group_session ? parseInt(group_session) : null,
       private_session: private_session ? parseInt(private_session) : null,
-      start_time: time_start,
-      end_time: time_end
-    });
+      start_time,
+      end_time
+    }, { transaction: t });
+
+    await t.commit();
 
     // Fetch the created package with associations
     const createdPackage = await Package.findByPk(newPackage.id, {
@@ -202,6 +207,7 @@ const createPromoPackage = async (req, res) => {
       data: transformedPackage
     });
   } catch (error) {
+    await t.rollback();
     console.error('Error creating promo package:', error);
     res.status(500).json({
       success: false,

@@ -34,7 +34,8 @@ const getAllTrialPackages = async (req, res) => {
       id: pkg.id,
       name: pkg.name,
       price: pkg.price,
-      session: pkg.PackageFirstTrial ? pkg.PackageFirstTrial.session : null,
+      group_session: pkg.PackageFirstTrial ? pkg.PackageFirstTrial.group_session : null,
+      private_categories: pkg.PackageFirstTrial ? pkg.PackageFirstTrial.private_categories : null,
       duration_value: pkg.duration_value,
       duration_unit: pkg.duration_unit,
       reminder_day: pkg.reminder_day,
@@ -94,7 +95,8 @@ const getTrialPackageById = async (req, res) => {
       id: package.id,
       name: package.name,
       price: package.price,
-      session: package.PackageFirstTrial ? package.PackageFirstTrial.session : null,
+      group_session: package.PackageFirstTrial ? package.PackageFirstTrial.group_session : null,
+      private_categories: package.PackageFirstTrial ? package.PackageFirstTrial.private_categories : null,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
       reminder_day: package.reminder_day,
@@ -125,7 +127,8 @@ const createTrialPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session
+      group_session,
+      private_categories
     } = req.body;
 
     // Check if package with same name exists
@@ -157,7 +160,8 @@ const createTrialPackage = async (req, res) => {
     // Create package first trial
     await PackageFirstTrial.create({
       package_id: newPackage.id,
-      session: parseInt(session)
+      group_session: group_session,
+      private_categories: private_categories
     });
 
     // Fetch the created package with associations
@@ -174,7 +178,8 @@ const createTrialPackage = async (req, res) => {
       id: createdPackage.id,
       name: createdPackage.name,
       price: createdPackage.price,
-      session: createdPackage.PackageFirstTrial ? createdPackage.PackageFirstTrial.session : null,
+      group_session: createdPackage.PackageFirstTrial ? createdPackage.PackageFirstTrial.group_session : null,
+      private_categories: createdPackage.PackageFirstTrial ? createdPackage.PackageFirstTrial.private_categories : null,
       duration_value: createdPackage.duration_value,
       duration_unit: createdPackage.duration_unit,
       reminder_day: createdPackage.reminder_day,
@@ -206,7 +211,8 @@ const updateTrialPackage = async (req, res) => {
       duration_unit,
       reminder_day,
       reminder_session,
-      session
+      group_session,
+      private_categories
     } = req.body;
 
     const package = await Package.findOne({
@@ -252,18 +258,20 @@ const updateTrialPackage = async (req, res) => {
     });
 
     // Update package first trial
-    if (session) {
+    if (group_session !== undefined || private_categories !== undefined) {
       const existingTrial = await PackageFirstTrial.findOne({
         where: { package_id: package.id }
       });
       if (existingTrial) {
         await existingTrial.update({
-          session: parseInt(session)
+          group_session: group_session,
+          private_categories: private_categories
         });
       } else {
         await PackageFirstTrial.create({
           package_id: package.id,
-          session: parseInt(session)
+          group_session: group_session,
+          private_categories: private_categories
         });
       }
     }
@@ -282,7 +290,8 @@ const updateTrialPackage = async (req, res) => {
       id: updatedPackage.id,
       name: updatedPackage.name,
       price: updatedPackage.price,
-      session: updatedPackage.PackageFirstTrial ? updatedPackage.PackageFirstTrial.session : null,
+      group_session: updatedPackage.PackageFirstTrial ? updatedPackage.PackageFirstTrial.group_session : null,
+      private_categories: updatedPackage.PackageFirstTrial ? updatedPackage.PackageFirstTrial.private_categories : null,
       duration_value: updatedPackage.duration_value,
       duration_unit: updatedPackage.duration_unit,
       reminder_day: updatedPackage.reminder_day,

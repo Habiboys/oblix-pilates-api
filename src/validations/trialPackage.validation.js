@@ -62,22 +62,25 @@ const createTrialPackageSchema = Joi.object({
       'number.min': 'Reminder session must be at least 1',
       'number.max': 'Reminder session cannot exceed 100'
     }),
-  session: Joi.number()
+  group_session: Joi.number()
     .integer()
-    .positive()
+    .min(0)
     .required()
     .messages({
-      'number.base': 'Session must be a number',
-      'number.integer': 'Session must be an integer',
-      'number.positive': 'Session must be positive',
-      'any.required': 'Session is required'
+      'number.base': 'Group session must be a number',
+      'number.integer': 'Group session must be an integer',
+      'number.min': 'Group session must be at least 0',
+      'any.required': 'Group session is required'
     }),
-  category_id: Joi.string()
-    .uuid()
+  private_categories: Joi.number()
+    .integer()
+    .min(0)
     .required()
     .messages({
-      'string.guid': 'Category ID must be a valid UUID',
-      'any.required': 'Category ID is required'
+      'number.base': 'Private categories must be a number',
+      'number.integer': 'Private categories must be an integer',
+      'number.min': 'Private categories must be at least 0',
+      'any.required': 'Private categories is required'
     })
 });
 
@@ -139,20 +142,23 @@ const updateTrialPackageSchema = Joi.object({
       'number.min': 'Reminder session must be at least 1',
       'number.max': 'Reminder session cannot exceed 100'
     }),
-  session: Joi.number()
+  group_session: Joi.number()
     .integer()
-    .positive()
+    .min(0)
     .optional()
     .messages({
-      'number.base': 'Session must be a number',
-      'number.integer': 'Session must be an integer',
-      'number.positive': 'Session must be positive'
+      'number.base': 'Group session must be a number',
+      'number.integer': 'Group session must be an integer',
+      'number.min': 'Group session must be at least 0'
     }),
-  category_id: Joi.string()
-    .uuid()
+  private_categories: Joi.number()
+    .integer()
+    .min(0)
     .optional()
     .messages({
-      'string.guid': 'Category ID must be a valid UUID'
+      'number.base': 'Private categories must be a number',
+      'number.integer': 'Private categories must be an integer',
+      'number.min': 'Private categories must be at least 0'
     })
 });
 
