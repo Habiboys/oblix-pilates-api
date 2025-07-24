@@ -26,9 +26,9 @@ const getProfile = async (req, res) => {
         }
         
         // Format response sesuai yang diminta
-        const memberData = {
+        const MemberData = {
             id: user.Member.id,
-            member_code: user.Member.member_code,
+            Member_code: user.Member.Member_code,
             username: user.Member.username,
             full_name: user.Member.full_name,
             email: user.email, // Tambahkan email dari user
@@ -43,7 +43,7 @@ const getProfile = async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Operation successful',
-            data: memberData
+            data: MemberData
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -70,14 +70,14 @@ const updateProfile = async (req, res) => {
             }],
         });
 
-        if (!user || !user.member) {
-            return res.status(404).json({ message: 'User or member profile not found' });
+        if (!user || !user.Member) {
+            return res.status(404).json({ message: 'User or Member profile not found' });
         }
 
         // Update user jika ada email
         if (email) await user.update({ email });
 
-        // Siapkan data untuk update member
+        // Siapkan data untuk update Member
         const updateData = {};
         if (full_name) updateData.full_name = full_name;
         if (username) updateData.username = username;
@@ -88,8 +88,8 @@ const updateProfile = async (req, res) => {
         // Update picture jika ada file upload
         if (req.file) {
             // Hapus foto lama jika ada
-            if (user.member.picture) {
-                const oldPhotoPath = path.join(__dirname, '../../uploads/profiles/', user.member.picture);
+            if (user.Member.picture) {
+                const oldPhotoPath = path.join(__dirname, '../../uploads/profiles/', user.Member.picture);
                 if (fs.existsSync(oldPhotoPath)) {
                     fs.unlinkSync(oldPhotoPath);
                 }
@@ -97,8 +97,8 @@ const updateProfile = async (req, res) => {
             updateData.picture = req.file.filename;
         }
 
-        // Update member
-        await user.member.update(updateData);
+        // Update Member
+        await user.Member.update(updateData);
         const data = {
             ...updateData
         }
@@ -159,7 +159,7 @@ const deleteProfilePhoto = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // Cari user dengan member
+        // Cari user dengan Member
         const user = await User.findOne({
             where: { id: userId },
             include: [{
@@ -168,20 +168,20 @@ const deleteProfilePhoto = async (req, res) => {
             }]
         });
 
-        if (!user || !user.member) {
-            return res.status(404).json({ message: 'User or member profile not found' });
+        if (!user || !user.Member) {
+            return res.status(404).json({ message: 'User or Member profile not found' });
         }
 
         // Hapus file foto jika ada
-        if (user.member.picture) {
-            const photoPath = path.join(__dirname, '../../uploads/profiles/', user.member.picture);
+        if (user.Member.picture) {
+            const photoPath = path.join(__dirname, '../../uploads/profiles/', user.Member.picture);
             if (fs.existsSync(photoPath)) {
                 fs.unlinkSync(photoPath);
             }
         }
 
-        // Update member untuk hapus picture
-        await user.member.update({ picture: null });
+        // Update Member untuk hapus picture
+        await user.Member.update({ picture: null });
 
         res.status(200).json({
             message: 'Profile photo deleted successfully'
