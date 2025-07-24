@@ -40,11 +40,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     name: {
       type: DataTypes.STRING(100),
-      allowNull: false
+      allowNull: true
     },
     price: {
       type: DataTypes.DECIMAL(12, 2),
-      allowNull: false
+      allowNull: true
     },
     type: {
       type: DataTypes.ENUM('membership', 'first_trial', 'promo', 'bonus'),
@@ -52,11 +52,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     duration_value: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     duration_unit: {
       type: DataTypes.ENUM('week', 'month'),
-      allowNull: false
+      allowNull: true
     },
     reminder_day: {
       type: DataTypes.INTEGER,

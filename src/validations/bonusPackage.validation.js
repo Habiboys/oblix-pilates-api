@@ -2,25 +2,6 @@ const Joi = require('joi');
 
 // Validation schema for creating bonus package
 const createBonusPackageSchema = Joi.object({
-  name: Joi.string()
-    .min(3)
-    .max(100)
-    .required()
-    .messages({
-      'string.min': 'Package name must be at least 3 characters long',
-      'string.max': 'Package name cannot exceed 100 characters',
-      'any.required': 'Package name is required'
-    }),
-  price: Joi.number()
-    .positive()
-    .precision(2)
-    .required()
-    .messages({
-      'number.base': 'Price must be a number',
-      'number.positive': 'Price must be positive',
-      'number.precision': 'Price can have maximum 2 decimal places',
-      'any.required': 'Price is required'
-    }),
   duration_value: Joi.number()
     .integer()
     .positive()
@@ -38,74 +19,60 @@ const createBonusPackageSchema = Joi.object({
       'any.only': 'Duration unit must be either week or month',
       'any.required': 'Duration unit is required'
     }),
-  reminder_day: Joi.number()
+  group_session: Joi.number()
     .integer()
+    .min(0)
+    .required()
+    .messages({
+      'number.base': 'Group session must be a number',
+      'number.integer': 'Group session must be an integer',
+      'number.min': 'Group session must be at least 0',
+      'any.required': 'Group session is required'
+    }),
+  private_session: Joi.number()
+    .integer()
+    .min(0)
+    .required()
+    .messages({
+      'number.base': 'Private session must be a number',
+      'number.integer': 'Private session must be an integer',
+      'number.min': 'Private session must be at least 0',
+      'any.required': 'Private session is required'
+    }),
+  member_ids: Joi.array()
+    .items(Joi.string().uuid().messages({
+      'string.guid': 'Each member_id must be a valid UUID'
+    }))
     .min(1)
-    .max(365)
-    .optional()
-    .allow(null)
-    .messages({
-      'number.base': 'Reminder day must be a number',
-      'number.integer': 'Reminder day must be an integer',
-      'number.min': 'Reminder day must be at least 1',
-      'number.max': 'Reminder day cannot exceed 365'
-    }),
-  reminder_session: Joi.number()
-    .integer()
-    .min(1)
-    .max(100)
-    .optional()
-    .allow(null)
-    .messages({
-      'number.base': 'Reminder session must be a number',
-      'number.integer': 'Reminder session must be an integer',
-      'number.min': 'Reminder session must be at least 1',
-      'number.max': 'Reminder session cannot exceed 100'
-    }),
-  session: Joi.number()
-    .integer()
-    .positive()
     .required()
     .messages({
-      'number.base': 'Session must be a number',
-      'number.integer': 'Session must be an integer',
-      'number.positive': 'Session must be positive',
-      'any.required': 'Session is required'
-    }),
-  category_id: Joi.string()
-    .uuid()
-    .required()
-    .messages({
-      'string.guid': 'Category ID must be a valid UUID',
-      'any.required': 'Category ID is required'
-    }),
-  member_id: Joi.string()
-    .uuid()
-    .required()
-    .messages({
-      'string.guid': 'Member ID must be a valid UUID',
-      'any.required': 'Member ID is required'
+      'array.base': 'member_ids must be an array',
+      'array.min': 'member_ids must contain at least 1 member',
+      'any.required': 'member_ids is required'
     })
 });
 
 // Validation schema for updating bonus package
 const updateBonusPackageSchema = Joi.object({
-  name: Joi.string()
-    .min(3)
-    .max(100)
-    .optional()
+  group_session: Joi.number()
+    .integer()
+    .min(0)
+    .required()
     .messages({
-      'string.min': 'Package name must be at least 3 characters long',
-      'string.max': 'Package name cannot exceed 100 characters'
+      'number.base': 'Group session must be a number',
+      'number.integer': 'Group session must be an integer',
+      'number.min': 'Group session must be at least 0',
+      'any.required': 'Group session is required'
     }),
-  price: Joi.number()
-    .positive()
-    .precision(2)
-    .optional()
+  private_session: Joi.number()
+    .integer()
+    .min(0)
+    .required()
     .messages({
-      'number.base': 'Price must be a number',
-      'number.positive': 'Price must be positive',
-      'number.precision': 'Price can have maximum 2 decimal places'
+      'number.base': 'Private session must be a number',
+      'number.integer': 'Private session must be an integer',
+      'number.min': 'Private session must be at least 0',
+      'any.required': 'Private session is required'
     }),
   duration_value: Joi.number()
     .integer()
@@ -122,45 +89,8 @@ const updateBonusPackageSchema = Joi.object({
     .messages({
       'any.only': 'Duration unit must be either week or month'
     }),
-  reminder_day: Joi.number()
-    .integer()
-    .min(1)
-    .max(365)
-    .optional()
-    .allow(null)
-    .messages({
-      'number.base': 'Reminder day must be a number',
-      'number.integer': 'Reminder day must be an integer',
-      'number.min': 'Reminder day must be at least 1',
-      'number.max': 'Reminder day cannot exceed 365'
-    }),
-  reminder_session: Joi.number()
-    .integer()
-    .min(1)
-    .max(100)
-    .optional()
-    .allow(null)
-    .messages({
-      'number.base': 'Reminder session must be a number',
-      'number.integer': 'Reminder session must be an integer',
-      'number.min': 'Reminder session must be at least 1',
-      'number.max': 'Reminder session cannot exceed 100'
-    }),
-  session: Joi.number()
-    .integer()
-    .positive()
-    .optional()
-    .messages({
-      'number.base': 'Session must be a number',
-      'number.integer': 'Session must be an integer',
-      'number.positive': 'Session must be positive'
-    }),
-  category_id: Joi.string()
-    .uuid()
-    .optional()
-    .messages({
-      'string.guid': 'Category ID must be a valid UUID'
-    }),
+
+ 
   member_id: Joi.string()
     .uuid()
     .optional()

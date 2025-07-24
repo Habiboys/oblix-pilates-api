@@ -591,6 +591,7 @@ components:
           type: string
           maxLength: 100
           description: Name of the bonus package
+          nullable: true
         price:
           type: number
           format: decimal
@@ -624,7 +625,6 @@ components:
           description: Reminder session
       required:
         - id
-        - name
         - price
         - member
         - duration_value
@@ -1980,26 +1980,12 @@ components:
     CreateBonusPackageRequest:
       type: object
       required:
-        - name
-        - price
+        - group_session
+        - private_session
         - duration_value
         - duration_unit
-        - session
-        - category_id
         - member_id
       properties:
-        name:
-          type: string
-          minLength: 3
-          maxLength: 100
-          description: Name of the bonus package
-          example: Bonus Session Package
-        price:
-          type: number
-          minimum: 0
-          multipleOf: 0.01
-          description: Price of the bonus package
-          example: 200000
         duration_value:
           type: integer
           minimum: 1
@@ -2012,30 +1998,16 @@ components:
             - month
           description: Duration unit
           example: month
-        reminder_day:
+        group_session:
           type: integer
-          minimum: 1
-          maximum: 365
-          nullable: true
-          description: Reminder day (optional)
+          minimum: 0
+          description: Group session
           example: 5
-        reminder_session:
+        private_session:
           type: integer
-          minimum: 1
-          maximum: 100
-          nullable: true
-          description: Reminder session (optional)
-          example: 1
-        session:
-          type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 3
-        category_id:
-          type: string
-          format: uuid
-          description: Category ID for the bonus package
-          example: 123e4567-e89b-12d3-a456-426614174000
+          minimum: 0
+          description: Private session
+          example: 2
         member_id:
           type: string
           format: uuid
@@ -2044,18 +2016,6 @@ components:
     UpdateBonusPackageRequest:
       type: object
       properties:
-        name:
-          type: string
-          minLength: 3
-          maxLength: 100
-          description: Name of the bonus package
-          example: Bonus Session Package
-        price:
-          type: number
-          minimum: 0
-          multipleOf: 0.01
-          description: Price of the bonus package
-          example: 200000
         duration_value:
           type: integer
           minimum: 1
@@ -2068,30 +2028,16 @@ components:
             - month
           description: Duration unit
           example: month
-        reminder_day:
+        group_session:
           type: integer
-          minimum: 1
-          maximum: 365
-          nullable: true
-          description: Reminder day (optional)
+          minimum: 0
+          description: Group session
           example: 5
-        reminder_session:
+        private_session:
           type: integer
-          minimum: 1
-          maximum: 100
-          nullable: true
-          description: Reminder session (optional)
-          example: 1
-        session:
-          type: integer
-          minimum: 1
-          description: Number of sessions included
-          example: 3
-        category_id:
-          type: string
-          format: uuid
-          description: Category ID for the bonus package
-          example: 123e4567-e89b-12d3-a456-426614174000
+          minimum: 0
+          description: Private session
+          example: 2
         member_id:
           type: string
           format: uuid
@@ -5221,19 +5167,71 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateBonusPackageRequest'
+              type: object
+              required:
+                - duration_value
+                - duration_unit
+                - group_session
+                - private_session
+                - member_ids
+              properties:
+                duration_value:
+                  type: integer
+                  example: 1
+                duration_unit:
+                  type: string
+                  enum:
+                    - week
+                    - month
+                  example: month
+                group_session:
+                  type: integer
+                  example: 5
+                private_session:
+                  type: integer
+                  example: 2
+                member_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  example:
+                    - uuid-member-1
+                    - uuid-member-2
       responses:
         '201':
-          description: Bonus package created successfully
+          description: Bonus package created and assigned to members successfully
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
                     properties:
-                      data:
-                        $ref: '#/components/schemas/BonusPackage'
+                      id:
+                        type: string
+                        format: uuid
+                      group_session:
+                        type: integer
+                      private_session:
+                        type: integer
+                      duration_value:
+                        type: integer
+                      duration_unit:
+                        type: string
+                        enum:
+                          - week
+                          - month
+                      member_ids:
+                        type: array
+                        items:
+                          type: string
+                          format: uuid
         '400':
           description: Validation error or package with same name exists
           content:

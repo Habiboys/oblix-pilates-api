@@ -62,19 +62,65 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateBonusPackageRequest'
+              type: object
+              required:
+                - duration_value
+                - duration_unit
+                - group_session
+                - private_session
+                - member_ids
+              properties:
+                duration_value:
+                  type: integer
+                  example: 1
+                duration_unit:
+                  type: string
+                  enum: [week, month]
+                  example: "month"
+                group_session:
+                  type: integer
+                  example: 5
+                private_session:
+                  type: integer
+                  example: 2
+                member_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  example: ["uuid-member-1", "uuid-member-2"]
       responses:
         '201':
-          description: Bonus package created successfully
+          description: Bonus package created and assigned to members successfully
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
                     properties:
-                      data:
-                        $ref: '#/components/schemas/BonusPackage'
+                      id:
+                        type: string
+                        format: uuid
+                      group_session:
+                        type: integer
+                      private_session:
+                        type: integer
+                      duration_value:
+                        type: integer
+                      duration_unit:
+                        type: string
+                        enum: [week, month]
+                      member_ids:
+                        type: array
+                        items:
+                          type: string
+                          format: uuid
         '400':
           description: Validation error or package with same name exists
           content:

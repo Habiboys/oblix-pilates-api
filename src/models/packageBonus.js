@@ -32,14 +32,6 @@ module.exports = (sequelize, DataTypes) => {
     group_session: {
       type: DataTypes.INTEGER,
       allowNull: false
-    },
-    duration_value: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    duration_unit: {
-      type: DataTypes.ENUM('month'),
-      allowNull: false
     }
   }, {
     sequelize,

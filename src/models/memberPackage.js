@@ -36,24 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     order_id: {
       type: DataTypes.UUID,
-      allowNull: false
-    },
-    start_date: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
-    },
-    end_date: {
-      type: DataTypes.DATEONLY,
-      allowNull: false
-    },
-    total_session: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    used_session: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0
+      allowNull: true
     }
   }, {
     sequelize,

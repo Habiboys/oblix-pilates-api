@@ -1,4 +1,4 @@
-const { Package, PackageBonus, Member } = require('../models');
+const { Package, PackageBonus, Member, MemberPackage, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 // Get all bonus packages with pagination and search
@@ -24,8 +24,7 @@ const getAllBonusPackages = async (req, res) => {
           model: PackageBonus,
           include: [
             {
-              model: Member,
-              as: 'member'
+              model: Member
             }
           ]
         }
@@ -38,17 +37,14 @@ const getAllBonusPackages = async (req, res) => {
     // Transform data to match form requirements
     const transformedPackages = packages.map(pkg => ({
       id: pkg.id,
-      name: pkg.name,
-      price: pkg.price,
-      session: pkg.PackageBonus ? pkg.PackageBonus.session : null,
+      group_session: pkg.PackageBonus ? pkg.PackageBonus.group_session : null,
+      private_session: pkg.PackageBonus ? pkg.PackageBonus.private_session : null,
       member: pkg.PackageBonus && pkg.PackageBonus.member ? {
         id: pkg.PackageBonus.member.id,
         name: pkg.PackageBonus.member.full_name
       } : null,
       duration_value: pkg.duration_value,
       duration_unit: pkg.duration_unit,
-      reminder_day: pkg.reminder_day,
-      reminder_session: pkg.reminder_session
     }));
 
     const totalPages = Math.ceil(count / limit);
@@ -90,8 +86,7 @@ const getBonusPackageById = async (req, res) => {
           model: PackageBonus,
           include: [
             {
-              model: Member,
-              as: 'member'
+              model: Member
             }
           ]
         }
@@ -108,17 +103,14 @@ const getBonusPackageById = async (req, res) => {
     // Transform data to match form requirements
     const transformedPackage = {
       id: package.id,
-      name: package.name,
-      price: package.price,
-      session: package.PackageBonus ? package.PackageBonus.session : null,
+      group_session: package.PackageBonus ? package.PackageBonus.group_session : null,
+      private_session: package.PackageBonus ? package.PackageBonus.private_session : null,
       member: package.PackageBonus && package.PackageBonus.member ? {
         id: package.PackageBonus.member.id,
         name: package.PackageBonus.member.full_name
       } : null,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
-      reminder_day: package.reminder_day,
-      reminder_session: package.reminder_session
     };
 
     res.json({
@@ -137,97 +129,77 @@ const getBonusPackageById = async (req, res) => {
 
 // Create new bonus package
 const createBonusPackage = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const {
-      name,
-      price,
       duration_value,
       duration_unit,
-      reminder_day,
-      reminder_session,
-      session,
-      member_id
+      group_session,
+      private_session,
+      member_ids
     } = req.body;
 
     // Check if package with same name exists
     const existingPackage = await Package.findOne({
       where: { 
-        name,
         type: 'bonus'
-      }
+      },
+      transaction: t
     });
 
     if (existingPackage) {
+      await t.rollback();
       return res.status(400).json({
         success: false,
         message: 'Bonus package with this name already exists'
       });
     }
 
-    // Validate member exists
-    const member = await Member.findByPk(member_id);
-    if (!member) {
-      return res.status(400).json({
-        success: false,
-        message: 'Member not found'
-      });
-    }
-
     // Create bonus package
     const newPackage = await Package.create({
-      name,
-      price: parseFloat(price),
       type: 'bonus',
       duration_value: parseInt(duration_value),
       duration_unit,
-      reminder_day: reminder_day ? parseInt(reminder_day) : null,
-      reminder_session: reminder_session ? parseInt(reminder_session) : null
-    });
+    }, { transaction: t });
 
     // Create package bonus
     await PackageBonus.create({
       package_id: newPackage.id,
-      session: parseInt(session),
-      member_id
-    });
+      group_session: group_session ? parseInt(group_session) : null,
+      private_session: private_session ? parseInt(private_session) : null
+    }, { transaction: t });
 
-    // Fetch the created package with associations
-    const createdPackage = await Package.findByPk(newPackage.id, {
-      include: [
-        {
-          model: PackageBonus,
-          include: [
-            {
-              model: Member,
-              as: 'member'
-            }
-          ]
-        }
-      ]
-    });
+    // Insert to member_packages for each member_id
+    if (!Array.isArray(member_ids) || member_ids.length === 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'member_ids must be a non-empty array'
+      });
+    }
+    for (const member_id of member_ids) {
+      await MemberPackage.create({
+        member_id,
+        package_id: newPackage.id
+      }, { transaction: t });
+    }
 
-    // Transform data to match form requirements
-    const transformedPackage = {
-      id: createdPackage.id,
-      name: createdPackage.name,
-      price: createdPackage.price,
-      session: createdPackage.PackageBonus ? createdPackage.PackageBonus.session : null,
-      member: createdPackage.PackageBonus && createdPackage.PackageBonus.member ? {
-        id: createdPackage.PackageBonus.member.id,
-        name: createdPackage.PackageBonus.member.full_name
-      } : null,
-      duration_value: createdPackage.duration_value,
-      duration_unit: createdPackage.duration_unit,
-      reminder_day: createdPackage.reminder_day,
-      reminder_session: createdPackage.reminder_session
-    };
+    await t.commit();
 
     res.status(201).json({
       success: true,
-      message: 'Bonus package created successfully',
-      data: transformedPackage
+      message: 'Bonus package created and assigned to members successfully',
+      data: {
+        id: newPackage.id,
+        group_session,
+        private_session,
+        duration_value: newPackage.duration_value,
+        duration_unit: newPackage.duration_unit,
+        member_ids
+      }
     });
   } catch (error) {
+    await t.rollback();
     console.error('Error creating bonus package:', error);
     res.status(500).json({
       success: false,
@@ -241,13 +213,10 @@ const updateBonusPackage = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      name,
-      price,
       duration_value,
       duration_unit,
-      reminder_day,
-      reminder_session,
-      session,
+      group_session,
+      private_session,
       member_id
     } = req.body;
 
@@ -266,10 +235,9 @@ const updateBonusPackage = async (req, res) => {
     }
 
     // Check if package with same name exists (excluding current package)
-    if (name && name !== package.name) {
+    if (group_session && group_session !== package.PackageBonus.group_session) {
       const existingPackage = await Package.findOne({
         where: { 
-          name,
           type: 'bonus',
           id: { [Op.ne]: id }
         }
@@ -296,28 +264,26 @@ const updateBonusPackage = async (req, res) => {
 
     // Update package
     await package.update({
-      name: name || package.name,
-      price: price ? parseFloat(price) : package.price,
       duration_value: duration_value ? parseInt(duration_value) : package.duration_value,
       duration_unit: duration_unit || package.duration_unit,
-      reminder_day: reminder_day !== undefined ? (reminder_day ? parseInt(reminder_day) : null) : package.reminder_day,
-      reminder_session: reminder_session !== undefined ? (reminder_session ? parseInt(reminder_session) : null) : package.reminder_session
     });
 
     // Update package bonus
-    if (session && member_id) {
+    if (group_session && private_session && member_id) {
       const existingBonus = await PackageBonus.findOne({
         where: { package_id: package.id }
       });
       if (existingBonus) {
         await existingBonus.update({
-          session: parseInt(session),
+          group_session: parseInt(group_session),
+          private_session: parseInt(private_session),
           member_id
         });
       } else {
         await PackageBonus.create({
           package_id: package.id,
-          session: parseInt(session),
+          group_session: parseInt(group_session),
+          private_session: parseInt(private_session),
           member_id
         });
       }
@@ -330,8 +296,7 @@ const updateBonusPackage = async (req, res) => {
           model: PackageBonus,
           include: [
             {
-              model: Member,
-              as: 'member'
+              model: Member
             }
           ]
         }
@@ -341,17 +306,14 @@ const updateBonusPackage = async (req, res) => {
     // Transform data to match form requirements
     const transformedPackage = {
       id: updatedPackage.id,
-      name: updatedPackage.name,
-      price: updatedPackage.price,
-      session: updatedPackage.PackageBonus ? updatedPackage.PackageBonus.session : null,
+      group_session: updatedPackage.PackageBonus ? updatedPackage.PackageBonus.group_session : null,
+      private_session: updatedPackage.PackageBonus ? updatedPackage.PackageBonus.private_session : null,
       member: updatedPackage.PackageBonus && updatedPackage.PackageBonus.member ? {
         id: updatedPackage.PackageBonus.member.id,
         name: updatedPackage.PackageBonus.member.full_name
       } : null,
       duration_value: updatedPackage.duration_value,
       duration_unit: updatedPackage.duration_unit,
-      reminder_day: updatedPackage.reminder_day,
-      reminder_session: updatedPackage.reminder_session
     };
 
     res.json({

@@ -618,6 +618,7 @@ components:
           type: string
           maxLength: 100
           description: Name of the bonus package
+          nullable: true
         price:
           type: number
           format: decimal
@@ -649,7 +650,6 @@ components:
           description: Reminder session
       required:
         - id
-        - name
         - price
         - member
         - duration_value

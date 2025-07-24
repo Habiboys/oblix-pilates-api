@@ -32,30 +32,13 @@ module.exports = {
       },
       order_id: {
         type: Sequelize.UUID,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: 'orders',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
-      },
-      start_date: {
-        type: Sequelize.DATEONLY,
-        allowNull: false
-      },
-      end_date: {
-        type: Sequelize.DATEONLY,
-        allowNull: false
-      },
-      total_session: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      used_session: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        defaultValue: 0
       },
       createdAt: {
         allowNull: false,

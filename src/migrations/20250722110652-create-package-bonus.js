@@ -28,14 +28,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
-      duration_value: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      duration_unit: {
-        type: Sequelize.ENUM('month'),
-        allowNull: false
-      },
+      
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
