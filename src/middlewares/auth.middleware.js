@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Member } = require('../models');
 require('dotenv').config('../../.env');
 
 // Middleware untuk validasi token
