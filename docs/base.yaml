@@ -610,50 +610,61 @@ components:
     BonusPackage:
       type: object
       properties:
-        id:
+        package_id:
           type: string
           format: uuid
           description: Unique identifier for the bonus package
-        name:
-          type: string
-          maxLength: 100
-          description: Name of the bonus package
+        group_session:
+          type: integer
           nullable: true
-        price:
-          type: number
-          format: decimal
-          description: Price of the bonus package
-        member:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-              description: Member ID
-            name:
-              type: string
-              description: Member name
+          description: Number of group sessions included
+          example: 5
+        private_session:
+          type: integer
+          nullable: true
+          description: Number of private sessions included
+          example: 2
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                description: Member ID
+              name:
+                type: string
+                description: Member full name
+              member_code:
+                type: string
+                description: Member code
         duration_value:
           type: integer
           description: Duration value
+          example: 1
         duration_unit:
           type: string
           enum: [week, month]
           description: Duration unit
-        reminder_day:
-          type: integer
-          nullable: true
-          description: Reminder day
-        reminder_session:
-          type: integer
-          nullable: true
-          description: Reminder session
+          example: "month"
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
       required:
-        - id
-        - price
-        - member
+        - package_id
+        - group_session
+        - private_session
+        - members
         - duration_value
         - duration_unit
+        - created_at
+        - updated_at
 
     # Staff Schemas
     Staff:

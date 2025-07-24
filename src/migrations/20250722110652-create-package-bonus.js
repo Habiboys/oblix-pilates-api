@@ -4,14 +4,10 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('package_bonus', {
-      id: {
-        allowNull: false,
-        primaryKey: true,
-        type: Sequelize.UUID,
-        defaultValue: Sequelize.UUIDV4
-      },
+
       package_id: {
         type: Sequelize.UUID,
+        primaryKey: true,
         allowNull: false,
         references: {
           model: 'packages',

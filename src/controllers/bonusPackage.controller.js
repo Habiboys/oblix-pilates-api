@@ -1,5 +1,6 @@
 const { Package, PackageBonus, Member, MemberPackage, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const logger = require('../config/logger');
 
 // Get all bonus packages with pagination and search
 const getAllBonusPackages = async (req, res) => {
@@ -13,7 +14,7 @@ const getAllBonusPackages = async (req, res) => {
     
     if (search) {
       whereClause.name = {
-        [Op.iLike]: `%${search}%`
+        [Op.like]: `%${search}%`
       };
     }
 
@@ -21,7 +22,10 @@ const getAllBonusPackages = async (req, res) => {
       where: whereClause,
       include: [
         {
-          model: PackageBonus,
+          model: PackageBonus
+        },
+        {
+          model: MemberPackage,
           include: [
             {
               model: Member
@@ -34,17 +38,41 @@ const getAllBonusPackages = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
+    // Debug logging untuk melihat data yang di-load
+    logger.info('Raw packages data:', JSON.stringify(packages, null, 2));
+
     // Transform data to match form requirements
-    const transformedPackages = packages.map(pkg => ({
-      id: pkg.id,
-      group_session: pkg.PackageBonus ? pkg.PackageBonus.group_session : null,
-      private_session: pkg.PackageBonus ? pkg.PackageBonus.private_session : null,
-      member: pkg.PackageBonus && pkg.PackageBonus.member ? {
-        id: pkg.PackageBonus.member.id,
-        name: pkg.PackageBonus.member.full_name
-      } : null,
-      duration_value: pkg.duration_value,
-      duration_unit: pkg.duration_unit,
+    const transformedPackages = await Promise.all(packages.map(async pkg => {
+      // Debug logging untuk setiap package
+      logger.info(`Package ${pkg.id}: PackageBonus data:`, pkg.PackageBonus);
+      logger.info(`Package ${pkg.id}: PackageBonu data:`, pkg.PackageBonu);
+      logger.info(`Package ${pkg.id}: All keys:`, Object.keys(pkg));
+      
+      // Ambil member dari member_packages (bisa ada multiple members)
+      const members = pkg.MemberPackages ? pkg.MemberPackages.map(mp => ({
+        id: mp.Member.id,
+        name: mp.Member.full_name,
+      })) : [];
+
+      // Gunakan PackageBonu yang ter-load dari database
+      let packageBonus = pkg.PackageBonu || pkg.PackageBonus;
+      if (!packageBonus) {
+        packageBonus = await PackageBonus.findOne({
+          where: { package_id: pkg.id }
+        });
+        logger.info(`Package ${pkg.id}: Manual PackageBonus data:`, packageBonus);
+      }
+
+      return {
+        package_id: pkg.id,
+        group_session: packageBonus ? packageBonus.group_session : null,
+        private_session: packageBonus ? packageBonus.private_session : null,
+        members: members,
+        duration_value: pkg.duration_value,
+        duration_unit: pkg.duration_unit,
+        created_at: pkg.createdAt,
+        updated_at: pkg.updatedAt
+      };
     }));
 
     const totalPages = Math.ceil(count / limit);
@@ -63,7 +91,7 @@ const getAllBonusPackages = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting bonus packages:', error);
+    logger.error('Error getting bonus packages:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -83,7 +111,10 @@ const getBonusPackageById = async (req, res) => {
       },
       include: [
         {
-          model: PackageBonus,
+          model: PackageBonus
+        },
+        {
+          model: MemberPackage,
           include: [
             {
               model: Member
@@ -101,16 +132,21 @@ const getBonusPackageById = async (req, res) => {
     }
 
     // Transform data to match form requirements
+    const members = package.MemberPackages ? package.MemberPackages.map(mp => ({
+      id: mp.Member.id,
+      name: mp.Member.full_name,
+      member_code: mp.Member.member_code
+    })) : [];
+
     const transformedPackage = {
-      id: package.id,
+      package_id: package.id,
       group_session: package.PackageBonus ? package.PackageBonus.group_session : null,
       private_session: package.PackageBonus ? package.PackageBonus.private_session : null,
-      member: package.PackageBonus && package.PackageBonus.member ? {
-        id: package.PackageBonus.member.id,
-        name: package.PackageBonus.member.full_name
-      } : null,
+      members: members,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
+      created_at: package.createdAt,
+      updated_at: package.updatedAt
     };
 
     res.json({
@@ -119,7 +155,7 @@ const getBonusPackageById = async (req, res) => {
       data: transformedPackage
     });
   } catch (error) {
-    console.error('Error getting bonus package:', error);
+    logger.error('Error getting bonus package:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -136,22 +172,28 @@ const createBonusPackage = async (req, res) => {
       duration_unit,
       group_session,
       private_session,
-      member_ids
+      member_id
     } = req.body;
 
-    // Check if package with same name exists
-    const existingPackage = await Package.findOne({
-      where: { 
-        type: 'bonus'
-      },
-      transaction: t
-    });
+    //log pakai logger
+    logger.info(`Creating bonus package with data: ${JSON.stringify(req.body)}`);
 
-    if (existingPackage) {
+
+    // Validate required fields
+    if (!duration_value || !duration_unit || !member_id) {
       await t.rollback();
       return res.status(400).json({
         success: false,
-        message: 'Bonus package with this name already exists'
+        message: 'duration_value, duration_unit, dan member_id harus diisi'
+      });
+    }
+
+    // Validate at least one session type is provided
+    if ((!group_session || group_session === 0) && (!private_session || private_session === 0)) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Minimal satu jenis sesi (group_session atau private_session) harus diisi'
       });
     }
 
@@ -169,38 +211,38 @@ const createBonusPackage = async (req, res) => {
       private_session: private_session ? parseInt(private_session) : null
     }, { transaction: t });
 
-    // Insert to member_packages for each member_id
-    if (!Array.isArray(member_ids) || member_ids.length === 0) {
+    // Validate member exists
+    const member = await Member.findByPk(member_id, { transaction: t });
+    if (!member) {
       await t.rollback();
       return res.status(400).json({
         success: false,
-        message: 'member_ids must be a non-empty array'
+        message: 'Member tidak ditemukan'
       });
     }
-    for (const member_id of member_ids) {
-      await MemberPackage.create({
-        member_id,
-        package_id: newPackage.id
-      }, { transaction: t });
-    }
+
+    await MemberPackage.create({
+      member_id: member_id,
+      package_id: newPackage.id
+    }, { transaction: t });
 
     await t.commit();
 
     res.status(201).json({
       success: true,
-      message: 'Bonus package created and assigned to members successfully',
+      message: 'Bonus package created and assigned to member successfully',
       data: {
-        id: newPackage.id,
-        group_session,
-        private_session,
+        package_id: newPackage.id,
+        group_session: group_session ? parseInt(group_session) : null,
+        private_session: private_session ? parseInt(private_session) : null,
         duration_value: newPackage.duration_value,
         duration_unit: newPackage.duration_unit,
-        member_ids
+        member_id
       }
     });
   } catch (error) {
     await t.rollback();
-    console.error('Error creating bonus package:', error);
+    logger.error('Error creating bonus package:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -260,6 +302,16 @@ const updateBonusPackage = async (req, res) => {
           message: 'Member not found'
         });
       }
+
+      // Update member_packages - remove old and add new
+      await MemberPackage.destroy({
+        where: { package_id: package.id }
+      });
+
+      await MemberPackage.create({
+        member_id: member_id,
+        package_id: package.id
+      });
     }
 
     // Update package
@@ -269,22 +321,20 @@ const updateBonusPackage = async (req, res) => {
     });
 
     // Update package bonus
-    if (group_session && private_session && member_id) {
+    if (group_session && private_session) {
       const existingBonus = await PackageBonus.findOne({
         where: { package_id: package.id }
       });
       if (existingBonus) {
         await existingBonus.update({
           group_session: parseInt(group_session),
-          private_session: parseInt(private_session),
-          member_id
+          private_session: parseInt(private_session)
         });
       } else {
         await PackageBonus.create({
           package_id: package.id,
           group_session: parseInt(group_session),
-          private_session: parseInt(private_session),
-          member_id
+          private_session: parseInt(private_session)
         });
       }
     }
@@ -293,7 +343,10 @@ const updateBonusPackage = async (req, res) => {
     const updatedPackage = await Package.findByPk(id, {
       include: [
         {
-          model: PackageBonus,
+          model: PackageBonus
+        },
+        {
+          model: MemberPackage,
           include: [
             {
               model: Member
@@ -304,16 +357,21 @@ const updateBonusPackage = async (req, res) => {
     });
 
     // Transform data to match form requirements
+    const members = updatedPackage.MemberPackages ? updatedPackage.MemberPackages.map(mp => ({
+      id: mp.Member.id,
+      name: mp.Member.full_name,
+      member_code: mp.Member.member_code
+    })) : [];
+
     const transformedPackage = {
-      id: updatedPackage.id,
+      package_id: updatedPackage.id,
       group_session: updatedPackage.PackageBonus ? updatedPackage.PackageBonus.group_session : null,
       private_session: updatedPackage.PackageBonus ? updatedPackage.PackageBonus.private_session : null,
-      member: updatedPackage.PackageBonus && updatedPackage.PackageBonus.member ? {
-        id: updatedPackage.PackageBonus.member.id,
-        name: updatedPackage.PackageBonus.member.full_name
-      } : null,
+      members: members,
       duration_value: updatedPackage.duration_value,
       duration_unit: updatedPackage.duration_unit,
+      created_at: updatedPackage.createdAt,
+      updated_at: updatedPackage.updatedAt
     };
 
     res.json({
@@ -322,7 +380,7 @@ const updateBonusPackage = async (req, res) => {
       data: transformedPackage
     });
   } catch (error) {
-    console.error('Error updating bonus package:', error);
+    logger.error('Error updating bonus package:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -366,7 +424,7 @@ const deleteBonusPackage = async (req, res) => {
       message: 'Bonus package deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting bonus package:', error);
+    logger.error('Error deleting bonus package:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -382,7 +440,7 @@ const searchMembers = async (req, res) => {
     const whereClause = {};
     if (search) {
       whereClause.full_name = {
-        [Op.iLike]: `%${search}%`
+        [Op.like]: `%${search}%`
       };
     }
 
@@ -395,7 +453,7 @@ const searchMembers = async (req, res) => {
     // Transform data to simple format
     const transformedMembers = members.map(member => ({
       id: member.id,
-      name: member.full_name,
+      full_name: member.full_name,
       email: member.email
     }));
 
@@ -405,7 +463,7 @@ const searchMembers = async (req, res) => {
       data: transformedMembers
     });
   } catch (error) {
-    console.error('Error searching members:', error);
+    logger.error('Error searching members:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

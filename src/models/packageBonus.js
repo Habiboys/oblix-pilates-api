@@ -11,18 +11,13 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       PackageBonus.belongsTo(models.Package, {
         foreignKey: 'package_id',
-       
       });
     }
   }
   PackageBonus.init({
-    id: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: DataTypes.UUIDV4
-    },
     package_id: {
       type: DataTypes.UUID,
+      primaryKey: true,
       allowNull: false
     },
     private_session: {

@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
       Package.hasOne(models.PackagePromo, {
         foreignKey: 'package_id',
       });
-      Package.hasMany(models.PackageBonus, {
+      Package.hasOne(models.PackageBonus, {
         foreignKey: 'package_id',
       });
       Package.hasMany(models.Order, {

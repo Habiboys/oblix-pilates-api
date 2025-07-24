@@ -68,7 +68,7 @@ paths:
                 - duration_unit
                 - group_session
                 - private_session
-                - member_ids
+                - member_id
               properties:
                 duration_value:
                   type: integer
@@ -83,15 +83,13 @@ paths:
                 private_session:
                   type: integer
                   example: 2
-                member_ids:
-                  type: array
-                  items:
-                    type: string
-                    format: uuid
-                  example: ["uuid-member-1", "uuid-member-2"]
+                member_id:
+                  type: string
+                  format: uuid
+                  example: "uuid-member-1"
       responses:
         '201':
-          description: Bonus package created and assigned to members successfully
+          description: Bonus package created and assigned to member successfully
           content:
             application/json:
               schema:
@@ -107,20 +105,24 @@ paths:
                       id:
                         type: string
                         format: uuid
+                        description: Package ID
                       group_session:
                         type: integer
+                        description: Number of group sessions included
                       private_session:
                         type: integer
+                        description: Number of private sessions included
                       duration_value:
                         type: integer
+                        description: Duration value
                       duration_unit:
                         type: string
                         enum: [week, month]
-                      member_ids:
-                        type: array
-                        items:
-                          type: string
-                          format: uuid
+                        description: Duration unit
+                      member_id:
+                        type: string
+                        format: uuid
+                        description: Member ID
         '400':
           description: Validation error or package with same name exists
           content:

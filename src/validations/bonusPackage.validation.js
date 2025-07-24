@@ -39,16 +39,12 @@ const createBonusPackageSchema = Joi.object({
       'number.min': 'Private session must be at least 0',
       'any.required': 'Private session is required'
     }),
-  member_ids: Joi.array()
-    .items(Joi.string().uuid().messages({
-      'string.guid': 'Each member_id must be a valid UUID'
-    }))
-    .min(1)
+  member_id: Joi.string()
+    .uuid()
     .required()
     .messages({
-      'array.base': 'member_ids must be an array',
-      'array.min': 'member_ids must contain at least 1 member',
-      'any.required': 'member_ids is required'
+      'string.guid': 'Member ID must be a valid UUID',
+      'any.required': 'Member ID is required'
     })
 });
 
