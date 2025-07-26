@@ -6242,7 +6242,10 @@ paths:
       tags:
         - Payment
       summary: Payment notification from Midtrans
-      description: Endpoint untuk menerima notifikasi pembayaran dari Midtrans
+      description: |
+        Endpoint untuk menerima notifikasi pembayaran dari Midtrans (webhook).
+        Endpoint ini dipanggil otomatis oleh Midtrans setelah status pembayaran berubah.
+        Tidak memerlukan autentikasi karena dipanggil oleh Midtrans server.
       requestBody:
         required: true
         content:
@@ -6268,6 +6271,174 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /order/payment/finish:
+    get:
+      tags:
+        - Payment
+      summary: Payment finish callback (Redirect)
+      description: |
+        Callback URL untuk redirect user setelah pembayaran berhasil.
+        Endpoint ini dipanggil oleh Midtrans Snap ketika user mengklik tombol "Kembali ke Merchant"
+        atau setelah pembayaran selesai. User akan di-redirect ke frontend success page.
+
+        **URL Redirect:** `{FRONTEND_URL}/payment/success?order_id={order_id}`
+
+        **Contoh:** `https://oblix-pilates.vercel.app/payment/success?order_id=ORD-123456789`
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: ORD-1753523164857-424
+        - name: transaction_status
+          in: query
+          description: Status transaksi dari Midtrans
+          required: false
+          schema:
+            type: string
+            enum:
+              - settlement
+              - capture
+              - pending
+              - deny
+              - cancel
+              - expire
+              - failure
+            example: settlement
+        - name: transaction_id
+          in: query
+          description: Transaction ID dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: '123456789'
+        - name: status_code
+          in: query
+          description: Status code dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: '200'
+      responses:
+        '302':
+          description: Redirect to frontend success page
+          headers:
+            Location:
+              description: Redirect URL to frontend success page
+              schema:
+                type: string
+                example: https://oblix-pilates.vercel.app/payment/success?order_id=ORD-1753523164857-424
+  /order/payment/error:
+    get:
+      tags:
+        - Payment
+      summary: Payment error callback (Redirect)
+      description: |
+        Callback URL untuk redirect user jika pembayaran gagal.
+        Endpoint ini dipanggil oleh Midtrans Snap ketika pembayaran gagal atau dibatalkan.
+        User akan di-redirect ke frontend error page.
+
+        **URL Redirect:** `{FRONTEND_URL}/payment/error?order_id={order_id}`
+
+        **Contoh:** `https://oblix-pilates.vercel.app/payment/error?order_id=ORD-123456789`
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: ORD-1753523164857-424
+        - name: transaction_status
+          in: query
+          description: Status transaksi dari Midtrans
+          required: false
+          schema:
+            type: string
+            enum:
+              - deny
+              - cancel
+              - expire
+              - failure
+            example: deny
+        - name: transaction_id
+          in: query
+          description: Transaction ID dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: '123456789'
+        - name: status_code
+          in: query
+          description: Status code dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: '400'
+      responses:
+        '302':
+          description: Redirect to frontend error page
+          headers:
+            Location:
+              description: Redirect URL to frontend error page
+              schema:
+                type: string
+                example: https://oblix-pilates.vercel.app/payment/error?order_id=ORD-1753523164857-424
+  /order/payment/pending:
+    get:
+      tags:
+        - Payment
+      summary: Payment pending callback (Redirect)
+      description: |
+        Callback URL untuk redirect user jika pembayaran pending.
+        Endpoint ini dipanggil oleh Midtrans Snap ketika pembayaran masih dalam status pending
+        (misalnya menunggu konfirmasi dari bank). User akan di-redirect ke frontend pending page.
+
+        **URL Redirect:** `{FRONTEND_URL}/payment/pending?order_id={order_id}`
+
+        **Contoh:** `https://oblix-pilates.vercel.app/payment/pending?order_id=ORD-123456789`
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: ORD-1753523164857-424
+        - name: transaction_status
+          in: query
+          description: Status transaksi dari Midtrans
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+            example: pending
+        - name: transaction_id
+          in: query
+          description: Transaction ID dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: '123456789'
+        - name: status_code
+          in: query
+          description: Status code dari Midtrans
+          required: false
+          schema:
+            type: string
+            example: '201'
+      responses:
+        '302':
+          description: Redirect to frontend pending page
+          headers:
+            Location:
+              description: Redirect URL to frontend pending page
+              schema:
+                type: string
+                example: https://oblix-pilates.vercel.app/payment/pending?order_id=ORD-1753523164857-424
   /schedule/group:
     get:
       tags:
