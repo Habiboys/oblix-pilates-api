@@ -163,6 +163,16 @@ if (scheduleDoc) {
   console.log('❌ Failed to load schedule.yaml');
 }
 
+// Load and merge booking management endpoints
+const bookingDoc = loadYamlFile(path.join(__dirname, 'booking.yaml'));
+if (bookingDoc) {
+  console.log('📋 Booking doc paths:', Object.keys(bookingDoc.paths || {}));
+  mergePaths(baseDoc, bookingDoc);
+  console.log('✅ Merged booking management endpoints');
+} else {
+  console.log('❌ Failed to load booking.yaml');
+}
+
   // Add tags
   baseDoc.tags = [
     {
@@ -216,6 +226,10 @@ if (scheduleDoc) {
   {
     name: 'Schedule Management',
     description: 'Schedule management endpoints for group, semi-private, and private classes'
+  },
+  {
+    name: 'Booking Management',
+    description: 'Booking management endpoints for group and semi-private schedules'
   }
   ];
 

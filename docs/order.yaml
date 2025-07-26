@@ -238,6 +238,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      properties:
+        package_id:
+          type: string
+          format: uuid
+          description: ID paket yang akan dibeli
+      required:
+        - package_id
+
 
 
  

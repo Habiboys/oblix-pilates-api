@@ -8,23 +8,6 @@ const createOrderSchema = Joi.object({
     .messages({
       'string.guid': 'Package ID must be a valid UUID',
       'any.required': 'Package ID is required'
-    }),
-  quantity: Joi.number()
-    .integer()
-    .min(1)
-    .max(10)
-    .default(1)
-    .messages({
-      'number.base': 'Quantity must be a number',
-      'number.integer': 'Quantity must be an integer',
-      'number.min': 'Quantity must be at least 1',
-      'number.max': 'Quantity cannot exceed 10'
-    }),
-  notes: Joi.string()
-    .max(500)
-    .optional()
-    .messages({
-      'string.max': 'Notes cannot exceed 500 characters'
     })
 });
 

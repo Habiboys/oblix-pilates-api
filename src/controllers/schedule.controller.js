@@ -1,4 +1,5 @@
 const { Schedule, Class, Trainer, Member, Booking } = require('../models');
+const { validateSessionAvailability, createSessionAllocation } = require('../utils/sessionUtils');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -1011,16 +1012,42 @@ const createPrivateSchedule = async (req, res) => {
         // Create schedule(s) berdasarkan repeat type
         const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until);
 
+        // Cek jatah sesi member sebelum booking
+        const sessionValidation = await validateSessionAvailability(member_id, createdSchedules.length);
+        
+        if (!sessionValidation.isValid) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Member tidak memiliki jatah sesi yang cukup untuk booking',
+                data: {
+                    member_id: member_id,
+                    required_sessions: createdSchedules.length,
+                    available_sessions: sessionValidation.totalAvailableSessions,
+                    deficit: sessionValidation.deficit,
+                    package_details: sessionValidation.packageDetails
+                }
+            });
+        }
+
+        // Buat alokasi sesi untuk booking
+        const sessionAllocation = await createSessionAllocation(member_id, createdSchedules.length);
+
         // Auto booking untuk setiap schedule yang dibuat
         const bookings = [];
-        for (const schedule of createdSchedules) {
+        for (let i = 0; i < createdSchedules.length; i++) {
+            const schedule = createdSchedules[i];
+            const allocation = sessionAllocation[i];
+
             const booking = await Booking.create({
                 schedule_id: schedule.id,
                 member_id: member_id,
-                status: 'confirmed', // Auto confirmed untuk private schedule
+                package_id: allocation.package_id,
+                session_left: allocation.session_left,
+                status: 'signup',
                 booking_date: new Date(),
-                notes: 'Auto booking for private schedule'
+                notes: `Auto booking for private schedule using ${allocation.package_type} package`
             });
+            
             bookings.push(booking);
         }
 

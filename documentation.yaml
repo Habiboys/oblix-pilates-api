@@ -6268,143 +6268,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /order/payment/recurring:
-    post:
-      tags:
-        - Payment
-      summary: Recurring payment notification
-      description: Endpoint untuk menerima notifikasi pembayaran berulang dari Midtrans
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PaymentNotification'
-      responses:
-        '200':
-          description: Recurring notification processed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaymentResponse'
-        '404':
-          description: Order not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /order/payment/pay-account:
-    post:
-      tags:
-        - Payment
-      summary: Pay Account notification
-      description: Endpoint untuk menerima notifikasi status Pay Account dari Midtrans
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PaymentNotification'
-      responses:
-        '200':
-          description: Pay Account notification processed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaymentResponse'
-        '404':
-          description: Order not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /order/payment/finish:
-    get:
-      tags:
-        - Payment
-      summary: Payment success redirect
-      description: Redirect endpoint setelah pembayaran berhasil
-      parameters:
-        - name: order_id
-          in: query
-          description: Order ID
-          required: false
-          schema:
-            type: string
-        - name: result_code
-          in: query
-          description: Result code dari Midtrans
-          required: false
-          schema:
-            type: string
-        - name: transaction_status
-          in: query
-          description: Status transaksi
-          required: false
-          schema:
-            type: string
-      responses:
-        '302':
-          description: Redirect to frontend success page
-          headers:
-            Location:
-              description: Frontend success URL
-              schema:
-                type: string
-  /order/payment/error:
-    get:
-      tags:
-        - Payment
-      summary: Payment error redirect
-      description: Redirect endpoint jika terjadi error dalam pembayaran
-      parameters:
-        - name: order_id
-          in: query
-          description: Order ID
-          required: false
-          schema:
-            type: string
-      responses:
-        '302':
-          description: Redirect to frontend error page
-          headers:
-            Location:
-              description: Frontend error URL
-              schema:
-                type: string
-  /order/payment/pending:
-    get:
-      tags:
-        - Payment
-      summary: Payment pending redirect
-      description: Redirect endpoint jika pembayaran masih pending
-      parameters:
-        - name: order_id
-          in: query
-          description: Order ID
-          required: false
-          schema:
-            type: string
-      responses:
-        '302':
-          description: Redirect to frontend pending page
-          headers:
-            Location:
-              description: Frontend pending URL
-              schema:
-                type: string
   /schedule/group:
     get:
       tags:
@@ -7220,6 +7083,714 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/booking:
+    get:
+      tags:
+        - Booking Management
+      summary: Get all bookings with pagination and filters
+      description: Retrieve all bookings with optional filtering by member_id, schedule_id, and status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: member_id
+          in: query
+          description: Filter by member ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: schedule_id
+          in: query
+          description: Filter by schedule ID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Filter by booking status
+          required: false
+          schema:
+            type: string
+            enum:
+              - signup
+              - waiting_list
+              - cancelled
+      responses:
+        '200':
+          description: Bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Bookings retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BookingResponse'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Booking Management
+      summary: Create new booking
+      description: >-
+        Create a new booking for group or semi-private schedule. System will automatically validate session availability
+        and select appropriate package.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - schedule_id
+                - member_id
+              properties:
+                schedule_id:
+                  type: string
+                  format: uuid
+                  description: ID of the schedule to book
+                  example: 123e4567-e89b-12d3-a456-426614174000
+                member_id:
+                  type: string
+                  format: uuid
+                  description: ID of the member making the booking
+                  example: 123e4567-e89b-12d3-a456-426614174001
+                package_id:
+                  type: string
+                  format: uuid
+                  description: Optional package ID. If not provided, system will auto-select available package
+                  example: 123e4567-e89b-12d3-a456-426614174002
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional notes for the booking
+                  example: Booking for group class
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking created successfully
+                  data:
+                    $ref: '#/components/schemas/BookingResponse'
+        '400':
+          description: Bad request - validation error or insufficient sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Member tidak memiliki jatah sesi yang cukup
+                  data:
+                    type: object
+                    properties:
+                      required_sessions:
+                        type: integer
+                        example: 1
+                      available_sessions:
+                        type: integer
+                        example: 0
+                      deficit:
+                        type: integer
+                        example: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Schedule or member not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Schedule tidak ditemukan
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/{id}:
+    get:
+      tags:
+        - Booking Management
+      summary: Get booking by ID
+      description: Retrieve a specific booking by its ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Booking ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Booking not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Booking Management
+      summary: Delete booking
+      description: Delete a booking by its ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Booking ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Booking not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/{id}/status:
+    patch:
+      tags:
+        - Booking Management
+      summary: Update booking status
+      description: Update the status of a booking (signup, waiting_list, cancelled)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Booking ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - signup
+                    - waiting_list
+                    - cancelled
+                  description: New status for the booking
+                  example: waiting_list
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional notes for the status change
+                  example: Moved to waiting list due to full capacity
+      responses:
+        '200':
+          description: Booking status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking status updated successfully
+                  data:
+                    $ref: '#/components/schemas/BookingResponse'
+        '400':
+          description: Bad request - invalid status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Status tidak valid
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Booking not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/member/{member_id}/sessions:
+    get:
+      tags:
+        - Booking Management
+      summary: Get member session summary
+      description: Get detailed information about member's available sessions and package usage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          description: Member ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member session summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Member session summary retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/MemberSessionSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Member not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/member/{member_id}/bookings:
+    get:
+      tags:
+        - Booking Management
+      summary: Get bookings by member ID
+      description: Retrieve all bookings for a specific member with pagination and status filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: member_id
+          in: path
+          required: true
+          description: Member ID
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: status
+          in: query
+          description: Filter by booking status
+          required: false
+          schema:
+            type: string
+            enum:
+              - signup
+              - waiting_list
+              - cancelled
+      responses:
+        '200':
+          description: Member bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Member bookings retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BookingResponse'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Member not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/{id}/cancel:
+    post:
+      tags:
+        - Booking Management
+      summary: Cancel booking
+      description: Cancel a booking with validation for cancel buffer time and automatic waitlist promotion
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Booking ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Optional reason for cancellation
+                  example: Saya tidak bisa hadir karena ada urusan mendadak
+      responses:
+        '200':
+          description: Booking cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking cancelled successfully
+                  data:
+                    type: object
+                    properties:
+                      cancelled_booking:
+                        $ref: '#/components/schemas/BookingResponse'
+                      promoted_from_waitlist:
+                        $ref: '#/components/schemas/BookingResponse'
+        '400':
+          description: Cannot cancel booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Tidak dapat cancel booking. Batas waktu cancel adalah 120 menit sebelum kelas dimulai.
+                  data:
+                    type: object
+                    properties:
+                      schedule_time:
+                        type: string
+                        format: date-time
+                        example: '2024-01-20T09:00:00Z'
+                      cancel_deadline:
+                        type: string
+                        format: date-time
+                        example: '2024-01-20T07:00:00Z'
+                      current_time:
+                        type: string
+                        format: date-time
+                        example: '2024-01-20T08:30:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Booking not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/admin/auto-cancel:
+    post:
+      tags:
+        - Booking Management
+      summary: Run auto-cancel expired bookings
+      description: Automatically cancel bookings that exceed cancel buffer time (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Auto-cancel process completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Auto-cancel process completed
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      cancelled_count:
+                        type: integer
+                        example: 5
+                      cancelled_bookings:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            booking_id:
+                              type: string
+                              format: uuid
+                            member_name:
+                              type: string
+                              example: John Doe
+                            schedule_date:
+                              type: string
+                              format: date
+                              example: '2024-01-20'
+                            schedule_time:
+                              type: string
+                              example: '09:00:00'
+                            cancel_reason:
+                              type: string
+                              example: Auto-cancelled due to cancel buffer time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/admin/insufficient-cancel:
+    post:
+      tags:
+        - Booking Management
+      summary: Cancel insufficient bookings
+      description: Cancel bookings for schedules that don't meet minimum signup requirement (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Insufficient bookings cancellation completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Insufficient bookings cancellation completed
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      cancelled_count:
+                        type: integer
+                        example: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/admin/statistics:
+    get:
+      tags:
+        - Booking Management
+      summary: Get booking statistics
+      description: Get booking statistics for monitoring (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Booking statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking statistics retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      statistics:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            status:
+                              type: string
+                              enum:
+                                - signup
+                                - waiting_list
+                                - cancelled
+                            count:
+                              type: integer
+                              example: 15
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 tags:
   - name: Authentication
     description: User authentication and authorization endpoints
@@ -7247,3 +7818,5 @@ tags:
     description: Payment-related endpoints for Midtrans integration
   - name: Schedule Management
     description: Schedule management endpoints for group, semi-private, and private classes
+  - name: Booking Management
+    description: Booking management endpoints for group and semi-private schedules

@@ -20,10 +20,12 @@ const categoryRoutes = require('./routes/category.route');
 const staffRoutes = require('./routes/staff.route');
 const orderRoutes = require('./routes/order.route');
 const scheduleRoutes = require('./routes/schedule.route');
+const bookingRoutes = require('./routes/booking.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
 const { logger, errorLogger } = require('./middlewares/logger.middleware');
+const { startAllCronJobs } = require('./cron/bookingCron');
 
 // Middleware untuk logging semua request
 app.use(logger);
@@ -62,6 +64,7 @@ app.use('/api/category', categoryRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/schedule', scheduleRoutes);
+app.use('/api/booking', bookingRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World');
@@ -83,4 +86,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`API Documentation: http://localhost:${PORT}/api-docs`);
   console.log(`Logs will be saved to: logs/api-${new Date().toISOString().split('T')[0]}.log`);
+  
+  // Start cron jobs
+  startAllCronJobs();
 });
