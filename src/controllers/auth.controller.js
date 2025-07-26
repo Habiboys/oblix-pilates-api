@@ -1,4 +1,4 @@
-const { User, Member } = require('../models');
+const { User, Member, MemberPackage, Package } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -80,22 +80,50 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ where: { email } });
+        const user = await User.findOne({ 
+            where: { email },
+            include: [
+                {
+                    model: Member,
+                    include: [
+                        {
+                            model: MemberPackage,
+                            include: [
+                                {
+                                    model: Package
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
+        
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
         }
+        
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({ message: 'Invalid password' });
         }
+        
         const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
         await user.update({ refresh_token: refreshToken });
+        
+        // Cek status pembelian paket member
+        let hasPurchasedPackage = false;
+        
+        if (user.Member && user.Member.MemberPackages) {
+            hasPurchasedPackage = user.Member.MemberPackages.length > 0;
+        }
         
         const userData = {
             id: user.id,
             email: user.email,
             role: user.role,
+            has_purchased_package: hasPurchasedPackage
         }
 
         res.status(200).json({
