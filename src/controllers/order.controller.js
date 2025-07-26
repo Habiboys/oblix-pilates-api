@@ -1,4 +1,4 @@
-const { Order, Package, Member, User, MemberPackage, Booking } = require('../models');
+const { Order, Package, Member, User, MemberPackage, Booking, Payment, PackageMembership, Category } = require('../models');  
 const { Op } = require('sequelize');
 const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');
@@ -156,25 +156,58 @@ const createOrder = async (req, res) => {
 
     // Check if member already has active package of the same type
     if (package.type === 'membership') {
+      // Untuk membership, cek berdasarkan kategori yang sama
       const activeMembership = await MemberPackage.findOne({
         where: {
           member_id,
-          '$Package.type$': 'membership'
+          '$Package.type$': 'membership',
+          end_date: { [Op.gte]: new Date() } // Hanya yang masih aktif
         },
         include: [
           {
             model: Package,
-            where: { type: 'membership' }
+            where: { type: 'membership' },
+            include: [
+              {
+                model: PackageMembership,
+                include: [
+                  {
+                    model: Category
+                  }
+                ]
+              }
+            ]
           }
         ]
       });
 
       if (activeMembership) {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'Anda masih memiliki membership aktif. Silakan gunakan membership yang ada terlebih dahulu.'
+        // Cek apakah kategori membership yang akan dibeli sama dengan yang aktif
+        const packageToBuy = await Package.findByPk(package_id, {
+          include: [
+            {
+              model: PackageMembership,
+              include: [
+                {
+                  model: Category
+                }
+              ]
+            }
+          ]
         });
+
+        if (packageToBuy && packageToBuy.PackageMembership && activeMembership.Package.PackageMembership) {
+          const activeCategoryId = activeMembership.Package.PackageMembership.category_id;
+          const newCategoryId = packageToBuy.PackageMembership.category_id;
+
+          if (activeCategoryId === newCategoryId) {
+            await transaction.rollback();
+            return res.status(400).json({
+              success: false,
+              message: `Anda masih memiliki membership aktif untuk kategori ${activeMembership.Package.PackageMembership.Category.category_name}. Silakan gunakan membership yang ada terlebih dahulu.`
+            });
+          }
+        }
       }
     }
 
@@ -198,7 +231,8 @@ const createOrder = async (req, res) => {
     const unusedPackages = await MemberPackage.findAll({
       where: {
         member_id,
-        '$Package.type$': package.type
+        '$Package.type$': package.type,
+        end_date: { [Op.gte]: new Date() } // Hanya yang masih aktif
       },
       include: [
         {
@@ -218,11 +252,42 @@ const createOrder = async (req, res) => {
       });
 
       if (usedSessions < memberPackage.total_session) {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: `Anda masih memiliki paket ${package.type} yang belum digunakan sepenuhnya. Silakan gunakan paket yang ada terlebih dahulu.`
-        });
+        // Untuk membership, cek apakah kategori sama
+        if (package.type === 'membership') {
+          const currentPackage = await Package.findByPk(memberPackage.package_id, {
+            include: [
+              {
+                model: PackageMembership
+              }
+            ]
+          });
+
+          const packageToBuy = await Package.findByPk(package_id, {
+            include: [
+              {
+                model: PackageMembership
+              }
+            ]
+          });
+
+          // Jika kategori sama, tolak pembelian
+          if (currentPackage && packageToBuy && 
+              currentPackage.PackageMembership && packageToBuy.PackageMembership &&
+              currentPackage.PackageMembership.category_id === packageToBuy.PackageMembership.category_id) {
+            await transaction.rollback();
+            return res.status(400).json({
+              success: false,
+              message: `Anda masih memiliki paket ${package.type} yang belum digunakan sepenuhnya untuk kategori yang sama. Silakan gunakan paket yang ada terlebih dahulu.`
+            });
+          }
+        } else {
+          // Untuk paket non-membership, tetap tolak jika ada yang belum digunakan
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: `Anda masih memiliki paket ${package.type} yang belum digunakan sepenuhnya. Silakan gunakan paket yang ada terlebih dahulu.`
+          });
+        }
       }
     }
 
@@ -588,6 +653,15 @@ const paymentNotification = async (req, res) => {
     // If payment is successful, activate member package
     if (newStatus === 'paid') {
       try {
+        // Simpan data payment ke tabel payments
+        await Payment.create({
+          order_id: order.id,
+          payment_type: status.payment_type,
+          payment_status: 'success',
+          transaction_time: status.transaction_time ? new Date(status.transaction_time) : new Date(),
+          settlement_time: status.settlement_time ? new Date(status.settlement_time) : null,
+          midtrans_response: status
+        });
         // Check if MemberPackage already exists for this order
         const existingMemberPackage = await MemberPackage.findOne({
           where: { order_id: order.id }
