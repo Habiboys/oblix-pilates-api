@@ -2,7 +2,6 @@ const { Order, Package, Member, User, MemberPackage, Booking, Payment, PackageMe
 const { Op } = require('sequelize');
 const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');
-const logger = require('../config/logger');
 
 // Create new order
 const createOrder = async (req, res) => {
@@ -641,8 +640,7 @@ const paymentNotification = async (req, res) => {
 
     // Map Midtrans status to our status
     const newStatus = MidtransService.mapPaymentStatus(status.transaction_status);
-    //logger
-    logger.info(`Midtrans status: ${status.transaction_status}`);
+
     // Update order
     await order.update({
       payment_status: newStatus,
