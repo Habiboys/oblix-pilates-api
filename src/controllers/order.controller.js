@@ -2,6 +2,7 @@ const { Order, Package, Member, User, MemberPackage, Booking, Payment, PackageMe
 const { Op } = require('sequelize');
 const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');
+const logger = require('../config/logger');
 
 // Create new order
 const createOrder = async (req, res) => {
@@ -310,6 +311,8 @@ const createOrder = async (req, res) => {
       session_count: package.session_count,
       duration_value: package.duration_value,
       duration_unit: package.duration_unit,
+      payment_status: 'pending',
+      status: 'pending',
       notes,
       expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
     }, { transaction });
@@ -548,7 +551,8 @@ const cancelOrder = async (req, res) => {
 
     // Update order status
     await order.update({
-      payment_status: 'cancelled'
+      payment_status: 'cancelled',
+      status: 'cancelled'
     }, { transaction });
 
     await transaction.commit();
@@ -637,10 +641,12 @@ const paymentNotification = async (req, res) => {
 
     // Map Midtrans status to our status
     const newStatus = MidtransService.mapPaymentStatus(status.transaction_status);
-
+    //logger
+    logger.info(`Midtrans status: ${status.transaction_status}`);
     // Update order
     await order.update({
       payment_status: newStatus,
+      status: newStatus === 'paid' ? 'completed' : newStatus, // Update status column too
       midtrans_transaction_id: status.transaction_id,
       midtrans_transaction_status: status.transaction_status,
       midtrans_fraud_status: status.fraud_status,

@@ -1,5 +1,6 @@
 const midtransClient = require('midtrans-client');
 const config = require('../config/config');
+const logger = require('../config/logger');
 
 // Initialize Midtrans client
 const snap = new midtransClient.Snap({
@@ -44,15 +45,15 @@ class MidtransService {
         }
       };
 
-      console.log('Creating Midtrans transaction with parameter:', JSON.stringify(parameter, null, 2));
+      logger.info('Creating Midtrans transaction with parameter:', JSON.stringify(parameter, null, 2));
       
       const transaction = await snap.createTransaction(parameter);
       
-      console.log('Midtrans transaction created successfully:', JSON.stringify(transaction, null, 2));
+      logger.info('Midtrans transaction created successfully:', JSON.stringify(transaction, null, 2));
       
       return transaction;
     } catch (error) {
-      console.error('Midtrans create transaction error details:', {
+      logger.error('Midtrans create transaction error details:', {
         message: error.message,
         response: error.ApiResponse,
         httpStatusCode: error.httpStatusCode,
@@ -70,7 +71,7 @@ class MidtransService {
       const status = await core.transaction.status(orderId);
       return status;
     } catch (error) {
-      console.error('Midtrans get status error:', error);
+      logger.error('Midtrans get status error:', error);
       throw new Error('Failed to get transaction status');
     }
   }
@@ -83,7 +84,7 @@ class MidtransService {
       const cancel = await core.transaction.cancel(orderId);
       return cancel;
     } catch (error) {
-      console.error('Midtrans cancel transaction error:', error);
+      logger.error('Midtrans cancel transaction error:', error);
       throw new Error('Failed to cancel transaction');
     }
   }
@@ -96,7 +97,7 @@ class MidtransService {
       const expire = await core.transaction.expire(orderId);
       return expire;
     } catch (error) {
-      console.error('Midtrans expire transaction error:', error);
+      logger.error('Midtrans expire transaction error:', error);
       throw new Error('Failed to expire transaction');
     }
   }
@@ -112,7 +113,7 @@ class MidtransService {
       });
       return refund;
     } catch (error) {
-      console.error('Midtrans refund transaction error:', error);
+      logger.error('Midtrans refund transaction error:', error);
       throw new Error('Failed to refund transaction');
     }
   }
@@ -125,7 +126,7 @@ class MidtransService {
       const status = await core.transaction.notification(notification);
       return status;
     } catch (error) {
-      console.error('Midtrans notification error:', error);
+      logger.error('Midtrans notification error:', error);
       
       // Handle specific 404 error from Midtrans
       if (error.httpStatusCode === '404' || 

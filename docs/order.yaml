@@ -1,5 +1,29 @@
 # Order Management Endpoints
 
+## Order Status Explanation
+
+### Two Status Columns:
+1. **`payment_status`** - Status pembayaran dari Midtrans
+   - `pending` - Menunggu pembayaran
+   - `paid` - Pembayaran berhasil
+   - `failed` - Pembayaran gagal
+   - `cancelled` - Order dibatalkan
+   - `expired` - Order expired
+
+2. **`status`** - Status umum order
+   - `pending` - Order baru dibuat, menunggu pembayaran
+   - `completed` - Order selesai (pembayaran berhasil)
+   - `cancelled` - Order dibatalkan
+   - `failed` - Order gagal
+
+### Status Mapping:
+- payment_status: 'paid' → status: 'completed'
+- payment_status: 'pending' → status: 'pending'
+- payment_status: 'cancelled' → status: 'cancelled'
+- payment_status: 'failed' → status: 'failed'
+
+---
+
 paths:
   /order/create:
     post:
