@@ -488,39 +488,53 @@ const cancelOrder = async (req, res) => {
 const paymentNotification = async (req, res) => {
   try {
     const notification = req.body;
+    
+    // Verify notification from Midtrans
     let status;
     try {
       status = await MidtransService.handleNotification(notification);
-    } catch (err) {
-      // Jika error 404 dari Midtrans, balas 404 ke Midtrans
-      if (
-        err.httpStatusCode === '404' ||
-        (err.ApiResponse && err.ApiResponse.status_code === '404') ||
-        (err.ApiResponse && err.ApiResponse.status_message && err.ApiResponse.status_message.includes("Transaction doesn't exist"))
-      ) {
-        console.error('Midtrans notification for non-existent transaction:', notification.order_id);
-        return res.status(404).json({ success: false, message: 'Transaction not found in Midtrans' });
+    } catch (error) {
+      // Handle specific Midtrans errors
+      if (error.httpStatusCode === '404' || 
+          (error.ApiResponse && error.ApiResponse.status_code === '404') ||
+          (error.message && error.message.includes("Transaction doesn't exist"))) {
+        
+        console.log(`Midtrans notification for non-existent transaction: ${notification.order_id || 'unknown'}`);
+        
+        // Return 200 to Midtrans to stop retry, but log the issue
+        return res.status(200).json({
+          success: false,
+          message: 'Transaction not found in Midtrans - notification ignored'
+        });
       }
-      // Error lain, balas 500
-      throw err;
+      
+      // For other Midtrans errors, log and return 500
+      console.error('Midtrans API error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Midtrans API error'
+      });
     }
+    
     // Find order by Midtrans order ID
     const order = await Order.findOne({
       where: { midtrans_order_id: status.order_id }
     });
 
     if (!order) {
-      return res.status(404).json({
+      console.log(`Order not found for Midtrans order ID: ${status.order_id}`);
+      return res.status(200).json({
         success: false,
-        message: 'Order not found'
+        message: 'Order not found in database - notification ignored'
       });
     }
 
     // Check if order is expired
     if (order.expired_at && new Date() > order.expired_at) {
-      return res.status(400).json({
+      console.log(`Order expired: ${order.order_number}`);
+      return res.status(200).json({
         success: false,
-        message: 'Order sudah expired'
+        message: 'Order expired - notification ignored'
       });
     }
 
@@ -551,6 +565,7 @@ const paymentNotification = async (req, res) => {
           // Calculate package duration
           const startDate = new Date();
           let endDate = new Date();
+          
           // Calculate end date based on duration
           if (order.duration_unit === 'days') {
             endDate.setDate(endDate.getDate() + order.duration_value);
@@ -561,6 +576,7 @@ const paymentNotification = async (req, res) => {
           } else if (order.duration_unit === 'years') {
             endDate.setFullYear(endDate.getFullYear() + order.duration_value);
           }
+
           // Create MemberPackage record
           await MemberPackage.create({
             member_id: order.member_id,
@@ -571,6 +587,7 @@ const paymentNotification = async (req, res) => {
             total_session: order.session_count || 0,
             used_session: 0
           });
+
           console.log(`MemberPackage created successfully for order ${order.order_number}`);
         } else {
           console.log(`MemberPackage already exists for order ${order.order_number}`);
@@ -581,12 +598,15 @@ const paymentNotification = async (req, res) => {
       }
     }
 
+    console.log(`Payment notification processed successfully for order: ${order.order_number}, status: ${newStatus}`);
+    
     res.json({
       success: true,
       message: 'Payment notification processed successfully'
     });
+
   } catch (error) {
-    console.error('Error processing payment notification:', error);
+    console.error('Unexpected error processing payment notification:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
