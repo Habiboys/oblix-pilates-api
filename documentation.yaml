@@ -6054,7 +6054,7 @@ paths:
       summary: Create new order
       description: Create a new order for package purchase with Midtrans integration
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -6099,7 +6099,7 @@ paths:
       summary: Get user orders
       description: Retrieve paginated list of user's orders
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: page
           in: query
@@ -6156,7 +6156,7 @@ paths:
       summary: Get order by ID
       description: Retrieve specific order details
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -6197,7 +6197,7 @@ paths:
       summary: Check payment status
       description: Check payment status from Midtrans and update order
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: order_id
           in: path
@@ -6244,7 +6244,7 @@ paths:
       summary: Cancel order
       description: Cancel pending order and Midtrans transaction
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: order_id
           in: path
@@ -7308,7 +7308,7 @@ paths:
       summary: Get all bookings with pagination and filters
       description: Retrieve all bookings with optional filtering by member_id, schedule_id, and status
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: page
           in: query
@@ -7383,7 +7383,7 @@ paths:
         Create a new booking for group or semi-private schedule. System will automatically validate session availability
         and select appropriate package.
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -7479,7 +7479,7 @@ paths:
       summary: Get booking by ID
       description: Retrieve a specific booking by its ID
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -7527,7 +7527,7 @@ paths:
       summary: Delete booking
       description: Delete a booking by its ID
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -7574,7 +7574,7 @@ paths:
       summary: Update booking status
       description: Update the status of a booking (signup, waiting_list, cancelled)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -7656,7 +7656,7 @@ paths:
       summary: Get member session summary
       description: Get detailed information about member's available sessions and package usage
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: member_id
           in: path
@@ -7705,7 +7705,7 @@ paths:
       summary: Get bookings by member ID
       description: Retrieve all bookings for a specific member with pagination and status filtering
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: member_id
           in: path
@@ -7785,7 +7785,7 @@ paths:
       summary: Cancel booking
       description: Cancel a booking with validation for cancel buffer time and automatic waitlist promotion
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -7879,7 +7879,7 @@ paths:
       summary: Run auto-cancel expired bookings
       description: Automatically cancel bookings that exceed cancel buffer time (admin only)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Auto-cancel process completed
@@ -7935,7 +7935,7 @@ paths:
       summary: Cancel insufficient bookings
       description: Cancel bookings for schedules that don't meet minimum signup requirement (admin only)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Insufficient bookings cancellation completed
@@ -7970,7 +7970,7 @@ paths:
       summary: Get booking statistics
       description: Get booking statistics for monitoring (admin only)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Booking statistics retrieved successfully
@@ -8009,6 +8009,156 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /member-package/my-packages:
+    get:
+      tags:
+        - Member Package Management
+      summary: Get user's packages
+      description: |
+        Retrieve user's current active package and package purchase history.
+        Includes progress tracking for sessions used vs total sessions available.
+
+        **Session Usage Calculation:**
+        - Used sessions: Count from booking table with status 'signup'
+        - Total sessions: Based on package type and related tables
+        - Progress: (used_sessions / total_sessions) * 100
+
+        **Package Types Supported:**
+        - membership: Uses package_membership.session
+        - first_trial: Uses package_first_trial.group_session + private_session
+        - promo: Uses package_promo.group_session + private_session
+        - bonus: Uses package_bonus.group_session + private_session
+
+        **Active Package Logic:**
+        - end_date >= today AND payment_status = 'paid'
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Packages retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: My packages retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      current_active_package:
+                        type: object
+                        nullable: true
+                        description: Currently active package (end_date >= today and payment_status = 'paid')
+                        properties:
+                          package_name:
+                            type: string
+                            example: 30 Session Group
+                            description: Name of the active package
+                          validity_until:
+                            type: string
+                            format: date
+                            example: '2025-08-26'
+                            description: Package expiration date
+                          session_group_classes:
+                            type: object
+                            description: Group session tracking information
+                            properties:
+                              used:
+                                type: integer
+                                example: 5
+                                description: Number of sessions used (from booking table with status 'signup')
+                              total:
+                                type: integer
+                                example: 30
+                                description: Total sessions available in package
+                              remaining:
+                                type: integer
+                                example: 25
+                                description: Remaining sessions available
+                              progress_percentage:
+                                type: integer
+                                example: 17
+                                description: Progress percentage (used/total * 100)
+                          session_private_classes:
+                            type: object
+                            description: Private session tracking information (currently not implemented)
+                            properties:
+                              used:
+                                type: integer
+                                example: 0
+                              total:
+                                type: integer
+                                example: 0
+                              remaining:
+                                type: integer
+                                example: 0
+                              progress_percentage:
+                                type: integer
+                                example: 0
+                      package_history:
+                        type: array
+                        description: List of all purchased packages (payment_status = 'paid')
+                        items:
+                          type: object
+                          properties:
+                            'no':
+                              type: integer
+                              example: 1
+                              description: Sequential number for display
+                            invoice_number:
+                              type: string
+                              example: ORD-1753528601660-943
+                              description: Order number used as invoice number
+                            payment_date:
+                              type: string
+                              format: date-time
+                              example: '2025-07-26T11:17:04.000Z'
+                              description: Date when payment was completed
+                            expired_date:
+                              type: string
+                              format: date
+                              example: '2025-07-26'
+                              description: Package expiration date
+                            package_name:
+                              type: string
+                              example: 30 Session Group
+                              description: Name of the package
+                            session_count:
+                              type: integer
+                              example: 30
+                              description: Total sessions included in this package
+                            price:
+                              type: string
+                              example: '630000.00'
+                              description: Package price in decimal format
+                            order_id:
+                              type: string
+                              format: uuid
+                              example: 5cf2d916-561a-4844-9b5c-53c7f6795112
+                              description: Order ID for reference
+        '401':
+          description: Unauthorized - Token not provided or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Only members can view packages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 tags:
   - name: Authentication
     description: User authentication and authorization endpoints
@@ -8038,3 +8188,5 @@ tags:
     description: Schedule management endpoints for group, semi-private, and private classes
   - name: Booking Management
     description: Booking management endpoints for group and semi-private schedules
+  - name: Member Package Management
+    description: Member package management and tracking endpoints

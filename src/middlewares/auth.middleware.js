@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User, Member } = require('../models');
-require('dotenv').config('../../.env');
+require('dotenv').config();
 
 // Middleware untuk validasi token
 const validateToken = async (req, res, next) => {
@@ -15,6 +15,7 @@ const validateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
     const user = await User.findByPk(decoded.id, {
       include: [{ model: Member }]
     });
@@ -39,9 +40,9 @@ const validateToken = async (req, res, next) => {
       role: user.role,
       member_id: user.Member ? user.Member.id : null
     };
-    console.log(req.user);
     next();
   } catch (error) {
+    console.error('Auth middleware error:', error);
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(401).json({
         status: 'error',

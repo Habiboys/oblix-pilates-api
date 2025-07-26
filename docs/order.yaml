@@ -10,7 +10,7 @@ paths:
       summary: Create new order
       description: Create a new order for package purchase with Midtrans integration
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -56,7 +56,7 @@ paths:
       summary: Get user orders
       description: Retrieve paginated list of user's orders
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: page
           in: query
@@ -109,7 +109,7 @@ paths:
       summary: Get order by ID
       description: Retrieve specific order details
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: id
           in: path
@@ -151,7 +151,7 @@ paths:
       summary: Check payment status
       description: Check payment status from Midtrans and update order
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: order_id
           in: path
@@ -199,7 +199,7 @@ paths:
       summary: Cancel order
       description: Cancel pending order and Midtrans transaction
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: order_id
           in: path

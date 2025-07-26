@@ -173,6 +173,16 @@ if (bookingDoc) {
   console.log('❌ Failed to load booking.yaml');
 }
 
+// Load and merge member package management endpoints
+const memberPackageDoc = loadYamlFile(path.join(__dirname, 'memberPackage.yaml'));
+if (memberPackageDoc) {
+  console.log('📋 Member Package doc paths:', Object.keys(memberPackageDoc.paths || {}));
+  mergePaths(baseDoc, memberPackageDoc);
+  console.log('✅ Merged member package management endpoints');
+} else {
+  console.log('❌ Failed to load memberPackage.yaml');
+}
+
   // Add tags
   baseDoc.tags = [
     {
@@ -230,6 +240,10 @@ if (bookingDoc) {
   {
     name: 'Booking Management',
     description: 'Booking management endpoints for group and semi-private schedules'
+  },
+  {
+    name: 'Member Package Management',
+    description: 'Member package management and tracking endpoints'
   }
   ];
 

@@ -1,0 +1,168 @@
+paths:
+  /member-package/my-packages:
+    get:
+      tags:
+        - Member Package Management
+      summary: Get user's packages
+      description: |
+        Retrieve user's current active package and package purchase history.
+        Includes progress tracking for sessions used vs total sessions available.
+        
+        **Session Usage Calculation:**
+        - Used sessions: Count from booking table with status 'signup'
+        - Total sessions: Based on package type and related tables
+        - Progress: (used_sessions / total_sessions) * 100
+        
+        **Package Types Supported:**
+        - membership: Uses package_membership.session
+        - first_trial: Uses package_first_trial.group_session + private_session
+        - promo: Uses package_promo.group_session + private_session
+        - bonus: Uses package_bonus.group_session + private_session
+        
+        **Active Package Logic:**
+        - end_date >= today AND payment_status = 'paid'
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Packages retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "My packages retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      current_active_package:
+                        type: object
+                        nullable: true
+                        description: "Currently active package (end_date >= today and payment_status = 'paid')"
+                        properties:
+                          package_name:
+                            type: string
+                            example: "30 Session Group"
+                            description: "Name of the active package"
+                          validity_until:
+                            type: string
+                            format: date
+                            example: "2025-08-26"
+                            description: "Package expiration date"
+                          session_group_classes:
+                            type: object
+                            description: "Group session tracking information"
+                            properties:
+                              used:
+                                type: integer
+                                example: 5
+                                description: "Number of sessions used (from booking table with status 'signup')"
+                              total:
+                                type: integer
+                                example: 30
+                                description: "Total sessions available in package"
+                              remaining:
+                                type: integer
+                                example: 25
+                                description: "Remaining sessions available"
+                              progress_percentage:
+                                type: integer
+                                example: 17
+                                description: "Progress percentage (used/total * 100)"
+                          session_private_classes:
+                            type: object
+                            description: "Private session tracking information (currently not implemented)"
+                            properties:
+                              used:
+                                type: integer
+                                example: 0
+                              total:
+                                type: integer
+                                example: 0
+                              remaining:
+                                type: integer
+                                example: 0
+                              progress_percentage:
+                                type: integer
+                                example: 0
+                      package_history:
+                        type: array
+                        description: "List of all purchased packages (payment_status = 'paid')"
+                        items:
+                          type: object
+                          properties:
+                            no:
+                              type: integer
+                              example: 1
+                              description: "Sequential number for display"
+                            invoice_number:
+                              type: string
+                              example: "ORD-1753528601660-943"
+                              description: "Order number used as invoice number"
+                            payment_date:
+                              type: string
+                              format: date-time
+                              example: "2025-07-26T11:17:04.000Z"
+                              description: "Date when payment was completed"
+                            expired_date:
+                              type: string
+                              format: date
+                              example: "2025-07-26"
+                              description: "Package expiration date"
+                            package_name:
+                              type: string
+                              example: "30 Session Group"
+                              description: "Name of the package"
+                            session_count:
+                              type: integer
+                              example: 30
+                              description: "Total sessions included in this package"
+                            price:
+                              type: string
+                              example: "630000.00"
+                              description: "Package price in decimal format"
+                            order_id:
+                              type: string
+                              format: uuid
+                              example: "5cf2d916-561a-4844-9b5c-53c7f6795112"
+                              description: "Order ID for reference"
+        '401':
+          description: Unauthorized - Token not provided or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Only members can view packages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT 
