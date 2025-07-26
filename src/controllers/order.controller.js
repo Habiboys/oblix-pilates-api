@@ -381,7 +381,6 @@ const createOrder = async (req, res) => {
     };
 
     console.log('Sending response to client:', JSON.stringify(responseData, null, 2));
-    logger.info(`Midtrans status: ${status.transaction_status}`);
 
     res.status(201).json(responseData);
 
