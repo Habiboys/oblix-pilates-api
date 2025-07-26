@@ -283,7 +283,7 @@ const createOrder = async (req, res) => {
       });
     }
 
-    if (!midtransResponse || !midtransResponse.order_id) {
+    if (!midtransResponse || !midtransResponse.token || !midtransResponse.redirect_url) {
       console.error('Invalid Midtrans response:', midtransResponse);
       await transaction.rollback();
       return res.status(500).json({
@@ -294,7 +294,8 @@ const createOrder = async (req, res) => {
 
     // Update order with Midtrans data
     await order.update({
-      midtrans_order_id: midtransResponse.order_id,
+      midtrans_order_id: order.order_number, // Use our order number as Midtrans order ID
+      midtrans_token: midtransResponse.token,
       midtrans_redirect_url: midtransResponse.redirect_url
     }, { transaction });
 
