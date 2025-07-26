@@ -38,9 +38,9 @@ class MidtransService {
           name: item.package_name
         })),
         callbacks: {
-          finish: `${config.app.baseUrl}/payment/finish`,
-          error: `${config.app.baseUrl}/payment/error`,
-          pending: `${config.app.baseUrl}/payment/pending`
+          finish: `${config.app.baseUrl}/api/order/payment/finish`,
+          error: `${config.app.baseUrl}/api/order/payment/error`,
+          pending: `${config.app.baseUrl}/api/order/payment/pending`
         }
       };
 

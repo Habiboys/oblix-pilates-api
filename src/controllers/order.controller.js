@@ -654,11 +654,12 @@ const paymentFinish = async (req, res) => {
     console.log('Payment finish callback:', { order_id, transaction_status, transaction_id });
     
     // Redirect to frontend with success status
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/success?order_id=${order_id}`;
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/success?order_id=${order_id}`;
+    console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Payment finish callback error:', error);
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error`;
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/error`;
     res.redirect(redirectUrl);
   }
 };
@@ -670,11 +671,12 @@ const paymentError = async (req, res) => {
     console.log('Payment error callback:', { order_id, transaction_status, transaction_id });
     
     // Redirect to frontend with error status
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error?order_id=${order_id}`;
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/error?order_id=${order_id}`;
+    console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Payment error callback error:', error);
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error`;
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/error`;
     res.redirect(redirectUrl);
   }
 };
@@ -686,11 +688,12 @@ const paymentPending = async (req, res) => {
     console.log('Payment pending callback:', { order_id, transaction_status, transaction_id });
     
     // Redirect to frontend with pending status
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/pending?order_id=${order_id}`;
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/pending?order_id=${order_id}`;
+    console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Payment pending callback error:', error);
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error`;
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment/error`;
     res.redirect(redirectUrl);
   }
 };
