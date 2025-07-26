@@ -2,7 +2,7 @@ const { Order, Package, Member, User, MemberPackage, Booking, Payment, PackageMe
 const { Op } = require('sequelize');
 const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');
-
+const logger = require('../config/logger');
 // Create new order
 const createOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -381,6 +381,7 @@ const createOrder = async (req, res) => {
     };
 
     console.log('Sending response to client:', JSON.stringify(responseData, null, 2));
+    logger.info(`Midtrans status: ${status.transaction_status}`);
 
     res.status(201).json(responseData);
 
