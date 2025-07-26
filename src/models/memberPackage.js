@@ -37,6 +37,14 @@ module.exports = (sequelize, DataTypes) => {
     order_id: {
       type: DataTypes.UUID,
       allowNull: true
+    },
+    start_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    end_date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
     }
   }, {
     sequelize,
