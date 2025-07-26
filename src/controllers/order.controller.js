@@ -488,10 +488,22 @@ const cancelOrder = async (req, res) => {
 const paymentNotification = async (req, res) => {
   try {
     const notification = req.body;
-    
-    // Verify notification from Midtrans
-    const status = await MidtransService.handleNotification(notification);
-    
+    let status;
+    try {
+      status = await MidtransService.handleNotification(notification);
+    } catch (err) {
+      // Jika error 404 dari Midtrans, balas 404 ke Midtrans
+      if (
+        err.httpStatusCode === '404' ||
+        (err.ApiResponse && err.ApiResponse.status_code === '404') ||
+        (err.ApiResponse && err.ApiResponse.status_message && err.ApiResponse.status_message.includes("Transaction doesn't exist"))
+      ) {
+        console.error('Midtrans notification for non-existent transaction:', notification.order_id);
+        return res.status(404).json({ success: false, message: 'Transaction not found in Midtrans' });
+      }
+      // Error lain, balas 500
+      throw err;
+    }
     // Find order by Midtrans order ID
     const order = await Order.findOne({
       where: { midtrans_order_id: status.order_id }
@@ -539,7 +551,6 @@ const paymentNotification = async (req, res) => {
           // Calculate package duration
           const startDate = new Date();
           let endDate = new Date();
-          
           // Calculate end date based on duration
           if (order.duration_unit === 'days') {
             endDate.setDate(endDate.getDate() + order.duration_value);
@@ -550,7 +561,6 @@ const paymentNotification = async (req, res) => {
           } else if (order.duration_unit === 'years') {
             endDate.setFullYear(endDate.getFullYear() + order.duration_value);
           }
-
           // Create MemberPackage record
           await MemberPackage.create({
             member_id: order.member_id,
@@ -561,7 +571,6 @@ const paymentNotification = async (req, res) => {
             total_session: order.session_count || 0,
             used_session: 0
           });
-
           console.log(`MemberPackage created successfully for order ${order.order_number}`);
         } else {
           console.log(`MemberPackage already exists for order ${order.order_number}`);
@@ -576,7 +585,6 @@ const paymentNotification = async (req, res) => {
       success: true,
       message: 'Payment notification processed successfully'
     });
-
   } catch (error) {
     console.error('Error processing payment notification:', error);
     res.status(500).json({
