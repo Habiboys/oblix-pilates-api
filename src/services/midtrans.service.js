@@ -44,10 +44,20 @@ class MidtransService {
         }
       };
 
+      console.log('Creating Midtrans transaction with parameter:', JSON.stringify(parameter, null, 2));
+      
       const transaction = await snap.createTransaction(parameter);
+      
+      console.log('Midtrans transaction created successfully:', JSON.stringify(transaction, null, 2));
+      
       return transaction;
     } catch (error) {
-      console.error('Midtrans create transaction error:', error);
+      console.error('Midtrans create transaction error details:', {
+        message: error.message,
+        response: error.ApiResponse,
+        httpStatusCode: error.httpStatusCode,
+        rawHttpClientData: error.rawHttpClientData
+      });
       throw new Error('Failed to create payment transaction');
     }
   }

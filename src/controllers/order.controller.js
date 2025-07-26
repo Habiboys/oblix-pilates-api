@@ -267,10 +267,24 @@ const createOrder = async (req, res) => {
       }]
     };
 
+    console.log('Order data prepared for Midtrans:', JSON.stringify(orderData, null, 2));
+
     // Create Midtrans transaction
-    const midtransResponse = await MidtransService.createTransaction(orderData);
+    let midtransResponse;
+    try {
+      midtransResponse = await MidtransService.createTransaction(orderData);
+    } catch (error) {
+      console.error('Error creating Midtrans transaction:', error);
+      await transaction.rollback();
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal membuat transaksi pembayaran. Silakan coba lagi.',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
 
     if (!midtransResponse || !midtransResponse.order_id) {
+      console.error('Invalid Midtrans response:', midtransResponse);
       await transaction.rollback();
       return res.status(500).json({
         success: false,
@@ -627,10 +641,62 @@ const paymentNotification = async (req, res) => {
   }
 };
 
+// Payment callback handlers (for user redirects)
+const paymentFinish = async (req, res) => {
+  try {
+    const { order_id, transaction_status, transaction_id } = req.query;
+    
+    console.log('Payment finish callback:', { order_id, transaction_status, transaction_id });
+    
+    // Redirect to frontend with success status
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/success?order_id=${order_id}`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error('Payment finish callback error:', error);
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error`;
+    res.redirect(redirectUrl);
+  }
+};
+
+const paymentError = async (req, res) => {
+  try {
+    const { order_id, transaction_status, transaction_id } = req.query;
+    
+    console.log('Payment error callback:', { order_id, transaction_status, transaction_id });
+    
+    // Redirect to frontend with error status
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error?order_id=${order_id}`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error('Payment error callback error:', error);
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error`;
+    res.redirect(redirectUrl);
+  }
+};
+
+const paymentPending = async (req, res) => {
+  try {
+    const { order_id, transaction_status, transaction_id } = req.query;
+    
+    console.log('Payment pending callback:', { order_id, transaction_status, transaction_id });
+    
+    // Redirect to frontend with pending status
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/pending?order_id=${order_id}`;
+    res.redirect(redirectUrl);
+  } catch (error) {
+    console.error('Payment pending callback error:', error);
+    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/payment/error`;
+    res.redirect(redirectUrl);
+  }
+};
+
 module.exports = {
   createOrder,
   getUserOrders,
   getOrderById,
   cancelOrder,
-  paymentNotification
+  paymentNotification,
+  paymentFinish,
+  paymentError,
+  paymentPending
 }; 

@@ -32,5 +32,107 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  
+  /order/payment/finish:
+    get:
+      tags:
+        - Payment
+      summary: Payment finish callback
+      description: Callback URL untuk redirect user setelah pembayaran berhasil
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID dari Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_status
+          in: query
+          description: Status transaksi dari Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_id
+          in: query
+          description: Transaction ID dari Midtrans
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend success page
+          headers:
+            Location:
+              description: Redirect URL to frontend
+              schema:
+                type: string
+  
+  /order/payment/error:
+    get:
+      tags:
+        - Payment
+      summary: Payment error callback
+      description: Callback URL untuk redirect user jika pembayaran gagal
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID dari Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_status
+          in: query
+          description: Status transaksi dari Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_id
+          in: query
+          description: Transaction ID dari Midtrans
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend error page
+          headers:
+            Location:
+              description: Redirect URL to frontend
+              schema:
+                type: string
+  
+  /order/payment/pending:
+    get:
+      tags:
+        - Payment
+      summary: Payment pending callback
+      description: Callback URL untuk redirect user jika pembayaran pending
+      parameters:
+        - name: order_id
+          in: query
+          description: Order ID dari Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_status
+          in: query
+          description: Status transaksi dari Midtrans
+          required: false
+          schema:
+            type: string
+        - name: transaction_id
+          in: query
+          description: Transaction ID dari Midtrans
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to frontend pending page
+          headers:
+            Location:
+              description: Redirect URL to frontend
+              schema:
+                type: string
 
 # Komponen schemas tetap, jika ada di file ini, biarkan. Jika tidak, schemas diambil dari file lain saat build. 

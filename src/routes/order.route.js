@@ -21,5 +21,8 @@ router.delete('/:order_id/cancel', validateToken, validate(cancelOrderSchema, 'p
 
 // Payment callback routes (no authentication required)
 router.post('/payment/notification', validate(paymentNotificationSchema), orderController.paymentNotification);
+router.get('/payment/finish', orderController.paymentFinish);
+router.get('/payment/error', orderController.paymentError);
+router.get('/payment/pending', orderController.paymentPending);
 
 module.exports = router; 
