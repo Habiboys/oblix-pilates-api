@@ -98,8 +98,8 @@ const logger = (req, res, next) => {
         console.log(consoleLogMessage);
         writeToLogFile(fileLogMessage);
         
-        // Log response body jika ada (untuk error cases) - hanya di file log
-        if (chunk && res.statusCode >= 400) {
+        // Log response body jika ada (untuk semua kasus) - hanya di file log
+        if (chunk) {
             try {
                 const responseBody = chunk.toString();
                 const responseLog = `[${formatTimestamp()}] RESPONSE BODY: ${responseBody}`;

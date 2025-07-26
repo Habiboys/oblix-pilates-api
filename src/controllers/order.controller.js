@@ -301,7 +301,7 @@ const createOrder = async (req, res) => {
 
     await transaction.commit();
 
-    res.status(201).json({
+    const responseData = {
       success: true,
       message: 'Order created successfully',
       data: {
@@ -311,7 +311,11 @@ const createOrder = async (req, res) => {
         payment_url: midtransResponse.redirect_url,
         token: midtransResponse.token
       }
-    });
+    };
+
+    console.log('Sending response to client:', JSON.stringify(responseData, null, 2));
+
+    res.status(201).json(responseData);
 
   } catch (error) {
     await transaction.rollback();
