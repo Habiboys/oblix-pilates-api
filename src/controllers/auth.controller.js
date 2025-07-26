@@ -295,11 +295,65 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const checkPurchaseStatus = async (req, res) => {
+    try {
+        const user_id = req.user.id; // From JWT token
+        
+        const user = await User.findOne({ 
+            where: { id: user_id },
+            include: [
+                {
+                    model: Member,
+                    include: [
+                        {
+                            model: MemberPackage,
+                            include: [
+                                {
+                                    model: Package
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
+        }
+        
+        // Cek status pembelian paket member
+        let hasPurchasedPackage = false;
+        
+        if (user.Member && user.Member.MemberPackages) {
+            hasPurchasedPackage = user.Member.MemberPackages.length > 0;
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: 'Purchase status retrieved successfully',
+            data: {
+                has_purchased_package: hasPurchasedPackage
+            }
+        });
+    } catch (error) {
+        console.error('Check purchase status error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error' 
+        });
+    }
+};
+
 module.exports = {
     register,
     login,
     refreshToken,
-    changePassword,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    changePassword,
+    checkPurchaseStatus
 };

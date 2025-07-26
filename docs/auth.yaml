@@ -214,4 +214,52 @@ paths:
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/purchase-status:
+    get:
+      tags:
+        - Authentication
+      summary: Check user purchase status
+      description: Get user's package purchase status (has_purchased_package)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Purchase status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Purchase status retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      has_purchased_package:
+                        type: boolean
+                        description: Whether user has purchased any package
+                        example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/ErrorResponse' 
