@@ -116,6 +116,17 @@ class MidtransService {
       return status;
     } catch (error) {
       console.error('Midtrans notification error:', error);
+      
+      // Handle specific 404 error from Midtrans
+      if (error.httpStatusCode === '404' || 
+          (error.ApiResponse && error.ApiResponse.status_code === '404') ||
+          (error.message && error.message.includes("Transaction doesn't exist"))) {
+        
+        // Re-throw the original error so controller can handle it specifically
+        throw error;
+      }
+      
+      // For other errors, throw generic error
       throw new Error('Failed to process payment notification');
     }
   }

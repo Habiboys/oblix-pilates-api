@@ -494,11 +494,24 @@ const paymentNotification = async (req, res) => {
     try {
       status = await MidtransService.handleNotification(notification);
     } catch (error) {
-      // Handle specific Midtrans errors
-      if (error.httpStatusCode === '404' || 
-          (error.ApiResponse && error.ApiResponse.status_code === '404') ||
-          (error.message && error.message.includes("Transaction doesn't exist"))) {
-        
+      console.log('Error details:', {
+        httpStatusCode: error.httpStatusCode,
+        apiResponse: error.ApiResponse,
+        message: error.message,
+        has404: error.httpStatusCode === '404' || 
+                (error.ApiResponse && error.ApiResponse.status_code === '404') ||
+                (error.message && error.message.includes("Transaction doesn't exist"))
+      });
+      
+      // Handle specific Midtrans errors - check multiple possible error structures
+      const is404Error = 
+        error.httpStatusCode === '404' || 
+        (error.ApiResponse && error.ApiResponse.status_code === '404') ||
+        (error.message && error.message.includes("Transaction doesn't exist")) ||
+        (error.rawHttpClientData && error.rawHttpClientData.data && error.rawHttpClientData.data.status_code === '404') ||
+        (error.rawHttpClientData && error.rawHttpClientData.data && error.rawHttpClientData.data.status_message && error.rawHttpClientData.data.status_message.includes("Transaction doesn't exist"));
+      
+      if (is404Error) {
         console.log(`Midtrans notification for non-existent transaction: ${notification.order_id || 'unknown'}`);
         
         // Return 200 to Midtrans to stop retry, but log the issue
