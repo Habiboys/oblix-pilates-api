@@ -22,6 +22,7 @@ const orderRoutes = require('./routes/order.route');
 const scheduleRoutes = require('./routes/schedule.route');
 const bookingRoutes = require('./routes/booking.route');
 const memberPackageRoutes = require('./routes/memberPackage.route');
+const testRoutes = require('./routes/test.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
@@ -73,6 +74,7 @@ app.use('/api/order', orderRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/booking', bookingRoutes);
 app.use('/api/member-package', memberPackageRoutes);
+app.use('/api/test', testRoutes);
 
 app.get('/', (req, res) => {
   res.send('Hello World');

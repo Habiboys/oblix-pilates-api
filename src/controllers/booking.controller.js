@@ -1,88 +1,8 @@
 const { Booking, Schedule, Member, Package } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionUtils');
-const { autoCancelExpiredBookings, cancelInsufficientBookings, getBookingStatistics } = require('../utils/bookingUtils');
+const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
 const twilioService = require('../services/twilio.service');
 const logger = require('../config/logger');
-
-// Helper function to process waitlist promotion
-const processWaitlistPromotion = async (scheduleId) => {
-    try {
-        // Get schedule details
-        const schedule = await Schedule.findByPk(scheduleId);
-        if (!schedule) return null;
-
-        // Count current signup bookings
-        const currentSignups = await Booking.count({
-            where: {
-                schedule_id: scheduleId,
-                status: 'signup'
-            }
-        });
-
-        // Get minimum signup requirement
-        const minSignup = schedule.min_signup || 1;
-        const maxCapacity = schedule.type === 'semi_private' ? 4 : 20; // Default capacity
-
-        // If we have space and meet minimum signup, promote from waitlist
-        if (currentSignups < maxCapacity) {
-            const nextWaitlistBooking = await Booking.findOne({
-                where: {
-                    schedule_id: scheduleId,
-                    status: 'waiting_list'
-                },
-                include: [
-                    {
-                        model: Member,
-                        attributes: ['id', 'full_name', 'phone_number']
-                    },
-                    {
-                        model: Schedule,
-                        include: [
-                            {
-                                model: require('../models').Class,
-                                attributes: ['id', 'class_name']
-                            }
-                        ]
-                    }
-                ],
-                order: [['createdAt', 'ASC']] // First come, first served
-            });
-
-            if (nextWaitlistBooking) {
-                await nextWaitlistBooking.update({
-                    status: 'signup',
-                    notes: 'Promoted from waitlist automatically'
-                });
-
-                logger.info(`Booking ${nextWaitlistBooking.id} promoted from waitlist to signup for schedule ${scheduleId}`);
-
-                // Send WhatsApp promotion notification (async)
-                try {
-                    twilioService.sendWaitlistPromotion(nextWaitlistBooking)
-                        .then(result => {
-                            if (result.success) {
-                                logger.info(`✅ WhatsApp promotion notification sent to ${nextWaitlistBooking.Member.full_name}`);
-                            } else {
-                                logger.error(`❌ Failed to send WhatsApp promotion notification to ${nextWaitlistBooking.Member.full_name}: ${result.error}`);
-                            }
-                        })
-                        .catch(error => {
-                            logger.error(`❌ Error sending WhatsApp promotion notification to ${nextWaitlistBooking.Member.full_name}:`, error);
-                        });
-                } catch (error) {
-                    logger.error('Error initiating WhatsApp promotion notification:', error);
-                }
-
-                return nextWaitlistBooking;
-            }
-        }
-
-        return null;
-    } catch (error) {
-        logger.error('Error processing waitlist promotion:', error);
-        return null;
-    }
-};
 
 // Helper function to check if booking should go to waitlist
 const shouldGoToWaitlist = async (scheduleId) => {

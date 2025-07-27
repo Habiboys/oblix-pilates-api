@@ -18,14 +18,24 @@ const sendWhatsAppMessage = async (to, message) => {
         // Format phone number (remove + if exists and add +)
         const formattedPhone = to.startsWith('+') ? to : `+${to}`;
         
-        // Use WhatsApp sandbox for development
-        const from = process.env.NODE_ENV === 'production' 
-            ? `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`
-            : 'whatsapp:+14155238886'; // Twilio sandbox number
+        // Determine WhatsApp sender number
+        let from;
+        if (process.env.TWILIO_WHATSAPP_NUMBER) {
+            // Use custom WhatsApp number (business account)
+            const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER.startsWith('+') 
+                ? process.env.TWILIO_WHATSAPP_NUMBER 
+                : `+${process.env.TWILIO_WHATSAPP_NUMBER}`;
+            from = `whatsapp:${whatsappNumber}`;
+            logger.info(`Using custom WhatsApp number: ${whatsappNumber}`);
+        } else {
+            // Use Twilio sandbox number (default)
+            from = 'whatsapp:+14155238886';
+            logger.info('Using Twilio sandbox number (+14155238886)');
+        }
         
         const toWhatsApp = `whatsapp:${formattedPhone}`;
 
-        logger.info(`Sending WhatsApp message to ${formattedPhone}`);
+        logger.info(`Sending WhatsApp message from ${from} to ${toWhatsApp}`);
         
         const response = await client.messages.create({
             body: message,
@@ -33,20 +43,33 @@ const sendWhatsAppMessage = async (to, message) => {
             to: toWhatsApp
         });
 
-        logger.info(`WhatsApp message sent successfully. SID: ${response.sid}`);
+        logger.info(`WhatsApp message sent successfully. SID: ${response.sid}, Status: ${response.status}`);
         
         return {
             success: true,
             messageId: response.sid,
             status: response.status,
-            to: formattedPhone
+            to: formattedPhone,
+            from: from
         };
 
     } catch (error) {
         logger.error('Error sending WhatsApp message:', error);
+        
+        // Provide more specific error messages
+        let errorMessage = error.message;
+        if (error.code === 20003) {
+            errorMessage = 'Authentication failed - check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN';
+        } else if (error.code === 21211) {
+            errorMessage = 'Invalid phone number format';
+        } else if (error.code === 21614) {
+            errorMessage = 'WhatsApp number not registered with Twilio or recipient not in sandbox';
+        }
+        
         return {
             success: false,
-            error: error.message,
+            error: errorMessage,
+            errorCode: error.code,
             to: to
         };
     }

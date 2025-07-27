@@ -921,12 +921,9 @@ paths:
                               class_color: "#4F46E5"
                               trainer_name: "Sarah Johnson"
                               type: "group"
+                              date: "2025-07-15"
                               time_start: "07:10"
                               time_end: "08:10"
-                              pax: 10
-                              booking_count: 8
-                              available_spots: 2
-                              is_full: false
                       schedules:
                         type: array
                         description: "Flat array of all schedules"
@@ -1638,10 +1635,6 @@ components:
         trainer_name:
           type: string
           example: "Sarah Johnson"
-        trainer_picture:
-          type: string
-          nullable: true
-          example: "trainer_photo_1.jpg"
         type:
           type: string
           enum: [group, semi_private, private]
@@ -1657,66 +1650,4 @@ components:
         time_end:
           type: string
           format: time
-          example: "08:10"
-        pax:
-          type: integer
-          description: "Maximum capacity"
-          example: 10
-        booking_count:
-          type: integer
-          description: "Number of confirmed bookings"
-          example: 8
-        waiting_list_count:
-          type: integer
-          description: "Number of people on waiting list"
-          example: 2
-        available_spots:
-          type: integer
-          description: "Available spots remaining"
-          example: 2
-        is_full:
-          type: boolean
-          description: "Whether the schedule is at full capacity"
-          example: false
-        has_waiting_list:
-          type: boolean
-          description: "Whether there are people on waiting list"
-          example: true
-        assigned_member:
-          type: object
-          nullable: true
-          description: "For private schedules only"
-          properties:
-            id:
-              type: string
-              format: uuid
-              nullable: true
-            name:
-              type: string
-              nullable: true
-          example:
-            id: "member-uuid-1"
-            name: "John Doe"
-        bookings:
-          type: array
-          description: "List of current bookings"
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uuid
-              status:
-                type: string
-                enum: [signup, waiting_list, cancelled]
-              member_name:
-                type: string
-            example:
-              id: "booking-uuid-1"
-              status: "signup"
-              member_name: "John Doe"
-        picture:
-          type: string
-          nullable: true
-          description: "Schedule picture/banner"
-          example: "schedule_banner_1.jpg" 
+          example: "08:10" 

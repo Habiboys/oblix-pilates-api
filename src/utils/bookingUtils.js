@@ -4,7 +4,7 @@ const logger = require('../config/logger');
 const twilioService = require('../services/twilio.service');
 
 /**
- * Auto-cancel bookings that exceed cancel buffer time
+ * Auto-cancel bookings when minimum signup is not met within cancel buffer time
  * This function should be called by a cron job or scheduler
  */
 const autoCancelExpiredBookings = async () => {
@@ -13,56 +13,76 @@ const autoCancelExpiredBookings = async () => {
 
         const currentTime = new Date();
         
-        // Get all active bookings (signup or waiting_list) that need to be cancelled
-        const bookingsToCancel = await Booking.findAll({
+        // Get all active schedules that are within cancel buffer time
+        const schedules = await Schedule.findAll({
             where: {
-                status: {
-                    [Op.in]: ['signup', 'waiting_list']
-                }
-            },
-            include: [
-                {
-                    model: Schedule,
-                    where: {
-                        date_start: {
-                            [Op.gte]: currentTime.toISOString().split('T')[0] // Today or future
-                        }
-                    }
+                date_start: {
+                    [Op.gte]: currentTime.toISOString().split('T')[0] // Today or future
                 },
-                {
-                    model: Member
+                type: {
+                    [Op.in]: ['group', 'semi_private']
                 }
-            ]
+            }
         });
 
         let cancelledCount = 0;
         const cancelledBookings = [];
 
-        for (const booking of bookingsToCancel) {
-            const scheduleDateTime = new Date(`${booking.Schedule.date_start}T${booking.Schedule.time_start}`);
-            const cancelBufferMinutes = booking.Schedule.cancel_buffer_minutes || 120; // Default 2 jam
+        for (const schedule of schedules) {
+            const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
+            const cancelBufferMinutes = schedule.cancel_buffer_minutes || 120; // Default 2 jam
             const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
 
-            // If current time is past cancel deadline, cancel the booking
-            if (currentTime > cancelDeadline) {
-                try {
-                    await booking.update({
-                        status: 'cancelled',
-                        notes: `Auto-cancelled: Melebihi batas waktu cancel (${cancelBufferMinutes} menit sebelum kelas)`
+            // Check if current time is within cancel buffer period
+            if (currentTime >= cancelDeadline && currentTime < scheduleDateTime) {
+                // Count current signups
+                const signupCount = await Booking.count({
+                    where: {
+                        schedule_id: schedule.id,
+                        status: 'signup'
+                    }
+                });
+
+                const minSignup = schedule.min_signup || 1;
+
+                // If signup count is less than minimum, cancel all bookings
+                if (signupCount < minSignup) {
+                    const bookingsToCancel = await Booking.findAll({
+                        where: {
+                            schedule_id: schedule.id,
+                            status: {
+                                [Op.in]: ['signup', 'waiting_list']
+                            }
+                        },
+                        include: [
+                            {
+                                model: Member
+                            }
+                        ]
                     });
 
-                    cancelledCount++;
-                    cancelledBookings.push({
-                        booking_id: booking.id,
-                        member_name: booking.Member.full_name,
-                        schedule_date: booking.Schedule.date_start,
-                        schedule_time: booking.Schedule.time_start,
-                        cancel_reason: 'Auto-cancelled due to cancel buffer time'
-                    });
+                    for (const booking of bookingsToCancel) {
+                        try {
+                            await booking.update({
+                                status: 'cancelled',
+                                notes: `Auto-cancelled: Kelas dibatalkan karena tidak memenuhi minimum peserta (${signupCount}/${minSignup}) dalam ${cancelBufferMinutes} menit sebelum kelas`
+                            });
 
-                    logger.info(`Auto-cancelled booking ${booking.id} for member ${booking.Member.full_name}`);
-                } catch (error) {
-                    logger.error(`Error auto-cancelling booking ${booking.id}:`, error);
+                            cancelledCount++;
+                            cancelledBookings.push({
+                                booking_id: booking.id,
+                                member_name: booking.Member.full_name,
+                                schedule_date: schedule.date_start,
+                                schedule_time: schedule.time_start,
+                                schedule_id: schedule.id,
+                                cancel_reason: `Auto-cancelled due to insufficient signups (${signupCount}/${minSignup})`
+                            });
+
+                            logger.info(`Auto-cancelled booking ${booking.id} for member ${booking.Member.full_name} - insufficient signups (${signupCount}/${minSignup})`);
+                        } catch (error) {
+                            logger.error(`Error auto-cancelling booking ${booking.id}:`, error);
+                        }
+                    }
                 }
             }
         }
@@ -117,7 +137,17 @@ const processWaitlistPromotion = async (scheduleId) => {
                 },
                 include: [
                     {
-                        model: Member
+                        model: Member,
+                        attributes: ['id', 'full_name', 'phone_number']
+                    },
+                    {
+                        model: Schedule,
+                        include: [
+                            {
+                                model: require('../models').Class,
+                                attributes: ['id', 'class_name']
+                            }
+                        ]
                     }
                 ],
                 order: [['createdAt', 'ASC']] // First come, first served
@@ -130,6 +160,24 @@ const processWaitlistPromotion = async (scheduleId) => {
                 });
 
                 logger.info(`Booking ${nextWaitlistBooking.id} promoted from waitlist to signup for schedule ${scheduleId}`);
+
+                // Send WhatsApp promotion notification (async)
+                try {
+                    twilioService.sendWaitlistPromotion(nextWaitlistBooking)
+                        .then(result => {
+                            if (result.success) {
+                                logger.info(`✅ WhatsApp promotion notification sent to ${nextWaitlistBooking.Member.full_name}`);
+                            } else {
+                                logger.error(`❌ Failed to send WhatsApp promotion notification to ${nextWaitlistBooking.Member.full_name}: ${result.error}`);
+                            }
+                        })
+                        .catch(error => {
+                            logger.error(`❌ Error sending WhatsApp promotion notification to ${nextWaitlistBooking.Member.full_name}:`, error);
+                        });
+                } catch (error) {
+                    logger.error('Error initiating WhatsApp promotion notification:', error);
+                }
+
                 return nextWaitlistBooking;
             }
         }
@@ -141,82 +189,7 @@ const processWaitlistPromotion = async (scheduleId) => {
     }
 };
 
-/**
- * Check and cancel bookings for schedules that don't meet minimum signup
- */
-const cancelInsufficientBookings = async () => {
-    try {
-        logger.info('Starting insufficient bookings cancellation process...');
 
-        const currentTime = new Date();
-        const tomorrow = new Date(currentTime);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        // Get schedules for tomorrow that don't meet minimum signup
-        const schedules = await Schedule.findAll({
-            where: {
-                date_start: tomorrow.toISOString().split('T')[0],
-                type: {
-                    [Op.in]: ['group', 'semi_private']
-                }
-            }
-        });
-
-        let cancelledCount = 0;
-
-        for (const schedule of schedules) {
-            const signupCount = await Booking.count({
-                where: {
-                    schedule_id: schedule.id,
-                    status: 'signup'
-                }
-            });
-
-            const minSignup = schedule.min_signup || 1;
-
-            // If signup count is less than minimum, cancel all bookings
-            if (signupCount < minSignup) {
-                const bookingsToCancel = await Booking.findAll({
-                    where: {
-                        schedule_id: schedule.id,
-                        status: {
-                            [Op.in]: ['signup', 'waiting_list']
-                        }
-                    },
-                    include: [
-                        {
-                            model: Member
-                        }
-                    ]
-                });
-
-                for (const booking of bookingsToCancel) {
-                    await booking.update({
-                        status: 'cancelled',
-                        notes: `Auto-cancelled: Kelas dibatalkan karena tidak memenuhi minimum peserta (${signupCount}/${minSignup})`
-                    });
-
-                    cancelledCount++;
-                    logger.info(`Auto-cancelled booking ${booking.id} due to insufficient signups for schedule ${schedule.id}`);
-                }
-            }
-        }
-
-        logger.info(`Insufficient bookings cancellation completed. Cancelled ${cancelledCount} bookings.`);
-        
-        return {
-            success: true,
-            cancelled_count: cancelledCount
-        };
-
-    } catch (error) {
-        logger.error('Error in insufficient bookings cancellation:', error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-};
 
 /**
  * Send H-1 reminder to members with bookings tomorrow
@@ -323,49 +296,48 @@ const sendH1Reminders = async () => {
 
 /**
  * Get booking statistics for monitoring
- */
-const getBookingStatistics = async () => {
-    try {
-        const currentTime = new Date();
-        const today = currentTime.toISOString().split('T')[0];
+//  */
+// const getBookingStatistics = async () => {
+//     try {
+//         const currentTime = new Date();
+//         const today = currentTime.toISOString().split('T')[0];
 
-        const stats = await Booking.findAll({
-            where: {
-                '$Schedule.date_start$': {
-                    [Op.gte]: today
-                }
-            },
-            include: [
-                {
-                    model: Schedule,
-                    attributes: ['id', 'date_start', 'time_start', 'type', 'min_signup']
-                }
-            ],
-            attributes: [
-                'status',
-                [require('sequelize').fn('COUNT', require('sequelize').col('Booking.id')), 'count']
-            ],
-            group: ['Booking.status', 'Schedule.id', 'Schedule.date_start', 'Schedule.time_start', 'Schedule.type', 'Schedule.min_signup']
-        });
+//         const stats = await Booking.findAll({
+//             where: {
+//                 '$Schedule.date_start$': {
+//                     [Op.gte]: today
+//                 }
+//             },
+//             include: [
+//                 {
+//                     model: Schedule,
+//                     attributes: ['id', 'date_start', 'time_start', 'type', 'min_signup']
+//                 }
+//             ],
+//             attributes: [
+//                 'status',
+//                 [require('sequelize').fn('COUNT', require('sequelize').col('Booking.id')), 'count']
+//             ],
+//             group: ['Booking.status', 'Schedule.id', 'Schedule.date_start', 'Schedule.time_start', 'Schedule.type', 'Schedule.min_signup']
+//         });
 
-        return {
-            success: true,
-            statistics: stats
-        };
+//         return {
+//             success: true,
+//             statistics: stats
+//         };
 
-    } catch (error) {
-        logger.error('Error getting booking statistics:', error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-};
+//     } catch (error) {
+//         logger.error('Error getting booking statistics:', error);
+//         return {
+//             success: false,
+//             error: error.message
+//         };
+//     }
+// };
 
 module.exports = {
     autoCancelExpiredBookings,
     processWaitlistPromotion,
-    cancelInsufficientBookings,
-    getBookingStatistics,
+    // getBookingStatistics,
     sendH1Reminders
 }; 

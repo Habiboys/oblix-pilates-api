@@ -183,6 +183,16 @@ if (memberPackageDoc) {
   console.log('❌ Failed to load memberPackage.yaml');
 }
 
+// Load and merge test endpoints
+const testDoc = loadYamlFile(path.join(__dirname, 'test.yaml'));
+if (testDoc) {
+  console.log('📋 Test doc paths:', Object.keys(testDoc.paths || {}));
+  mergePaths(baseDoc, testDoc);
+  console.log('✅ Merged test endpoints');
+} else {
+  console.log('❌ Failed to load test.yaml');
+}
+
   // Add tags
   baseDoc.tags = [
     {
@@ -244,7 +254,8 @@ if (memberPackageDoc) {
   {
     name: 'Member Package Management',
     description: 'Member package management and tracking endpoints'
-  }
+  },
+
   ];
 
   // Write the combined documentation

@@ -1,14 +1,15 @@
 const cron = require('node-cron');
-const { autoCancelExpiredBookings, cancelInsufficientBookings, sendH1Reminders } = require('../utils/bookingUtils');
+const { autoCancelExpiredBookings, sendH1Reminders } = require('../utils/bookingUtils');
 const logger = require('../config/logger');
 
 /**
- * Cron job untuk auto-cancel booking yang melebihi cancel buffer time
- * Berjalan setiap 15 menit
+ * Cron job untuk auto-cancel booking ketika minimum signup tidak terpenuhi
+ * dalam cancel buffer time (misal 2 jam sebelum kelas dimulai)
+ * Berjalan setiap menit untuk presisi yang lebih baik
  */
 const startAutoCancelCron = () => {
-    // Schedule: setiap 15 menit
-    cron.schedule('*/15 * * * *', async () => {
+    // Schedule: setiap menit
+    cron.schedule('* * * * *', async () => {
         logger.info('🕐 Running auto-cancel cron job...');
         
         try {
@@ -32,44 +33,16 @@ const startAutoCancelCron = () => {
         timezone: "Asia/Jakarta"
     });
 
-    logger.info('🕐 Auto-cancel cron job scheduled (every 15 minutes)');
-};
-
-/**
- * Cron job untuk cancel booking yang tidak memenuhi minimum signup
- * Berjalan setiap hari jam 18:00 (6 PM)
- */
-const startInsufficientCancelCron = () => {
-    // Schedule: setiap hari jam 18:00
-    cron.schedule('0 18 * * *', async () => {
-        logger.info('🕐 Running insufficient bookings cancellation cron job...');
-        
-        try {
-            const result = await cancelInsufficientBookings();
-            
-            if (result.success && result.cancelled_count > 0) {
-                logger.info(`✅ Insufficient bookings cancellation completed: ${result.cancelled_count} bookings cancelled`);
-            } else {
-                logger.info('✅ Insufficient bookings cancellation completed: No bookings to cancel');
-            }
-        } catch (error) {
-            logger.error('❌ Error in insufficient bookings cancellation cron job:', error);
-        }
-    }, {
-        scheduled: true,
-        timezone: "Asia/Jakarta"
-    });
-
-    logger.info('🕐 Insufficient bookings cancellation cron job scheduled (daily at 18:00)');
+    logger.info('🕐 Auto-cancel cron job scheduled (every minute)');
 };
 
 /**
  * Cron job untuk reminder booking H-1
- * Berjalan setiap hari jam 18:00 (6 PM) untuk mengirim reminder kelas besok
+ * Berjalan setiap hari jam 17:30 (5:30 PM) untuk mengirim reminder kelas besok
  */
 const startBookingReminderCron = () => {
-    // Schedule: setiap hari jam 18:00
-    cron.schedule('0 18 * * *', async () => {
+    // Schedule: setiap hari jam 17:30
+    cron.schedule('30 17 * * *', async () => {
         logger.info('📱 Running H-1 booking reminder cron job...');
         
         try {
@@ -97,7 +70,7 @@ const startBookingReminderCron = () => {
         timezone: "Asia/Jakarta"
     });
 
-    logger.info('📱 H-1 booking reminder cron job scheduled (daily at 18:00)');
+    logger.info('📱 H-1 booking reminder cron job scheduled (daily at 17:30)');
 };
 
 /**
@@ -107,7 +80,6 @@ const startAllCronJobs = () => {
     logger.info('🚀 Starting all booking cron jobs...');
     
     startAutoCancelCron();
-    startInsufficientCancelCron();
     startBookingReminderCron();
     
     logger.info('✅ All booking cron jobs started successfully');
@@ -135,7 +107,6 @@ const stopAllCronJobs = () => {
 
 module.exports = {
     startAutoCancelCron,
-    startInsufficientCancelCron,
     startBookingReminderCron,
     startAllCronJobs,
     stopAllCronJobs

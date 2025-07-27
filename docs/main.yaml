@@ -40,37 +40,40 @@ $ref: './category.yaml'
 # Import schedule management endpoints
 $ref: './schedule.yaml'
 
-# Import payment endpoints
-$ref: './payment-endpoints.yaml'
+# Import booking management endpoints
+$ref: './booking.yaml'
 
 # Import member package management endpoints
 $ref: './memberPackage.yaml'
 
+# Import test endpoints
+$ref: './test.yaml'
+
 # Add tags for better organization
 tags:
   - name: Authentication
-    description: User authentication and authorization endpoints
+    description: User authentication and authorization
   - name: Content Management
-    description: Banner, blog, FAQ, gallery, and testimonial management endpoints
+    description: Static content management (FAQ, testimonials, banners, etc.)
   - name: Profile Management
-    description: User profile management endpoints
+    description: User profile management
   - name: Trainer Management
-    description: Trainer management endpoints
-  - name: Membership Package Management
-    description: Membership package management endpoints
-  - name: Trial Package Management
-    description: Trial package management endpoints
-  - name: Promo Package Management
-    description: Promo package management endpoints
-  - name: Bonus Package Management
-    description: Bonus package management endpoints
+    description: Trainer information management
+  - name: Package Management
+    description: Membership, trial, promo, and bonus package management
   - name: Staff Management
-    description: Staff management endpoints
+    description: Staff member management
   - name: Category Management
-    description: Category management endpoints
+    description: Class category management
+  - name: Order Management
+    description: Order processing and payment handling
+  - name: Payment System
+    description: Midtrans payment integration and callbacks
   - name: Schedule Management
-    description: Schedule management endpoints for group, semi-private, and private classes
-  - name: Payment
-    description: Payment-related endpoints for Midtrans integration 
+    description: Class schedule management (group, semi-private, private)
+  - name: Booking Management
+    description: Class booking and reservation system
   - name: Member Package Management
-    description: Member package management and tracking endpoints 
+    description: User package history and tracking
+  - name: Test & Development
+    description: Testing endpoints for development and integration 

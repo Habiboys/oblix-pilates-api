@@ -1348,24 +1348,7 @@ const getScheduleCalendar = async (req, res) => {
                 },
                 {
                     model: Trainer,
-                    attributes: ['id', 'title', 'picture', 'description']
-                },
-                {
-                    model: Member,
-                    as: 'assignedMember',
-                    attributes: ['id', 'full_name', 'email', 'phone_number'],
-                    required: false // For left join
-                },
-                {
-                    model: Booking,
-                    attributes: ['id', 'status'],
-                    include: [
-                        {
-                            model: Member,
-                            attributes: ['id', 'full_name']
-                        }
-                    ],
-                    required: false
+                    attributes: ['id', 'title']
                 }
             ],
             order: [['date_start', 'ASC'], ['time_start', 'ASC']]
@@ -1373,35 +1356,15 @@ const getScheduleCalendar = async (req, res) => {
         
         // Format data untuk calendar
         const formattedSchedules = schedules.map(schedule => {
-            const bookingCount = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'signup').length : 0;
-            const waitingListCount = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'waiting_list').length : 0;
-            
             return {
                 id: schedule.id,
                 class_name: schedule.Class?.class_name || '',
                 class_color: schedule.Class?.color_sign || '#000000',
                 trainer_name: schedule.Trainer?.title || '',
-                trainer_picture: schedule.Trainer?.picture || null,
                 type: schedule.type,
                 date: schedule.date_start,
                 time_start: schedule.time_start,
-                time_end: schedule.time_end,
-                pax: schedule.pax,
-                booking_count: bookingCount,
-                waiting_list_count: waitingListCount,
-                available_spots: Math.max(0, schedule.pax - bookingCount),
-                is_full: bookingCount >= schedule.pax,
-                has_waiting_list: waitingListCount > 0,
-                assigned_member: schedule.type === 'private' ? {
-                    id: schedule.assignedMember?.id || null,
-                    name: schedule.assignedMember?.full_name || null
-                } : null,
-                bookings: schedule.Bookings?.map(booking => ({
-                    id: booking.id,
-                    status: booking.status,
-                    member_name: booking.Member?.full_name || ''
-                })) || [],
-                picture: schedule.picture
+                time_end: schedule.time_end
             };
         });
         

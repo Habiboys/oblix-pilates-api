@@ -1,0 +1,168 @@
+paths:
+  /test/twilio/status:
+    get:
+      tags:
+        - Test & Development
+      summary: Get Twilio configuration status
+      description: |
+        Check the status of Twilio configuration including account credentials
+        and WhatsApp setup. Admin only endpoint.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Twilio configuration status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Twilio configuration status"
+                  data:
+                    type: object
+                    properties:
+                      account_sid:
+                        type: string
+                        example: "✅ Configured"
+                      auth_token:
+                        type: string
+                        example: "✅ Configured"
+                      whatsapp_number:
+                        type: string
+                        example: "❌ Missing (using sandbox)"
+                      environment:
+                        type: string
+                        example: "development"
+                      sandbox_mode:
+                        type: boolean
+                        example: true
+        '401':
+          description: Unauthorized - Token required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /test/twilio/whatsapp:
+    post:
+      tags:
+        - Test & Development
+      summary: Test WhatsApp message sending
+      description: |
+        Send a test WhatsApp message using Twilio. Admin only endpoint.
+        
+        **Requirements for WhatsApp:**
+        - Phone number must be in international format
+        - For sandbox mode, recipient must join the sandbox first
+        - Message length max 1600 characters
+        
+        **Sandbox Setup:**
+        1. Send "join {{sandbox_keyword}}" to +1 415 523 8886
+        2. Wait for confirmation message
+        3. Now you can test sending messages
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone_number
+                - message
+              properties:
+                phone_number:
+                  type: string
+                  description: "Phone number in international format (with or without +)"
+                  example: "+6281234567890"
+                message:
+                  type: string
+                  description: "Message content to send"
+                  maxLength: 1600
+                  example: "Hello! This is a test message from Oblix Pilates API."
+      responses:
+        '200':
+          description: WhatsApp message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Pesan WhatsApp berhasil dikirim"
+                  data:
+                    type: object
+                    properties:
+                      message_id:
+                        type: string
+                        example: "SM1234567890abcdef1234567890abcdef"
+                      status:
+                        type: string
+                        example: "queued"
+                      to:
+                        type: string
+                        example: "+6281234567890"
+        '400':
+          description: Bad request - Validation error or message failed to send
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Gagal mengirim pesan WhatsApp"
+                  error:
+                    type: string
+                    example: "Phone number is not a valid WhatsApp number"
+        '401':
+          description: Unauthorized - Token required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    TestWhatsAppRequest:
+      type: object
+      required:
+        - phone_number
+        - message
+      properties:
+        phone_number:
+          type: string
+          description: "Phone number in international format"
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          example: "+6281234567890"
+        message:
+          type: string
+          description: "Message content"
+          minLength: 1
+          maxLength: 1600
+          example: "Hello! This is a test message from Oblix Pilates API." 
