@@ -61,6 +61,7 @@ const autoCancelExpiredBookings = async () => {
                         ]
                     });
 
+                    // Cancel all bookings
                     for (const booking of bookingsToCancel) {
                         try {
                             await booking.update({
@@ -82,6 +83,14 @@ const autoCancelExpiredBookings = async () => {
                         } catch (error) {
                             logger.error(`Error auto-cancelling booking ${booking.id}:`, error);
                         }
+                    }
+
+                    // Send class cancellation notification to all cancelled members
+                    try {
+                        const result = await twilioService.sendClassCancellation(bookingsToCancel, schedule);
+                        logger.info(`📱 Class cancellation notifications sent: ${result.length} members notified`);
+                    } catch (error) {
+                        logger.error('❌ Error sending class cancellation notifications:', error);
                     }
                 }
             }
