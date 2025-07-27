@@ -193,6 +193,16 @@ if (testDoc) {
   console.log('❌ Failed to load test.yaml');
 }
 
+// Load and merge class management endpoints
+const classDoc = loadYamlFile(path.join(__dirname, 'class.yaml'));
+if (classDoc) {
+  console.log('📋 Class doc paths:', Object.keys(classDoc.paths || {}));
+  mergePaths(baseDoc, classDoc);
+  console.log('✅ Merged class management endpoints');
+} else {
+  console.log('❌ Failed to load class.yaml');
+}
+
   // Add tags
   baseDoc.tags = [
     {
@@ -255,7 +265,10 @@ if (testDoc) {
     name: 'Member Package Management',
     description: 'Member package management and tracking endpoints'
   },
-
+  {
+    name: 'Class Management',
+    description: 'Class management endpoints'
+  }
   ];
 
   // Write the combined documentation

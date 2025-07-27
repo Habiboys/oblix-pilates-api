@@ -108,8 +108,12 @@ const login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid password' });
         }
         
-        const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+        // Use environment variable for JWT expiry, default to 24h for development
+        const jwtExpiry = process.env.JWT_EXPIRY || '24h';
+        const refreshExpiry = process.env.JWT_REFRESH_EXPIRY || '7d';
+        
+        const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: jwtExpiry });
+        const refreshToken = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, { expiresIn: refreshExpiry });
         await user.update({ refresh_token: refreshToken });
         
         // Cek status pembelian paket member
@@ -150,7 +154,11 @@ try {
     if (!user.isActive) {
         return res.status(400).json({ message: 'User is not active' });
     }
-    const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    
+    // Use environment variable for JWT expiry, default to 24h for development
+    const jwtExpiry = process.env.JWT_EXPIRY || '24h';
+    const accessToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: jwtExpiry });
+    
     res.status(200).json({
         message: 'Token refreshed successfully',
         data: {
@@ -297,10 +305,8 @@ const resetPassword = async (req, res) => {
 
 const checkPurchaseStatus = async (req, res) => {
     try {
-        const user_id = req.user.id; // From JWT token
-        
-        const user = await User.findOne({ 
-            where: { id: user_id },
+        const userId = req.user.id;
+        const user = await User.findByPk(userId, {
             include: [
                 {
                     model: Member,
@@ -317,23 +323,19 @@ const checkPurchaseStatus = async (req, res) => {
                 }
             ]
         });
-        
+
         if (!user) {
-            return res.status(404).json({ 
-                success: false,
-                message: 'User not found' 
+            return res.status(404).json({
+                message: 'User not found'
             });
         }
-        
-        // Cek status pembelian paket member
+
         let hasPurchasedPackage = false;
-        
         if (user.Member && user.Member.MemberPackages) {
             hasPurchasedPackage = user.Member.MemberPackages.length > 0;
         }
-        
+
         res.status(200).json({
-            success: true,
             message: 'Purchase status retrieved successfully',
             data: {
                 has_purchased_package: hasPurchasedPackage
@@ -341,9 +343,34 @@ const checkPurchaseStatus = async (req, res) => {
         });
     } catch (error) {
         console.error('Check purchase status error:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Internal server error' 
+        res.status(500).json({
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Check token status
+const checkTokenStatus = async (req, res) => {
+    try {
+        // If middleware reaches here, token is valid
+        const user = req.user;
+        
+        res.status(200).json({
+            message: 'Token is valid',
+            data: {
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    role: user.role,
+                    member_id: user.member_id
+                },
+                token_status: 'valid'
+            }
+        });
+    } catch (error) {
+        console.error('Check token status error:', error);
+        res.status(500).json({
+            message: 'Internal server error'
         });
     }
 };
@@ -353,7 +380,8 @@ module.exports = {
     login,
     refreshToken,
     forgotPassword,
-    resetPassword,
     changePassword,
-    checkPurchaseStatus
+    resetPassword,
+    checkPurchaseStatus,
+    checkTokenStatus
 };

@@ -205,7 +205,7 @@ class ScheduleService {
             },
             {
                 model: Trainer,
-                attributes: ['id', 'title', 'picture', 'description']
+                attributes: ['id', 'title', 'picture']
             }
         ];
 

@@ -37,6 +37,9 @@ $ref: './staff.yaml'
 # Import category management endpoints
 $ref: './category.yaml'
 
+# Import class management endpoints
+$ref: './class.yaml'
+
 # Import schedule management endpoints
 $ref: './schedule.yaml'
 
@@ -65,6 +68,8 @@ tags:
     description: Staff member management
   - name: Category Management
     description: Class category management
+  - name: Class Management
+    description: Class type and configuration management
   - name: Order Management
     description: Order processing and payment handling
   - name: Payment System

@@ -43,12 +43,33 @@ const validateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
+    
+    // Handle specific JWT errors
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Token telah expired',
+        error: 'TOKEN_EXPIRED',
+        expiredAt: error.expiredAt
+      });
+    }
+    
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(401).json({
         status: 'error',
-        message: 'Token tidak valid'
+        message: 'Token tidak valid',
+        error: 'INVALID_TOKEN'
       });
     }
+    
+    if (error instanceof jwt.NotBeforeError) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Token belum aktif',
+        error: 'TOKEN_NOT_ACTIVE'
+      });
+    }
+    
     return res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan pada server'

@@ -1301,6 +1301,7 @@ const getScheduleCalendar = async (req, res) => {
                         }
                     },
                     required: false,
+                    attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'session_left', 'status', 'createdAt', 'updatedAt'],
                     include: include_members === 'true' ? [
                         {
                             model: Member,
