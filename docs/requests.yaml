@@ -1149,6 +1149,16 @@ components:
           default: none
           description: Repeat type for the schedule
           example: "weekly"
+        repeat_days:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+          minItems: 1
+          maxItems: 7
+          description: Days of the week to repeat (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday) - Required if repeat_type is weekly
+          example: [1, 3, 5]
         schedule_until:
           type: string
           format: date
@@ -1305,6 +1315,16 @@ components:
           default: none
           description: Repeat type for the schedule
           example: "weekly"
+        repeat_days:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+          minItems: 1
+          maxItems: 7
+          description: Days of the week to repeat (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday) - Required if repeat_type is weekly
+          example: [1, 3, 5]
         schedule_until:
           type: string
           format: date
@@ -1460,6 +1480,16 @@ components:
           default: none
           description: Repeat type for the schedule
           example: "weekly"
+        repeat_days:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+          minItems: 1
+          maxItems: 7
+          description: Days of the week to repeat (0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday) - Required if repeat_type is weekly
+          example: [1, 3, 5]
         schedule_until:
           type: string
           format: date

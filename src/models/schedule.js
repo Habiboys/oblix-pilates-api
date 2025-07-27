@@ -78,6 +78,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'none'
     },
+    repeat_days: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      comment: 'Array of days to repeat (0=Sunday, 1=Monday, etc.) for weekly repeat schedules'
+    },
     schedule_until: {
       type: DataTypes.DATEONLY,
       allowNull: true

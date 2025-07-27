@@ -203,6 +203,8 @@ if (classDoc) {
   console.log('❌ Failed to load class.yaml');
 }
 
+
+
   // Add tags
   baseDoc.tags = [
     {

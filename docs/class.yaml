@@ -6,7 +6,7 @@ paths:
       summary: Get all classes
       description: Mengambil daftar semua kelas dengan pagination dan search
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: search
           in: query
@@ -67,7 +67,7 @@ paths:
       summary: Create new class
       description: Membuat kelas baru (Admin only)
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -170,7 +170,7 @@ paths:
       summary: Get class by ID
       description: Mengambil detail kelas berdasarkan ID
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -209,7 +209,7 @@ paths:
       summary: Update class
       description: Mengupdate kelas berdasarkan ID (Admin only)
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -281,7 +281,7 @@ paths:
       summary: Delete class
       description: Menghapus kelas berdasarkan ID (Admin only)
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -431,7 +431,7 @@ components:
                 example: Internal server error
 
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT 

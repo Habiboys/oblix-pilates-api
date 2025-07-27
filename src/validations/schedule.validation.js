@@ -37,6 +37,16 @@ const createGroupScheduleSchema = Joi.object({
         'string.empty': 'Repeat type is required',
         'any.only': 'Repeat type must be either "none" or "weekly"'
     }),
+    repeat_days: Joi.when('repeat_type', {
+        is: 'weekly',
+        then: Joi.array().items(Joi.number().integer().min(0).max(6)).min(1).max(7).required().messages({
+            'array.base': 'Repeat days must be an array',
+            'array.min': 'At least one day must be selected for weekly repeat',
+            'array.max': 'Maximum 7 days can be selected',
+            'any.required': 'Repeat days is required for weekly repeat'
+        }),
+        otherwise: Joi.array().items(Joi.number().integer().min(0).max(6)).optional()
+    }),
     schedule_until: Joi.when('repeat_type', {
         is: 'weekly',
         then: Joi.date().iso().required().messages({
@@ -122,6 +132,11 @@ const updateGroupScheduleSchema = Joi.object({
     }),
     repeat_type: Joi.string().valid('none', 'weekly').optional().messages({
         'any.only': 'Repeat type must be either "none" or "weekly"'
+    }),
+    repeat_days: Joi.array().items(Joi.number().integer().min(0).max(6)).optional().messages({
+        'array.base': 'Repeat days must be an array',
+        'array.min': 'At least one day must be selected for weekly repeat',
+        'array.max': 'Maximum 7 days can be selected'
     }),
     schedule_until: Joi.date().iso().optional().messages({
         'date.base': 'Schedule until must be a valid date',
@@ -229,6 +244,16 @@ const createSemiPrivateScheduleSchema = Joi.object({
     }),
     repeat_type: Joi.string().valid('none', 'weekly').default('none').messages({
         'any.only': 'Repeat type must be either "none" or "weekly"'
+    }),
+    repeat_days: Joi.when('repeat_type', {
+        is: 'weekly',
+        then: Joi.array().items(Joi.number().integer().min(0).max(6)).min(1).max(7).required().messages({
+            'array.base': 'Repeat days must be an array',
+            'array.min': 'At least one day must be selected for weekly repeat',
+            'array.max': 'Maximum 7 days can be selected',
+            'any.required': 'Repeat days is required for weekly repeat'
+        }),
+        otherwise: Joi.array().items(Joi.number().integer().min(0).max(6)).optional()
     }),
     schedule_until: Joi.when('repeat_type', {
         is: 'weekly',
@@ -429,6 +454,16 @@ const createPrivateScheduleSchema = Joi.object({
     }),
     repeat_type: Joi.string().valid('none', 'weekly').default('none').messages({
         'any.only': 'Repeat type must be either "none" or "weekly"'
+    }),
+    repeat_days: Joi.when('repeat_type', {
+        is: 'weekly',
+        then: Joi.array().items(Joi.number().integer().min(0).max(6)).min(1).max(7).required().messages({
+            'array.base': 'Repeat days must be an array',
+            'array.min': 'At least one day must be selected for weekly repeat',
+            'array.max': 'Maximum 7 days can be selected',
+            'any.required': 'Repeat days is required for weekly repeat'
+        }),
+        otherwise: Joi.array().items(Joi.number().integer().min(0).max(6)).optional()
     }),
     schedule_until: Joi.when('repeat_type', {
         is: 'weekly',

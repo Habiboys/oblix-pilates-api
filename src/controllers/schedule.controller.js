@@ -9,31 +9,49 @@ const fs = require('fs');
 const path = require('path');
 
 // Fungsi untuk generate dates untuk weekly repeat
-const generateWeeklyDates = (startDate, untilDate) => {
+const generateWeeklyDates = (startDate, untilDate, repeatDays = []) => {
     const dates = [];
     const currentDate = new Date(startDate);
     const endDate = new Date(untilDate);
     
+    // Jika tidak ada repeat_days, gunakan hari yang sama dengan startDate
+    if (!repeatDays || repeatDays.length === 0) {
+        const dayOfWeek = currentDate.getDay();
+        repeatDays = [dayOfWeek];
+    }
+    
     while (currentDate <= endDate) {
-        dates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 7); // Tambah 7 hari
+        // Cek apakah hari ini termasuk dalam repeat_days
+        const dayOfWeek = currentDate.getDay();
+        if (repeatDays.includes(dayOfWeek)) {
+            dates.push(new Date(currentDate));
+        }
+        currentDate.setDate(currentDate.getDate() + 1); // Tambah 1 hari
     }
     
     return dates;
 };
 
 // Fungsi untuk create multiple schedules untuk repeat
-const createRepeatSchedules = async (scheduleData, repeatType, scheduleUntil) => {
+const createRepeatSchedules = async (scheduleData, repeatType, scheduleUntil, repeatDays = []) => {
     const schedules = [];
     
     if (repeatType === 'weekly' && scheduleUntil) {
-        // Buat schedule utama dulu
-        const mainSchedule = await Schedule.create(scheduleData);
+        const dates = generateWeeklyDates(scheduleData.date_start, scheduleUntil, repeatDays);
+        
+        if (dates.length === 0) {
+            throw new Error('No valid dates found for the specified repeat days');
+        }
+        
+        // Buat schedule pertama sebagai main schedule
+        const mainSchedule = await Schedule.create({
+            ...scheduleData,
+            date_start: dates[0].toISOString().split('T')[0],
+            repeat_days: repeatDays
+        });
         schedules.push(mainSchedule);
         
-        const dates = generateWeeklyDates(scheduleData.date_start, scheduleUntil);
-        
-        // Skip tanggal pertama karena sudah dibuat sebagai main schedule
+        // Buat schedule untuk tanggal-tanggal berikutnya
         const remainingDates = dates.slice(1);
         
         for (const date of remainingDates) {
@@ -42,13 +60,17 @@ const createRepeatSchedules = async (scheduleData, repeatType, scheduleUntil) =>
                 date_start: date.toISOString().split('T')[0],
                 repeat_type: 'none', // Set individual schedule sebagai 'none'
                 schedule_until: null, // Set individual schedule sebagai null
+                repeat_days: null, // Set individual schedule sebagai null
                 parent_schedule_id: mainSchedule.id // Reference ke schedule utama
             });
             schedules.push(schedule);
         }
     } else {
         // Single schedule
-        const schedule = await Schedule.create(scheduleData);
+        const schedule = await Schedule.create({
+            ...scheduleData,
+            repeat_days: repeatType === 'weekly' ? repeatDays : null
+        });
         schedules.push(schedule);
     }
     
@@ -155,7 +177,8 @@ const createGroupSchedule = async (req, res) => {
             booking_deadline_hour,
             waitlist_lock_minutes,
             min_signup,
-            cancel_buffer_minutes
+            cancel_buffer_minutes,
+            repeat_days // Added repeat_days
         } = req.body;
 
         // Validate class exists
@@ -209,7 +232,7 @@ const createGroupSchedule = async (req, res) => {
         };
 
         // Create schedule(s) berdasarkan repeat type
-        const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until);
+        const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until, repeat_days);
 
         // Fetch created schedule dengan associations (ambil yang pertama untuk response)
         const createdSchedule = await Schedule.findByPk(createdSchedules[0].id, {
@@ -265,7 +288,8 @@ const updateGroupSchedule = async (req, res) => {
             booking_deadline_hour,
             waitlist_lock_minutes,
             min_signup,
-            cancel_buffer_minutes
+            cancel_buffer_minutes,
+            repeat_days // Added repeat_days
         } = req.body;
 
         const schedule = await Schedule.findOne({
@@ -332,6 +356,7 @@ const updateGroupSchedule = async (req, res) => {
         if (waitlist_lock_minutes !== undefined) updateData.waitlist_lock_minutes = parseInt(waitlist_lock_minutes);
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
+        if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
 
         // Handle picture update
         if (req.file) {
@@ -522,7 +547,8 @@ const createSemiPrivateSchedule = async (req, res) => {
             booking_deadline_hour,
             waitlist_lock_minutes,
             min_signup,
-            cancel_buffer_minutes
+            cancel_buffer_minutes,
+            repeat_days // Added repeat_days
         } = req.body;
 
         // Validate class exists
@@ -576,7 +602,7 @@ const createSemiPrivateSchedule = async (req, res) => {
         };
 
         // Create schedule(s) berdasarkan repeat type
-        const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until);
+        const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until, repeat_days);
 
         // Fetch created schedule dengan associations (ambil yang pertama untuk response)
         const createdSchedule = await Schedule.findByPk(createdSchedules[0].id, {
@@ -632,7 +658,8 @@ const updateSemiPrivateSchedule = async (req, res) => {
             booking_deadline_hour,
             waitlist_lock_minutes,
             min_signup,
-            cancel_buffer_minutes
+            cancel_buffer_minutes,
+            repeat_days // Added repeat_days
         } = req.body;
 
         const schedule = await Schedule.findOne({
@@ -699,6 +726,7 @@ const updateSemiPrivateSchedule = async (req, res) => {
         if (waitlist_lock_minutes !== undefined) updateData.waitlist_lock_minutes = parseInt(waitlist_lock_minutes);
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
+        if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
 
         // Handle picture update
         if (req.file) {
@@ -889,7 +917,8 @@ const createPrivateSchedule = async (req, res) => {
             booking_deadline_hour,
             waitlist_lock_minutes,
             min_signup,
-            cancel_buffer_minutes
+            cancel_buffer_minutes,
+            repeat_days // Added repeat_days
         } = req.body;
 
         // Validate class exists
@@ -953,7 +982,7 @@ const createPrivateSchedule = async (req, res) => {
         };
 
         // Create schedule(s) berdasarkan repeat type
-        const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until);
+        const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until, repeat_days);
 
         // Cek jatah sesi member sebelum booking
         const sessionValidation = await validateSessionAvailability(member_id, createdSchedules.length);
@@ -1059,7 +1088,8 @@ const updatePrivateSchedule = async (req, res) => {
             booking_deadline_hour,
             waitlist_lock_minutes,
             min_signup,
-            cancel_buffer_minutes
+            cancel_buffer_minutes,
+            repeat_days // Added repeat_days
         } = req.body;
 
         const schedule = await Schedule.findOne({
@@ -1137,6 +1167,7 @@ const updatePrivateSchedule = async (req, res) => {
         if (waitlist_lock_minutes !== undefined) updateData.waitlist_lock_minutes = parseInt(waitlist_lock_minutes);
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
+        if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
 
         // Handle picture update
         if (req.file) {
