@@ -230,6 +230,5 @@ module.exports = {
     getClassById,
     createClass,
     updateClass,
-    deleteClass,
-    getClassesForSelect
+    deleteClass
 }; 

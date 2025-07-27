@@ -5,8 +5,7 @@ const {
     getClassById, 
     createClass, 
     updateClass, 
-    deleteClass,
-    getClassesForSelect
+    deleteClass
 } = require('../controllers/class.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
@@ -18,7 +17,6 @@ const {
 } = require('../validations/class.validation');
 
 // Public routes (tidak perlu auth)
-router.get('/select', getClassesForSelect); // Untuk dropdown/select
 
 // Protected routes (perlu auth)
 router.get('/', validateToken, validate(getAllClassesSchema, 'query'), getAllClasses);
