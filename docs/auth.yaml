@@ -214,7 +214,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResponse' 
 
   /auth/purchase-status:
     get:

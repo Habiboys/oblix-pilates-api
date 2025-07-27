@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { 
-  getProfile, 
-  updateProfile, 
-  changePassword, 
-  deleteProfilePhoto
+    getProfile, 
+    updateProfile, 
+    changePassword, 
+    deleteProfilePhoto 
 } = require('../controllers/profile.controller');
 const { validateToken } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
 const { 
-  updateProfileSchema, 
-  changePasswordSchema 
+    updateProfileSchema, 
+    changePasswordSchema 
 } = require('../validations/profile.validation');
 
 router.get('/', validateToken, getProfile);

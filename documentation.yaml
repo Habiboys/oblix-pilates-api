@@ -7301,6 +7301,130 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /schedule/calendar:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get schedule calendar data
+      description: |
+        Retrieve schedule data formatted for calendar display. Returns schedules with class details, 
+        trainer information, booking counts, and availability status.
+
+        **Features:**
+        - Filter by month, year, and schedule type
+        - Shows booking counts and available spots
+        - Groups schedules by date for easy calendar rendering
+        - Includes class colors, trainer details, and member assignments
+        - Shows waiting list status
+
+        **Default Values:**
+        - Month: Current month (1-12)
+        - Year: Current year
+        - Type: All types (group, semi_private, private)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+          description: Month to display (1-12). Default is current month.
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2020
+            maximum: 2100
+            example: 2025
+          description: Year to display. Default is current year.
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - group
+              - semi_private
+              - private
+            example: group
+          description: Filter by schedule type. Default shows all types.
+      responses:
+        '200':
+          description: Schedule calendar data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Schedule calendar data retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      month:
+                        type: integer
+                        example: 7
+                      year:
+                        type: integer
+                        example: 2025
+                      filter_type:
+                        type: string
+                        example: all
+                      total_schedules:
+                        type: integer
+                        example: 15
+                      schedules_by_date:
+                        type: object
+                        description: Schedules grouped by date for calendar rendering
+                        additionalProperties:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/ScheduleCalendarItem'
+                        example:
+                          '2025-07-15':
+                            - id: schedule-uuid-1
+                              class_name: Chair Basic
+                              class_color: '#4F46E5'
+                              trainer_name: Sarah Johnson
+                              type: group
+                              time_start: '07:10'
+                              time_end: '08:10'
+                              pax: 10
+                              booking_count: 8
+                              available_spots: 2
+                              is_full: false
+                      schedules:
+                        type: array
+                        description: Flat array of all schedules
+                        items:
+                          $ref: '#/components/schemas/ScheduleCalendarItem'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Token required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/booking:
     get:
       tags:

@@ -1302,6 +1302,140 @@ const deletePrivateSchedule = async (req, res) => {
     }
 };
 
+// Get schedule data for calendar view
+const getScheduleCalendar = async (req, res) => {
+    try {
+        const { month, year, type } = req.query;
+        
+        // Default to current month/year if not provided
+        const currentDate = new Date();
+        const targetMonth = month ? parseInt(month) : currentDate.getMonth() + 1;
+        const targetYear = year ? parseInt(year) : currentDate.getFullYear();
+        
+        // Validate month (1-12)
+        if (targetMonth < 1 || targetMonth > 12) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Bulan harus antara 1-12'
+            });
+        }
+        
+        // Build where clause
+        const whereClause = {};
+        
+        // Filter by month and year
+        const startDate = new Date(targetYear, targetMonth - 1, 1);
+        const endDate = new Date(targetYear, targetMonth, 0); // Last day of month
+        
+        whereClause.date_start = {
+            [Op.between]: [
+                startDate.toISOString().split('T')[0],
+                endDate.toISOString().split('T')[0]
+            ]
+        };
+        
+        // Filter by type if provided
+        if (type && ['group', 'semi_private', 'private'].includes(type)) {
+            whereClause.type = type;
+        }
+        
+        const schedules = await Schedule.findAll({
+            where: whereClause,
+            include: [
+                {
+                    model: Class,
+                    attributes: ['id', 'class_name', 'color_sign']
+                },
+                {
+                    model: Trainer,
+                    attributes: ['id', 'title', 'picture', 'description']
+                },
+                {
+                    model: Member,
+                    as: 'assignedMember',
+                    attributes: ['id', 'full_name', 'email', 'phone_number'],
+                    required: false // For left join
+                },
+                {
+                    model: Booking,
+                    attributes: ['id', 'status'],
+                    include: [
+                        {
+                            model: Member,
+                            attributes: ['id', 'full_name']
+                        }
+                    ],
+                    required: false
+                }
+            ],
+            order: [['date_start', 'ASC'], ['time_start', 'ASC']]
+        });
+        
+        // Format data untuk calendar
+        const formattedSchedules = schedules.map(schedule => {
+            const bookingCount = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'signup').length : 0;
+            const waitingListCount = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'waiting_list').length : 0;
+            
+            return {
+                id: schedule.id,
+                class_name: schedule.Class?.class_name || '',
+                class_color: schedule.Class?.color_sign || '#000000',
+                trainer_name: schedule.Trainer?.title || '',
+                trainer_picture: schedule.Trainer?.picture || null,
+                type: schedule.type,
+                date: schedule.date_start,
+                time_start: schedule.time_start,
+                time_end: schedule.time_end,
+                pax: schedule.pax,
+                booking_count: bookingCount,
+                waiting_list_count: waitingListCount,
+                available_spots: Math.max(0, schedule.pax - bookingCount),
+                is_full: bookingCount >= schedule.pax,
+                has_waiting_list: waitingListCount > 0,
+                assigned_member: schedule.type === 'private' ? {
+                    id: schedule.assignedMember?.id || null,
+                    name: schedule.assignedMember?.full_name || null
+                } : null,
+                bookings: schedule.Bookings?.map(booking => ({
+                    id: booking.id,
+                    status: booking.status,
+                    member_name: booking.Member?.full_name || ''
+                })) || [],
+                picture: schedule.picture
+            };
+        });
+        
+        // Group schedules by date for easier calendar rendering
+        const schedulesByDate = {};
+        formattedSchedules.forEach(schedule => {
+            const date = schedule.date;
+            if (!schedulesByDate[date]) {
+                schedulesByDate[date] = [];
+            }
+            schedulesByDate[date].push(schedule);
+        });
+        
+        res.status(200).json({
+            success: true,
+            message: 'Schedule calendar data retrieved successfully',
+            data: {
+                month: targetMonth,
+                year: targetYear,
+                filter_type: type || 'all',
+                total_schedules: formattedSchedules.length,
+                schedules_by_date: schedulesByDate,
+                schedules: formattedSchedules
+            }
+        });
+    } catch (error) {
+        console.error('Get schedule calendar error:', error);
+        res.status(500).json({ 
+            status: 'error',
+            message: 'Terjadi kesalahan pada server' 
+        });
+    }
+};
+
 module.exports = {
     getAllGroupSchedules,
     getGroupScheduleById,
@@ -1317,5 +1451,6 @@ module.exports = {
     getPrivateScheduleById,
     createPrivateSchedule,
     updatePrivateSchedule,
-    deletePrivateSchedule
+    deletePrivateSchedule,
+    getScheduleCalendar
 }; 

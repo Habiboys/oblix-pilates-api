@@ -15,7 +15,8 @@ const {
     getPrivateScheduleById,
     createPrivateSchedule,
     updatePrivateSchedule,
-    deletePrivateSchedule
+    deletePrivateSchedule,
+    getScheduleCalendar
 } = require('../controllers/schedule.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
@@ -29,7 +30,8 @@ const {
     getSemiPrivateScheduleSchema,
     createPrivateScheduleSchema,
     updatePrivateScheduleSchema,
-    getPrivateScheduleSchema
+    getPrivateScheduleSchema,
+    getScheduleCalendarSchema
 } = require('../validations/schedule.validation');
 
 // Public routes - semua user bisa akses
@@ -126,5 +128,8 @@ router.delete('/private/:id',
     validate(getPrivateScheduleSchema, 'params'),
     deletePrivateSchedule
 );
+
+// Calendar endpoint
+router.get('/calendar', validateToken, validate(getScheduleCalendarSchema, 'query'), getScheduleCalendar);
 
 module.exports = router; 

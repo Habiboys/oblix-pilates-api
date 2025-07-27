@@ -71,6 +71,6 @@ tags:
   - name: Schedule Management
     description: Schedule management endpoints for group, semi-private, and private classes
   - name: Payment
-    description: Payment-related endpoints for Midtrans integration
+    description: Payment-related endpoints for Midtrans integration 
   - name: Member Package Management
     description: Member package management and tracking endpoints 

@@ -556,6 +556,37 @@ const getPrivateScheduleSchema = Joi.object({
     })
 });
 
+const getScheduleCalendarSchema = Joi.object({
+    month: Joi.number()
+        .integer()
+        .min(1)
+        .max(12)
+        .optional()
+        .messages({
+            'number.base': 'Bulan harus berupa angka',
+            'number.integer': 'Bulan harus berupa angka bulat',
+            'number.min': 'Bulan harus antara 1-12',
+            'number.max': 'Bulan harus antara 1-12'
+        }),
+    year: Joi.number()
+        .integer()
+        .min(2020)
+        .max(2100)
+        .optional()
+        .messages({
+            'number.base': 'Tahun harus berupa angka',
+            'number.integer': 'Tahun harus berupa angka bulat',
+            'number.min': 'Tahun harus antara 2020-2100',
+            'number.max': 'Tahun harus antara 2020-2100'
+        }),
+    type: Joi.string()
+        .valid('group', 'semi_private', 'private')
+        .optional()
+        .messages({
+            'any.only': 'Tipe schedule harus berupa group, semi_private, atau private'
+        })
+});
+
 module.exports = {
     createGroupScheduleSchema,
     updateGroupScheduleSchema,
@@ -565,5 +596,6 @@ module.exports = {
     getSemiPrivateScheduleSchema,
     createPrivateScheduleSchema,
     updatePrivateScheduleSchema,
-    getPrivateScheduleSchema
+    getPrivateScheduleSchema,
+    getScheduleCalendarSchema
 }; 

@@ -828,3 +828,895 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse' 
+
+  /schedule/calendar:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get schedule calendar data
+      description: |
+        Retrieve schedule data formatted for calendar display. Returns schedules with class details, 
+        trainer information, booking counts, and availability status.
+        
+        **Features:**
+        - Filter by month, year, and schedule type
+        - Shows booking counts and available spots
+        - Groups schedules by date for easy calendar rendering
+        - Includes class colors, trainer details, and member assignments
+        - Shows waiting list status
+        
+        **Default Values:**
+        - Month: Current month (1-12)
+        - Year: Current year
+        - Type: All types (group, semi_private, private)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+          description: Month to display (1-12). Default is current month.
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 2020
+            maximum: 2100
+            example: 2025
+          description: Year to display. Default is current year.
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [group, semi_private, private]
+            example: group
+          description: Filter by schedule type. Default shows all types.
+      responses:
+        '200':
+          description: Schedule calendar data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Schedule calendar data retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      month:
+                        type: integer
+                        example: 7
+                      year:
+                        type: integer
+                        example: 2025
+                      filter_type:
+                        type: string
+                        example: "all"
+                      total_schedules:
+                        type: integer
+                        example: 15
+                      schedules_by_date:
+                        type: object
+                        description: "Schedules grouped by date for calendar rendering"
+                        additionalProperties:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/ScheduleCalendarItem'
+                        example:
+                          "2025-07-15":
+                            - id: "schedule-uuid-1"
+                              class_name: "Chair Basic"
+                              class_color: "#4F46E5"
+                              trainer_name: "Sarah Johnson"
+                              type: "group"
+                              time_start: "07:10"
+                              time_end: "08:10"
+                              pax: 10
+                              booking_count: 8
+                              available_spots: 2
+                              is_full: false
+                      schedules:
+                        type: array
+                        description: "Flat array of all schedules"
+                        items:
+                          $ref: '#/components/schemas/ScheduleCalendarItem'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Token required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse' 
+
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation successful"
+        data:
+          type: object
+          nullable: true
+      example:
+        success: true
+        message: "Operation successful"
+        data: null
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Operation failed"
+        data:
+          type: object
+          nullable: true
+      example:
+        success: false
+        message: "Operation failed"
+        data: null
+
+    PaginationInfo:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 100
+        per_page:
+          type: integer
+          example: 10
+        current_page:
+          type: integer
+          example: 1
+        total_pages:
+          type: integer
+          example: 10
+      example:
+        total: 100
+        per_page: 10
+        current_page: 1
+        total_pages: 10
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 100
+        per_page:
+          type: integer
+          example: 10
+        current_page:
+          type: integer
+          example: 1
+        total_pages:
+          type: integer
+          example: 10
+      example:
+        total: 100
+        per_page: 10
+        current_page: 1
+        total_pages: 10
+
+    GroupSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "group"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        booking_count:
+          type: integer
+          description: "Number of confirmed bookings"
+          example: 8
+        waiting_list_count:
+          type: integer
+          description: "Number of people on waiting list"
+          example: 2
+        available_spots:
+          type: integer
+          description: "Available spots remaining"
+          example: 2
+        is_full:
+          type: boolean
+          description: "Whether the schedule is at full capacity"
+          example: false
+        has_waiting_list:
+          type: boolean
+          description: "Whether there are people on waiting list"
+          example: true
+        assigned_member:
+          type: object
+          nullable: true
+          description: "For private schedules only"
+          properties:
+            id:
+              type: string
+              format: uuid
+              nullable: true
+            name:
+              type: string
+              nullable: true
+          example:
+            id: "member-uuid-1"
+            name: "John Doe"
+        bookings:
+          type: array
+          description: "List of current bookings"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              member_name:
+                type: string
+            example:
+              id: "booking-uuid-1"
+              status: "signup"
+              member_name: "John Doe"
+        picture:
+          type: string
+          nullable: true
+          description: "Schedule picture/banner"
+          example: "schedule_banner_1.jpg"
+
+    PrivateSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "private"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        booking_count:
+          type: integer
+          description: "Number of confirmed bookings"
+          example: 8
+        waiting_list_count:
+          type: integer
+          description: "Number of people on waiting list"
+          example: 2
+        available_spots:
+          type: integer
+          description: "Available spots remaining"
+          example: 2
+        is_full:
+          type: boolean
+          description: "Whether the schedule is at full capacity"
+          example: false
+        has_waiting_list:
+          type: boolean
+          description: "Whether there are people on waiting list"
+          example: true
+        assigned_member:
+          type: object
+          nullable: true
+          description: "For private schedules only"
+          properties:
+            id:
+              type: string
+              format: uuid
+              nullable: true
+            name:
+              type: string
+              nullable: true
+          example:
+            id: "member-uuid-1"
+            name: "John Doe"
+        bookings:
+          type: array
+          description: "List of current bookings"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              member_name:
+                type: string
+            example:
+              id: "booking-uuid-1"
+              status: "signup"
+              member_name: "John Doe"
+        picture:
+          type: string
+          nullable: true
+          description: "Schedule picture/banner"
+          example: "schedule_banner_1.jpg"
+
+    CreateGroupScheduleRequest:
+      type: object
+      required:
+        - class_name
+        - date
+        - time_start
+        - time_end
+        - pax
+        - type
+      properties:
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "group"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        repeatType:
+          type: string
+          example: "weekly"
+      example:
+        class_name: "Chair Basic"
+        class_color: "#4F46E5"
+        trainer_name: "Sarah Johnson"
+        trainer_picture: "trainer_photo_1.jpg"
+        type: "group"
+        date: "2025-07-15"
+        time_start: "07:10"
+        time_end: "08:10"
+        pax: 10
+        repeatType: "weekly"
+
+    UpdateGroupScheduleRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "group"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        repeatType:
+          type: string
+          example: "weekly"
+      example:
+        id: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name: "Chair Basic"
+        class_color: "#4F46E5"
+        trainer_name: "Sarah Johnson"
+        trainer_picture: "trainer_photo_1.jpg"
+        type: "group"
+        date: "2025-07-15"
+        time_start: "07:10"
+        time_end: "08:10"
+        pax: 10
+        repeatType: "weekly"
+
+    CreateSemiPrivateScheduleRequest:
+      type: object
+      required:
+        - class_name
+        - date
+        - time_start
+        - time_end
+        - pax
+        - type
+      properties:
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "semi_private"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        repeatType:
+          type: string
+          example: "weekly"
+      example:
+        class_name: "Chair Basic"
+        class_color: "#4F46E5"
+        trainer_name: "Sarah Johnson"
+        trainer_picture: "trainer_photo_1.jpg"
+        type: "semi_private"
+        date: "2025-07-15"
+        time_start: "07:10"
+        time_end: "08:10"
+        pax: 10
+        repeatType: "weekly"
+
+    UpdateSemiPrivateScheduleRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "semi_private"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        repeatType:
+          type: string
+          example: "weekly"
+      example:
+        id: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name: "Chair Basic"
+        class_color: "#4F46E5"
+        trainer_name: "Sarah Johnson"
+        trainer_picture: "trainer_photo_1.jpg"
+        type: "semi_private"
+        date: "2025-07-15"
+        time_start: "07:10"
+        time_end: "08:10"
+        pax: 10
+        repeatType: "weekly"
+
+    CreatePrivateScheduleRequest:
+      type: object
+      required:
+        - class_name
+        - date
+        - time_start
+        - time_end
+        - pax
+        - type
+      properties:
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "private"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        repeatType:
+          type: string
+          example: "weekly"
+        assignedMember:
+          type: object
+          required:
+            - id
+          properties:
+            id:
+              type: string
+              format: uuid
+            full_name:
+              type: string
+            email:
+              type: string
+          example:
+            id: "member-uuid-1"
+            full_name: "John Doe"
+            email: "john.doe@example.com"
+      example:
+        class_name: "Chair Basic"
+        class_color: "#4F46E5"
+        trainer_name: "Sarah Johnson"
+        trainer_picture: "trainer_photo_1.jpg"
+        type: "private"
+        date: "2025-07-15"
+        time_start: "07:10"
+        time_end: "08:10"
+        pax: 10
+        repeatType: "weekly"
+        assignedMember:
+          id: "member-uuid-1"
+          full_name: "John Doe"
+          email: "john.doe@example.com"
+
+    UpdatePrivateScheduleRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "private"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        repeatType:
+          type: string
+          example: "weekly"
+        assignedMember:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+              nullable: true
+            name:
+              type: string
+              nullable: true
+          example:
+            id: "member-uuid-1"
+            name: "John Doe"
+      example:
+        id: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name: "Chair Basic"
+        class_color: "#4F46E5"
+        trainer_name: "Sarah Johnson"
+        trainer_picture: "trainer_photo_1.jpg"
+        type: "private"
+        date: "2025-07-15"
+        time_start: "07:10"
+        time_end: "08:10"
+        pax: 10
+        repeatType: "weekly"
+        assignedMember:
+          id: "member-uuid-1"
+          name: "John Doe"
+
+    ScheduleCalendarItem:
+      type: object
+      description: "Schedule item formatted for calendar display"
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "group"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        booking_count:
+          type: integer
+          description: "Number of confirmed bookings"
+          example: 8
+        waiting_list_count:
+          type: integer
+          description: "Number of people on waiting list"
+          example: 2
+        available_spots:
+          type: integer
+          description: "Available spots remaining"
+          example: 2
+        is_full:
+          type: boolean
+          description: "Whether the schedule is at full capacity"
+          example: false
+        has_waiting_list:
+          type: boolean
+          description: "Whether there are people on waiting list"
+          example: true
+        assigned_member:
+          type: object
+          nullable: true
+          description: "For private schedules only"
+          properties:
+            id:
+              type: string
+              format: uuid
+              nullable: true
+            name:
+              type: string
+              nullable: true
+          example:
+            id: "member-uuid-1"
+            name: "John Doe"
+        bookings:
+          type: array
+          description: "List of current bookings"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              member_name:
+                type: string
+            example:
+              id: "booking-uuid-1"
+              status: "signup"
+              member_name: "John Doe"
+        picture:
+          type: string
+          nullable: true
+          description: "Schedule picture/banner"
+          example: "schedule_banner_1.jpg" 
