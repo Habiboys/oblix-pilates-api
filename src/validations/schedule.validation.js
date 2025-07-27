@@ -174,11 +174,25 @@ const updateGroupScheduleSchema = Joi.object({
     return value;
 });
 
+// Validation schema for getting group schedules
 const getGroupScheduleSchema = Joi.object({
-    id: Joi.string().uuid().required().messages({
-        'string.empty': 'Schedule ID is required',
-        'string.uuid': 'Schedule ID must be a valid UUID',
-        'any.required': 'Schedule ID is required'
+    page: Joi.number().integer().min(1).optional().default(1).messages({
+        'number.base': 'Page must be a number',
+        'number.integer': 'Page must be an integer',
+        'number.min': 'Page must be at least 1'
+    }),
+    limit: Joi.number().integer().min(1).max(100).optional().default(10).messages({
+        'number.base': 'Limit must be a number',
+        'number.integer': 'Limit must be an integer',
+        'number.min': 'Limit must be at least 1',
+        'number.max': 'Limit cannot exceed 100'
+    }),
+    search: Joi.string().optional().allow('').messages({
+        'string.base': 'Search must be a string'
+    }),
+    date: Joi.date().iso().optional().messages({
+        'date.base': 'Date must be a valid date',
+        'date.format': 'Date must be in ISO format (YYYY-MM-DD)'
     })
 });
 
@@ -363,12 +377,25 @@ const updateSemiPrivateScheduleSchema = Joi.object({
     return value;
 });
 
-// Validation schema for getting semi-private schedule by ID
+// Validation schema for getting semi-private schedules
 const getSemiPrivateScheduleSchema = Joi.object({
-    id: Joi.string().uuid().required().messages({
-        'string.empty': 'Schedule ID is required',
-        'string.uuid': 'Schedule ID must be a valid UUID',
-        'any.required': 'Schedule ID is required'
+    page: Joi.number().integer().min(1).optional().default(1).messages({
+        'number.base': 'Page must be a number',
+        'number.integer': 'Page must be an integer',
+        'number.min': 'Page must be at least 1'
+    }),
+    limit: Joi.number().integer().min(1).max(100).optional().default(10).messages({
+        'number.base': 'Limit must be a number',
+        'number.integer': 'Limit must be an integer',
+        'number.min': 'Limit must be at least 1',
+        'number.max': 'Limit cannot exceed 100'
+    }),
+    search: Joi.string().optional().allow('').messages({
+        'string.base': 'Search must be a string'
+    }),
+    date: Joi.date().iso().optional().messages({
+        'date.base': 'Date must be a valid date',
+        'date.format': 'Date must be in ISO format (YYYY-MM-DD)'
     })
 });
 
@@ -547,12 +574,25 @@ const updatePrivateScheduleSchema = Joi.object({
     return value;
 });
 
-// Validation schema for getting private schedule by ID
+// Validation schema for getting private schedules
 const getPrivateScheduleSchema = Joi.object({
-    id: Joi.string().uuid().required().messages({
-        'string.empty': 'Schedule ID is required',
-        'string.uuid': 'Schedule ID must be a valid UUID',
-        'any.required': 'Schedule ID is required'
+    page: Joi.number().integer().min(1).optional().default(1).messages({
+        'number.base': 'Page must be a number',
+        'number.integer': 'Page must be an integer',
+        'number.min': 'Page must be at least 1'
+    }),
+    limit: Joi.number().integer().min(1).max(100).optional().default(10).messages({
+        'number.base': 'Limit must be a number',
+        'number.integer': 'Limit must be an integer',
+        'number.min': 'Limit must be at least 1',
+        'number.max': 'Limit cannot exceed 100'
+    }),
+    search: Joi.string().optional().allow('').messages({
+        'string.base': 'Search must be a string'
+    }),
+    date: Joi.date().iso().optional().messages({
+        'date.base': 'Date must be a valid date',
+        'date.format': 'Date must be in ISO format (YYYY-MM-DD)'
     })
 });
 
@@ -584,7 +624,41 @@ const getScheduleCalendarSchema = Joi.object({
         .optional()
         .messages({
             'any.only': 'Tipe schedule harus berupa group, semi_private, atau private'
+        }),
+    include_members: Joi.string()
+        .valid('true', 'false')
+        .optional()
+        .default('false')
+        .messages({
+            'any.only': 'Include members harus berupa true atau false'
         })
+});
+
+// Validation schema for getting group schedule by ID
+const getGroupScheduleByIdSchema = Joi.object({
+    id: Joi.string().uuid().required().messages({
+        'string.empty': 'Schedule ID is required',
+        'string.uuid': 'Schedule ID must be a valid UUID',
+        'any.required': 'Schedule ID is required'
+    })
+});
+
+// Validation schema for getting semi-private schedule by ID
+const getSemiPrivateScheduleByIdSchema = Joi.object({
+    id: Joi.string().uuid().required().messages({
+        'string.empty': 'Schedule ID is required',
+        'string.uuid': 'Schedule ID must be a valid UUID',
+        'any.required': 'Schedule ID is required'
+    })
+});
+
+// Validation schema for getting private schedule by ID
+const getPrivateScheduleByIdSchema = Joi.object({
+    id: Joi.string().uuid().required().messages({
+        'string.empty': 'Schedule ID is required',
+        'string.uuid': 'Schedule ID must be a valid UUID',
+        'any.required': 'Schedule ID is required'
+    })
 });
 
 module.exports = {
@@ -597,5 +671,8 @@ module.exports = {
     createPrivateScheduleSchema,
     updatePrivateScheduleSchema,
     getPrivateScheduleSchema,
-    getScheduleCalendarSchema
+    getScheduleCalendarSchema,
+    getGroupScheduleByIdSchema,
+    getSemiPrivateScheduleByIdSchema,
+    getPrivateScheduleByIdSchema
 }; 

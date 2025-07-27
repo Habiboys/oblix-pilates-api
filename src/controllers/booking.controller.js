@@ -634,43 +634,7 @@ const getBookingsByMember = async (req, res) => {
 }
 };
 
-// Auto-cancel expired bookings
-const runAutoCancel = async (req, res) => {
-    try {
-        const result = await autoCancelExpiredBookings();
-        
-        res.json({
-            success: true,
-            message: 'Auto-cancel process completed',
-            data: result
-        });
-    } catch (error) {
-        logger.error('Error running auto-cancel:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
 
-// Cancel insufficient bookings
-const runInsufficientCancel = async (req, res) => {
-    try {
-        const result = await cancelInsufficientBookings();
-        
-        res.json({
-            success: true,
-            message: 'Insufficient bookings cancellation completed',
-            data: result
-        });
-    } catch (error) {
-        logger.error('Error running insufficient cancel:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
 
 // Get booking statistics
 const getBookingStats = async (req, res) => {
@@ -691,6 +655,280 @@ const getBookingStats = async (req, res) => {
     }
 };
 
+// Update attendance status
+const updateAttendance = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { attendance, notes } = req.body;
+
+        const booking = await Booking.findByPk(id, {
+            include: [
+                {
+                    model: Member,
+                    attributes: ['id', 'full_name', 'phone_number'],
+                    include: [
+                        {
+                            model: require('../models').User,
+                            attributes: ['email']
+                        }
+                    ]
+                },
+                {
+                    model: Schedule,
+                    include: [
+                        {
+                            model: require('../models').Class,
+                            attributes: ['class_name']
+                        },
+                        {
+                            model: require('../models').Trainer,
+                            attributes: ['title']
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: 'Booking not found'
+            });
+        }
+
+        // Update attendance
+        await booking.update({
+            attendance,
+            notes: notes || booking.notes
+        });
+
+        res.json({
+            success: true,
+            message: 'Attendance updated successfully',
+            data: {
+                id: booking.id,
+                attendance: booking.attendance,
+                notes: booking.notes,
+                updated_at: booking.updatedAt
+            }
+        });
+    } catch (error) {
+        logger.error('Error updating attendance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Update attendance for all bookings in a schedule
+const updateScheduleAttendance = async (req, res) => {
+    try {
+        const { schedule_id } = req.params;
+        const { attendances } = req.body; // Array of { booking_id, attendance, notes }
+
+        // Validate schedule exists
+        const schedule = await Schedule.findByPk(schedule_id, {
+            include: [
+                {
+                    model: require('../models').Class,
+                    attributes: ['class_name']
+                },
+                {
+                    model: require('../models').Trainer,
+                    attributes: ['title']
+                }
+            ]
+        });
+
+        if (!schedule) {
+            return res.status(404).json({
+                success: false,
+                message: 'Schedule not found'
+            });
+        }
+
+        // Get all signup bookings for this schedule
+        const bookings = await Booking.findAll({
+            where: {
+                schedule_id,
+                status: 'signup'
+            },
+            include: [
+                {
+                    model: Member,
+                    attributes: ['id', 'full_name', 'phone_number'],
+                    include: [
+                        {
+                            model: require('../models').User,
+                            attributes: ['email']
+                        }
+                    ]
+                }
+            ],
+            order: [['createdAt', 'ASC']]
+        });
+
+        if (bookings.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No signup bookings found for this schedule'
+            });
+        }
+
+        const results = [];
+
+        // Update each booking attendance
+        for (const booking of bookings) {
+            const attendanceData = attendances.find(a => a.booking_id === booking.id);
+            
+            if (attendanceData) {
+                await booking.update({
+                    attendance: attendanceData.attendance,
+                    notes: attendanceData.notes || booking.notes
+                });
+
+                results.push({
+                    booking_id: booking.id,
+                    member_id: booking.member_id,
+                    member_name: booking.Member.full_name,
+                    attendance: booking.attendance,
+                    notes: booking.notes,
+                    updated_at: booking.updatedAt
+                });
+            } else {
+                // Default to present if not specified
+                await booking.update({
+                    attendance: 'present'
+                });
+
+                results.push({
+                    booking_id: booking.id,
+                    member_id: booking.member_id,
+                    member_name: booking.Member.full_name,
+                    attendance: 'present',
+                    notes: booking.notes,
+                    updated_at: booking.updatedAt
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: 'Schedule attendance updated successfully',
+            data: {
+                schedule_id,
+                schedule_info: {
+                    class_name: schedule.Class.class_name,
+                    trainer_name: schedule.Trainer.title,
+                    date: schedule.date_start,
+                    time: schedule.time_start
+                },
+                total_bookings: bookings.length,
+                updated_bookings: results
+            }
+        });
+    } catch (error) {
+        logger.error('Error updating schedule attendance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Admin cancel booking
+const adminCancelBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+
+        const booking = await Booking.findByPk(id, {
+            include: [
+                {
+                    model: Member,
+                    attributes: ['id', 'full_name', 'phone_number'],
+                    include: [
+                        {
+                            model: require('../models').User,
+                            attributes: ['email']
+                        }
+                    ]
+                },
+                {
+                    model: Schedule,
+                    include: [
+                        {
+                            model: require('../models').Class,
+                            attributes: ['class_name']
+                        },
+                        {
+                            model: require('../models').Trainer,
+                            attributes: ['title']
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: 'Booking not found'
+            });
+        }
+
+        if (booking.status === 'cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: 'Booking is already cancelled'
+            });
+        }
+
+        // Cancel booking
+        await booking.update({
+            status: 'cancelled',
+            notes: reason ? `Admin cancelled: ${reason}` : 'Admin cancelled'
+        });
+
+        // Process waitlist promotion if this was a signup booking
+        if (booking.status === 'signup') {
+            await processWaitlistPromotion(booking.schedule_id);
+        }
+
+        // Send cancellation notification
+        try {
+            await twilioService.sendAdminCancellation(
+                booking.Member.phone_number,
+                booking.Member.full_name,
+                booking.Schedule.Class.class_name,
+                booking.Schedule.date_start,
+                booking.Schedule.time_start,
+                'Admin cancelled your booking'
+            );
+        } catch (notificationError) {
+            logger.error('Error sending cancellation notification:', notificationError);
+        }
+
+        res.json({
+            success: true,
+            message: 'Booking cancelled successfully by admin',
+            data: {
+                id: booking.id,
+                status: booking.status,
+                notes: booking.notes,
+                cancelled_at: booking.updatedAt
+            }
+        });
+    } catch (error) {
+        logger.error('Error cancelling booking by admin:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 module.exports = {
     getAllBookings,
     getBookingById,
@@ -700,7 +938,8 @@ module.exports = {
     deleteBooking,
     getMemberSessions,
     getBookingsByMember,
-    runAutoCancel,
-    runInsufficientCancel,
-    getBookingStats
+    getBookingStats,
+    updateAttendance,
+    updateScheduleAttendance,
+    adminCancelBooking
 }; 

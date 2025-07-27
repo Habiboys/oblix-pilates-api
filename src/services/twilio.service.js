@@ -359,11 +359,123 @@ Terima kasih atas pengertiannya! 🙏
     }
 };
 
+/**
+ * Send attendance notification to member
+ * @param {string} phoneNumber - Member's phone number
+ * @param {string} memberName - Member's full name
+ * @param {string} className - Class name
+ * @param {string} date - Schedule date
+ * @param {string} time - Schedule time
+ * @param {string} attendance - Attendance status (absent/late)
+ * @returns {Promise<Object>} Send result
+ */
+const sendAttendanceNotification = async (phoneNumber, memberName, className, date, time, attendance) => {
+    try {
+        const scheduleDate = new Date(`${date}T${time}`);
+        const formattedDate = scheduleDate.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        const formattedTime = scheduleDate.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const statusEmoji = attendance === 'absent' ? '❌' : '⏰';
+        const statusText = attendance === 'absent' ? 'TIDAK HADIR' : 'TERLAMBAT';
+
+        const message = `${statusEmoji} *ABSENSI ${statusText}* ${statusEmoji}
+
+Halo ${memberName}! 👋
+
+Kami mencatat bahwa Anda ${attendance === 'absent' ? 'tidak hadir' : 'terlambat'} pada kelas:
+
+📅 *Tanggal*: ${formattedDate}
+⏰ *Waktu*: ${formattedTime}
+🏷️ *Kelas*: ${className}
+📊 *Status*: ${statusText}
+
+${attendance === 'absent' 
+    ? 'Mohon berikan alasan ketidakhadiran Anda atau hubungi kami untuk informasi lebih lanjut.'
+    : 'Untuk kedepannya, mohon datang tepat waktu agar tidak mengganggu jadwal kelas.'
+}
+
+Terima kasih! 🙏
+
+*Oblix Pilates Studio*`;
+
+        return await sendWhatsAppMessage(phoneNumber, message);
+
+    } catch (error) {
+        logger.error('Error sending attendance notification:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
+
+/**
+ * Send class cancellation notification for single booking (admin cancel)
+ * @param {string} phoneNumber - Member's phone number
+ * @param {string} memberName - Member's full name
+ * @param {string} className - Class name
+ * @param {string} date - Schedule date
+ * @param {string} time - Schedule time
+ * @param {string} reason - Cancellation reason
+ * @returns {Promise<Object>} Send result
+ */
+const sendAdminCancellation = async (phoneNumber, memberName, className, date, time, reason) => {
+    try {
+        const scheduleDate = new Date(`${date}T${time}`);
+        const formattedDate = scheduleDate.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        const formattedTime = scheduleDate.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const message = `🚫 *BOOKING DIBATALKAN* 🚫
+
+Halo ${memberName}! 👋
+
+Booking Anda untuk kelas berikut telah dibatalkan oleh admin:
+
+📅 *Tanggal*: ${formattedDate}
+⏰ *Waktu*: ${formattedTime}
+🏷️ *Kelas*: ${className}
+📝 *Alasan*: ${reason}
+
+Silakan booking kelas lain yang tersedia atau hubungi kami untuk informasi lebih lanjut.
+
+Terima kasih atas pengertiannya! 🙏
+
+*Oblix Pilates Studio*`;
+
+        return await sendWhatsAppMessage(phoneNumber, message);
+
+    } catch (error) {
+        logger.error('Error sending admin cancellation:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
+
 module.exports = {
     sendWhatsAppMessage,
     sendBookingReminder,
     sendBookingConfirmation,
     sendBookingCancellation,
     sendWaitlistPromotion,
-    sendClassCancellation
+    sendClassCancellation,
+    sendAttendanceNotification,
+    sendAdminCancellation
 }; 

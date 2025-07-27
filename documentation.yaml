@@ -6491,19 +6491,24 @@ paths:
       tags:
         - Schedule Management
       summary: Get all group schedules
-      description: Retrieve all group schedules with pagination and search
+      description: |
+        Retrieve all group schedules with pagination and search.
+        Returns detailed information including booking status, available slots, and member details.
       parameters:
         - in: query
           name: page
           schema:
             type: integer
             default: 1
+            minimum: 1
           description: Page number
         - in: query
           name: limit
           schema:
             type: integer
             default: 10
+            minimum: 1
+            maximum: 100
           description: Number of items per page
         - in: query
           name: search
@@ -6532,9 +6537,18 @@ paths:
                           schedules:
                             type: array
                             items:
-                              $ref: '#/components/schemas/GroupSchedule'
+                              $ref: '#/components/schemas/GroupScheduleDetail'
                           pagination:
                             $ref: '#/components/schemas/PaginationInfo'
+                          filters:
+                            type: object
+                            properties:
+                              search:
+                                type: string
+                                nullable: true
+                              date:
+                                type: string
+                                nullable: true
         '500':
           description: Internal server error
           content:
@@ -6604,7 +6618,9 @@ paths:
       tags:
         - Schedule Management
       summary: Get group schedule by ID
-      description: Retrieve a specific group schedule by its ID
+      description: |
+        Retrieve a specific group schedule by ID.
+        Returns detailed information including all booking details and member information.
       parameters:
         - in: path
           name: id
@@ -6624,7 +6640,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/GroupSchedule'
+                        $ref: '#/components/schemas/GroupScheduleDetail'
         '404':
           description: Schedule not found
           content:
@@ -6751,54 +6767,64 @@ paths:
       tags:
         - Schedule Management
       summary: Get all semi-private schedules
-      description: Retrieve all semi-private schedules with pagination and search
+      description: |
+        Retrieve all semi-private schedules with pagination and search.
+        Returns detailed information including booking status, available slots, and member details.
       parameters:
-        - name: page
-          in: query
+        - in: query
+          name: page
           schema:
             type: integer
             default: 1
             minimum: 1
           description: Page number
-        - name: limit
-          in: query
+        - in: query
+          name: limit
           schema:
             type: integer
             default: 10
             minimum: 1
             maximum: 100
           description: Number of items per page
-        - name: search
-          in: query
+        - in: query
+          name: search
           schema:
             type: string
           description: Search by class name
-        - name: date
-          in: query
+        - in: query
+          name: date
           schema:
             type: string
             format: date
-          description: Filter by specific date
+          description: Filter by specific date (YYYY-MM-DD)
       responses:
         '200':
           description: Semi-private schedules retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Semi-private schedules retrieved successfully
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
                     properties:
-                      schedules:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/GroupSchedule'
-                      pagination:
-                        $ref: '#/components/schemas/Pagination'
+                      data:
+                        type: object
+                        properties:
+                          schedules:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/SemiPrivateScheduleDetail'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
+                          filters:
+                            type: object
+                            properties:
+                              search:
+                                type: string
+                                nullable: true
+                              date:
+                                type: string
+                                nullable: true
         '500':
           description: Internal server error
           content:
@@ -6869,10 +6895,12 @@ paths:
       tags:
         - Schedule Management
       summary: Get semi-private schedule by ID
-      description: Retrieve a specific semi-private schedule by its ID
+      description: |
+        Retrieve a specific semi-private schedule by ID.
+        Returns detailed information including all booking details and member information.
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -6884,13 +6912,12 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Semi-private schedule retrieved successfully
-                  data:
-                    $ref: '#/components/schemas/GroupSchedule'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SemiPrivateScheduleDetail'
         '404':
           description: Schedule not found
           content:
@@ -6911,8 +6938,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -6975,8 +7002,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -7022,54 +7049,64 @@ paths:
       tags:
         - Schedule Management
       summary: Get all private schedules
-      description: Retrieve all private schedules with pagination and search
+      description: |
+        Retrieve all private schedules with pagination and search.
+        Returns detailed information including booking status, assigned member, and member details.
       parameters:
-        - name: page
-          in: query
+        - in: query
+          name: page
           schema:
             type: integer
             default: 1
             minimum: 1
           description: Page number
-        - name: limit
-          in: query
+        - in: query
+          name: limit
           schema:
             type: integer
             default: 10
             minimum: 1
             maximum: 100
           description: Number of items per page
-        - name: search
-          in: query
+        - in: query
+          name: search
           schema:
             type: string
           description: Search by class name
-        - name: date
-          in: query
+        - in: query
+          name: date
           schema:
             type: string
             format: date
-          description: Filter by specific date
+          description: Filter by specific date (YYYY-MM-DD)
       responses:
         '200':
           description: Private schedules retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Private schedules retrieved successfully
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
                     properties:
-                      schedules:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/PrivateSchedule'
-                      pagination:
-                        $ref: '#/components/schemas/Pagination'
+                      data:
+                        type: object
+                        properties:
+                          schedules:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PrivateScheduleDetail'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
+                          filters:
+                            type: object
+                            properties:
+                              search:
+                                type: string
+                                nullable: true
+                              date:
+                                type: string
+                                nullable: true
         '500':
           description: Internal server error
           content:
@@ -7153,10 +7190,12 @@ paths:
       tags:
         - Schedule Management
       summary: Get private schedule by ID
-      description: Retrieve a specific private schedule by its ID
+      description: |
+        Retrieve a specific private schedule by ID.
+        Returns detailed information including assigned member and all booking details.
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -7168,13 +7207,12 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Private schedule retrieved successfully
-                  data:
-                    $ref: '#/components/schemas/PrivateSchedule'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PrivateScheduleDetail'
         '404':
           description: Schedule not found
           content:
@@ -7195,8 +7233,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -7259,8 +7297,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -7525,11 +7563,6 @@ paths:
                   format: uuid
                   description: ID of the member making the booking
                   example: 123e4567-e89b-12d3-a456-426614174001
-                package_id:
-                  type: string
-                  format: uuid
-                  description: Optional package ID. If not provided, system will auto-select available package
-                  example: 123e4567-e89b-12d3-a456-426614174002
                 notes:
                   type: string
                   maxLength: 500
@@ -7552,45 +7585,11 @@ paths:
                   data:
                     $ref: '#/components/schemas/BookingResponse'
         '400':
-          description: Bad request - validation error or insufficient sessions
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Member tidak memiliki jatah sesi yang cukup
-                  data:
-                    type: object
-                    properties:
-                      required_sessions:
-                        type: integer
-                        example: 1
-                      available_sessions:
-                        type: integer
-                        example: 0
-                      deficit:
-                        type: integer
-                        example: 1
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Schedule or member not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Schedule tidak ditemukan
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/booking/{id}:
@@ -7604,11 +7603,12 @@ paths:
       parameters:
         - name: id
           in: path
+          description: ID of the booking
           required: true
-          description: Booking ID
           schema:
             type: string
             format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174001
       responses:
         '200':
           description: Booking retrieved successfully
@@ -7628,35 +7628,25 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Booking not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Booking not found
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
       tags:
         - Booking Management
       summary: Delete booking
-      description: Delete a booking by its ID
+      description: Delete a booking (Admin only)
       security:
         - BearerAuth: []
       parameters:
         - name: id
           in: path
+          description: ID of the booking to delete
           required: true
-          description: Booking ID
           schema:
             type: string
             format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174001
       responses:
         '200':
           description: Booking deleted successfully
@@ -7674,18 +7664,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Booking not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Booking not found
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/booking/{id}/status:
@@ -7693,23 +7672,26 @@ paths:
       tags:
         - Booking Management
       summary: Update booking status
-      description: Update the status of a booking (signup, waiting_list, cancelled)
+      description: Update the status of a booking (Admin only)
       security:
         - BearerAuth: []
       parameters:
         - name: id
           in: path
+          description: ID of the booking
           required: true
-          description: Booking ID
           schema:
             type: string
             format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174001
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - status
               properties:
                 status:
                   type: string
@@ -7718,12 +7700,12 @@ paths:
                     - waiting_list
                     - cancelled
                   description: New status for the booking
-                  example: waiting_list
+                  example: signup
                 notes:
                   type: string
                   maxLength: 500
                   description: Optional notes for the status change
-                  example: Moved to waiting list due to full capacity
+                  example: Status updated by admin
       responses:
         '200':
           description: Booking status updated successfully
@@ -7741,22 +7723,226 @@ paths:
                   data:
                     $ref: '#/components/schemas/BookingResponse'
         '400':
-          description: Bad request - invalid status
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Status tidak valid
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Booking not found
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/{id}/attendance:
+    patch:
+      tags:
+        - Booking Management
+      summary: Update booking attendance
+      description: Update attendance status for a specific booking
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the booking
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - attendance
+              properties:
+                attendance:
+                  type: string
+                  enum:
+                    - present
+                    - absent
+                  description: Attendance status
+                  example: present
+                notes:
+                  type: string
+                  maxLength: 500
+                  description: Optional notes for the attendance
+                  example: Hadir tepat waktu
+      responses:
+        '200':
+          description: Attendance updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Attendance updated successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: 123e4567-e89b-12d3-a456-426614174001
+                      attendance:
+                        type: string
+                        enum:
+                          - present
+                          - absent
+                        example: present
+                      notes:
+                        type: string
+                        nullable: true
+                        example: Hadir tepat waktu
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: '2025-07-15T07:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/schedule/{schedule_id}/attendance:
+    patch:
+      tags:
+        - Booking Management
+      summary: Update attendance for all bookings in a schedule
+      description: Update attendance status for all members who booked a specific schedule. Useful for bulk attendance marking.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: schedule_id
+          in: path
+          description: ID of the schedule
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174000
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - attendances
+              properties:
+                attendances:
+                  type: array
+                  description: Array of attendance data for each booking
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - booking_id
+                      - attendance
+                    properties:
+                      booking_id:
+                        type: string
+                        format: uuid
+                        description: ID of the booking
+                        example: 123e4567-e89b-12d3-a456-426614174001
+                      attendance:
+                        type: string
+                        enum:
+                          - present
+                          - absent
+                        description: Attendance status
+                        example: present
+                      notes:
+                        type: string
+                        maxLength: 500
+                        description: Optional notes for the attendance
+                        example: Hadir tepat waktu
+      responses:
+        '200':
+          description: Schedule attendance updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Schedule attendance updated successfully
+                  data:
+                    type: object
+                    properties:
+                      schedule_id:
+                        type: string
+                        format: uuid
+                        example: 123e4567-e89b-12d3-a456-426614174000
+                      schedule_info:
+                        type: object
+                        properties:
+                          class_name:
+                            type: string
+                            example: Pilates Basic
+                          trainer_name:
+                            type: string
+                            example: Sarah Johnson
+                          date:
+                            type: string
+                            format: date
+                            example: '2025-07-15'
+                          time:
+                            type: string
+                            format: time
+                            example: '07:00'
+                      total_bookings:
+                        type: integer
+                        description: Total number of bookings updated
+                        example: 5
+                      updated_bookings:
+                        type: array
+                        description: List of updated bookings with attendance
+                        items:
+                          type: object
+                          properties:
+                            booking_id:
+                              type: string
+                              format: uuid
+                              example: 123e4567-e89b-12d3-a456-426614174001
+                            member_id:
+                              type: string
+                              format: uuid
+                              example: 123e4567-e89b-12d3-a456-426614174002
+                            member_name:
+                              type: string
+                              example: John Doe
+                            attendance:
+                              type: string
+                              enum:
+                                - present
+                                - absent
+                              example: present
+                            notes:
+                              type: string
+                              nullable: true
+                              example: Hadir tepat waktu
+                            updated_at:
+                              type: string
+                              format: date-time
+                              example: '2025-07-15T07:00:00Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Schedule or bookings not found
           content:
             application/json:
               schema:
@@ -7767,7 +7953,141 @@ paths:
                     example: false
                   message:
                     type: string
-                    example: Booking not found
+                    example: Schedule not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/{id}/cancel:
+    post:
+      tags:
+        - Booking Management
+      summary: Cancel booking
+      description: Cancel a booking (Member can cancel their own booking)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the booking to cancel
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174001
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Optional reason for cancellation
+                  example: Cannot attend due to emergency
+      responses:
+        '200':
+          description: Booking cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking cancelled successfully
+                  data:
+                    $ref: '#/components/schemas/BookingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/booking/{id}/admin-cancel:
+    post:
+      tags:
+        - Booking Management
+      summary: Admin cancel booking
+      description: Allow admin to cancel a member's booking with optional reason
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the booking to cancel
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174001
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Optional reason for cancellation
+                  example: Member requested cancellation
+      responses:
+        '200':
+          description: Booking cancelled successfully by admin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking cancelled successfully by admin
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: 123e4567-e89b-12d3-a456-426614174001
+                      status:
+                        type: string
+                        enum:
+                          - cancelled
+                        example: cancelled
+                      notes:
+                        type: string
+                        example: 'Admin cancelled: Member requested cancellation'
+                      cancelled_at:
+                        type: string
+                        format: date-time
+                        example: '2025-07-15T07:00:00Z'
+        '400':
+          description: Booking already cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Booking is already cancelled
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/booking/member/{member_id}/sessions:
@@ -7775,17 +8095,18 @@ paths:
       tags:
         - Booking Management
       summary: Get member session summary
-      description: Get detailed information about member's available sessions and package usage
+      description: Get session summary for a specific member including available sessions across all packages
       security:
         - BearerAuth: []
       parameters:
         - name: member_id
           in: path
+          description: ID of the member
           required: true
-          description: Member ID
           schema:
             type: string
             format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174002
       responses:
         '200':
           description: Member session summary retrieved successfully
@@ -7805,18 +8126,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Member not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Member not found
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/booking/member/{member_id}/bookings:
@@ -7824,17 +8134,18 @@ paths:
       tags:
         - Booking Management
       summary: Get bookings by member ID
-      description: Retrieve all bookings for a specific member with pagination and status filtering
+      description: Retrieve all bookings for a specific member with pagination
       security:
         - BearerAuth: []
       parameters:
         - name: member_id
           in: path
+          description: ID of the member
           required: true
-          description: Member ID
           schema:
             type: string
             format: uuid
+            example: 123e4567-e89b-12d3-a456-426614174002
         - name: page
           in: query
           description: Page number for pagination
@@ -7885,203 +8196,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
-          description: Member not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Member not found
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/booking/{id}/cancel:
-    post:
-      tags:
-        - Booking Management
-      summary: Cancel booking
-      description: Cancel a booking with validation for cancel buffer time and automatic waitlist promotion
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Booking ID
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-                  maxLength: 500
-                  description: Optional reason for cancellation
-                  example: Saya tidak bisa hadir karena ada urusan mendadak
-      responses:
-        '200':
-          description: Booking cancelled successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Booking cancelled successfully
-                  data:
-                    type: object
-                    properties:
-                      cancelled_booking:
-                        $ref: '#/components/schemas/BookingResponse'
-                      promoted_from_waitlist:
-                        $ref: '#/components/schemas/BookingResponse'
-        '400':
-          description: Cannot cancel booking
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Tidak dapat cancel booking. Batas waktu cancel adalah 120 menit sebelum kelas dimulai.
-                  data:
-                    type: object
-                    properties:
-                      schedule_time:
-                        type: string
-                        format: date-time
-                        example: '2024-01-20T09:00:00Z'
-                      cancel_deadline:
-                        type: string
-                        format: date-time
-                        example: '2024-01-20T07:00:00Z'
-                      current_time:
-                        type: string
-                        format: date-time
-                        example: '2024-01-20T08:30:00Z'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          description: Booking not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Booking not found
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/booking/admin/auto-cancel:
-    post:
-      tags:
-        - Booking Management
-      summary: Run auto-cancel expired bookings
-      description: Automatically cancel bookings that exceed cancel buffer time (admin only)
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Auto-cancel process completed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Auto-cancel process completed
-                  data:
-                    type: object
-                    properties:
-                      success:
-                        type: boolean
-                        example: true
-                      cancelled_count:
-                        type: integer
-                        example: 5
-                      cancelled_bookings:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            booking_id:
-                              type: string
-                              format: uuid
-                            member_name:
-                              type: string
-                              example: John Doe
-                            schedule_date:
-                              type: string
-                              format: date
-                              example: '2024-01-20'
-                            schedule_time:
-                              type: string
-                              example: '09:00:00'
-                            cancel_reason:
-                              type: string
-                              example: Auto-cancelled due to cancel buffer time
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /api/booking/admin/insufficient-cancel:
-    post:
-      tags:
-        - Booking Management
-      summary: Cancel insufficient bookings
-      description: Cancel bookings for schedules that don't meet minimum signup requirement (admin only)
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Insufficient bookings cancellation completed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Insufficient bookings cancellation completed
-                  data:
-                    type: object
-                    properties:
-                      success:
-                        type: boolean
-                        example: true
-                      cancelled_count:
-                        type: integer
-                        example: 3
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/booking/admin/statistics:
@@ -8089,7 +8204,7 @@ paths:
       tags:
         - Booking Management
       summary: Get booking statistics
-      description: Get booking statistics for monitoring (admin only)
+      description: Get booking statistics for admin dashboard
       security:
         - BearerAuth: []
       responses:
@@ -8109,23 +8224,22 @@ paths:
                   data:
                     type: object
                     properties:
-                      success:
-                        type: boolean
-                        example: true
-                      statistics:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            status:
-                              type: string
-                              enum:
-                                - signup
-                                - waiting_list
-                                - cancelled
-                            count:
-                              type: integer
-                              example: 15
+                      total_bookings:
+                        type: integer
+                        description: Total number of bookings
+                        example: 150
+                      active_bookings:
+                        type: integer
+                        description: Number of active bookings
+                        example: 120
+                      cancelled_bookings:
+                        type: integer
+                        description: Number of cancelled bookings
+                        example: 30
+                      waitlist_bookings:
+                        type: integer
+                        description: Number of waitlist bookings
+                        example: 15
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':

@@ -45,7 +45,16 @@ module.exports = (sequelize, DataTypes) => {
     status: {
       type: DataTypes.ENUM('signup', 'waiting_list', 'cancelled'),
       allowNull: false,
-      defaultValue: 'pending'
+      defaultValue: 'signup'
+    },
+    attendance: {
+      type: DataTypes.ENUM('present', 'absent'),
+      allowNull: false,
+      defaultValue: 'present'
+    },
+    notes: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     sequelize,

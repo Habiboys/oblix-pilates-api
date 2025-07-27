@@ -1,5 +1,9 @@
 const { Schedule, Class, Trainer, Member, Booking } = require('../models');
-const { validateSessionAvailability, createSessionAllocation } = require('../utils/sessionUtils');
+const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionUtils');
+const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
+const ScheduleService = require('../services/schedule.service');
+const twilioService = require('../services/twilio.service');
+const logger = require('../config/logger');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -57,55 +61,44 @@ const getAllGroupSchedules = async (req, res) => {
         const { page = 1, limit = 10, search = '', date } = req.query;
         const offset = (page - 1) * limit;
 
-        const whereClause = {
-            type: 'group'
-        };
-
-        // Add search filter
-        if (search) {
-            whereClause['$Class.class_name$'] = { [Op.iLike]: `%${search}%` };
-        }
-
-        // Add date filter
-        if (date) {
-            whereClause.date_start = date;
-        }
+        const whereClause = ScheduleService.buildWhereClause('group', { search, date });
 
         const schedules = await Schedule.findAndCountAll({
             where: whereClause,
-            include: [
-                {
-                    model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
-                },
-                {
-                    model: Trainer,
-                    attributes: ['id', 'title', 'picture', 'description']
-                }
-            ],
+            include: ScheduleService.getIncludeAssociations('group', true), // Selalu include bookings
             limit: parseInt(limit),
             offset: parseInt(offset),
             order: [['date_start', 'ASC'], ['time_start', 'ASC']]
         });
 
+        // Format schedules dengan informasi detail
+        const formattedSchedules = schedules.rows.map(schedule => 
+            ScheduleService.formatScheduleData(schedule, true)
+        );
+
         const totalPages = Math.ceil(schedules.count / limit);
 
         res.status(200).json({
+            success: true,
             message: 'Group schedules retrieved successfully',
             data: {
-                schedules: schedules.rows,
+                schedules: formattedSchedules,
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: totalPages,
                     totalItems: schedules.count,
                     itemsPerPage: parseInt(limit)
+                },
+                filters: {
+                    search: search || null,
+                    date: date || null
                 }
             }
         });
     } catch (error) {
         console.error('Get all group schedules error:', error);
         res.status(500).json({ 
-            status: 'error',
+            success: false,
             message: 'Terjadi kesalahan pada server' 
         });
     }
@@ -121,33 +114,27 @@ const getGroupScheduleById = async (req, res) => {
                 id,
                 type: 'group'
             },
-            include: [
-                {
-                    model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
-                },
-                {
-                    model: Trainer,
-                    attributes: ['id', 'title', 'picture', 'description']
-                }
-            ]
+            include: ScheduleService.getIncludeAssociations('group', true) // Selalu include bookings
         });
 
         if (!schedule) {
             return res.status(404).json({
-                status: 'error',
+                success: false,
                 message: 'Group schedule not found'
             });
         }
 
+        const scheduleData = ScheduleService.formatScheduleData(schedule, true);
+
         res.status(200).json({
+            success: true,
             message: 'Group schedule retrieved successfully',
-            data: schedule
+            data: scheduleData
         });
     } catch (error) {
         console.error('Get group schedule by ID error:', error);
         res.status(500).json({ 
-            status: 'error',
+            success: false,
             message: 'Terjadi kesalahan pada server' 
         });
     }
@@ -441,55 +428,44 @@ const getAllSemiPrivateSchedules = async (req, res) => {
         const { page = 1, limit = 10, search = '', date } = req.query;
         const offset = (page - 1) * limit;
 
-        const whereClause = {
-            type: 'semi_private'
-        };
-
-        // Add search filter
-        if (search) {
-            whereClause['$Class.class_name$'] = { [Op.iLike]: `%${search}%` };
-        }
-
-        // Add date filter
-        if (date) {
-            whereClause.date_start = date;
-        }
+        const whereClause = ScheduleService.buildWhereClause('semi_private', { search, date });
 
         const schedules = await Schedule.findAndCountAll({
             where: whereClause,
-            include: [
-                {
-                    model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
-                },
-                {
-                    model: Trainer,
-                    attributes: ['id', 'title', 'picture', 'description']
-                }
-            ],
+            include: ScheduleService.getIncludeAssociations('semi_private', true), // Selalu include bookings
             limit: parseInt(limit),
             offset: parseInt(offset),
             order: [['date_start', 'ASC'], ['time_start', 'ASC']]
         });
 
+        // Format schedules dengan informasi detail
+        const formattedSchedules = schedules.rows.map(schedule => 
+            ScheduleService.formatScheduleData(schedule, true)
+        );
+
         const totalPages = Math.ceil(schedules.count / limit);
 
         res.status(200).json({
+            success: true,
             message: 'Semi-private schedules retrieved successfully',
             data: {
-                schedules: schedules.rows,
+                schedules: formattedSchedules,
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: totalPages,
                     totalItems: schedules.count,
                     itemsPerPage: parseInt(limit)
+                },
+                filters: {
+                    search: search || null,
+                    date: date || null
                 }
             }
         });
     } catch (error) {
         console.error('Get all semi-private schedules error:', error);
         res.status(500).json({ 
-            status: 'error',
+            success: false,
             message: 'Terjadi kesalahan pada server' 
         });
     }
@@ -505,33 +481,27 @@ const getSemiPrivateScheduleById = async (req, res) => {
                 id,
                 type: 'semi_private'
             },
-            include: [
-                {
-                    model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
-                },
-                {
-                    model: Trainer,
-                    attributes: ['id', 'title', 'picture', 'description']
-                }
-            ]
+            include: ScheduleService.getIncludeAssociations('semi_private', true) // Selalu include bookings
         });
 
         if (!schedule) {
             return res.status(404).json({
-                status: 'error',
+                success: false,
                 message: 'Semi-private schedule not found'
             });
         }
 
+        const scheduleData = ScheduleService.formatScheduleData(schedule, true);
+
         res.status(200).json({
+            success: true,
             message: 'Semi-private schedule retrieved successfully',
-            data: schedule
+            data: scheduleData
         });
     } catch (error) {
         console.error('Get semi-private schedule by ID error:', error);
         res.status(500).json({ 
-            status: 'error',
+            success: false,
             message: 'Terjadi kesalahan pada server' 
         });
     }
@@ -825,60 +795,44 @@ const getAllPrivateSchedules = async (req, res) => {
         const { page = 1, limit = 10, search = '', date } = req.query;
         const offset = (page - 1) * limit;
 
-        const whereClause = {
-            type: 'private'
-        };
-
-        // Add search filter
-        if (search) {
-            whereClause['$Class.class_name$'] = { [Op.iLike]: `%${search}%` };
-        }
-
-        // Add date filter
-        if (date) {
-            whereClause.date_start = date;
-        }
+        const whereClause = ScheduleService.buildWhereClause('private', { search, date });
 
         const schedules = await Schedule.findAndCountAll({
             where: whereClause,
-            include: [
-                {
-                    model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
-                },
-                {
-                    model: Trainer,
-                    attributes: ['id', 'title', 'picture', 'description']
-                },
-                {
-                    model: Member,
-                    as: 'assignedMember',
-                    attributes: ['id', 'full_name', 'email', 'phone_number']
-                }
-            ],
+            include: ScheduleService.getIncludeAssociations('private', true), // Selalu include bookings
             limit: parseInt(limit),
             offset: parseInt(offset),
             order: [['date_start', 'ASC'], ['time_start', 'ASC']]
         });
 
+        // Format schedules dengan informasi detail
+        const formattedSchedules = schedules.rows.map(schedule => 
+            ScheduleService.formatScheduleData(schedule, true)
+        );
+
         const totalPages = Math.ceil(schedules.count / limit);
 
         res.status(200).json({
+            success: true,
             message: 'Private schedules retrieved successfully',
             data: {
-                schedules: schedules.rows,
+                schedules: formattedSchedules,
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: totalPages,
                     totalItems: schedules.count,
                     itemsPerPage: parseInt(limit)
+                },
+                filters: {
+                    search: search || null,
+                    date: date || null
                 }
             }
         });
     } catch (error) {
         console.error('Get all private schedules error:', error);
         res.status(500).json({ 
-            status: 'error',
+            success: false,
             message: 'Terjadi kesalahan pada server' 
         });
     }
@@ -894,38 +848,27 @@ const getPrivateScheduleById = async (req, res) => {
                 id,
                 type: 'private'
             },
-            include: [
-                {
-                    model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
-                },
-                {
-                    model: Trainer,
-                    attributes: ['id', 'title', 'picture', 'description']
-                },
-                {
-                    model: Member,
-                    as: 'assignedMember',
-                    attributes: ['id', 'full_name', 'email', 'phone_number']
-                }
-            ]
+            include: ScheduleService.getIncludeAssociations('private', true) // Selalu include bookings
         });
 
         if (!schedule) {
             return res.status(404).json({
-                status: 'error',
+                success: false,
                 message: 'Private schedule not found'
             });
         }
 
+        const scheduleData = ScheduleService.formatScheduleData(schedule, true);
+
         res.status(200).json({
+            success: true,
             message: 'Private schedule retrieved successfully',
-            data: schedule
+            data: scheduleData
         });
     } catch (error) {
         console.error('Get private schedule by ID error:', error);
         res.status(500).json({ 
-            status: 'error',
+            success: false,
             message: 'Terjadi kesalahan pada server' 
         });
     }
@@ -1305,7 +1248,7 @@ const deletePrivateSchedule = async (req, res) => {
 // Get schedule data for calendar view
 const getScheduleCalendar = async (req, res) => {
     try {
-        const { month, year, type } = req.query;
+        const { month, year, type, include_members = 'false' } = req.query;
         
         // Default to current month/year if not provided
         const currentDate = new Date();
@@ -1348,24 +1291,102 @@ const getScheduleCalendar = async (req, res) => {
                 },
                 {
                     model: Trainer,
-                    attributes: ['id', 'title']
+                    attributes: ['id', 'title', 'picture']
+                },
+                {
+                    model: Booking,
+                    where: {
+                        status: {
+                            [Op.in]: ['signup', 'waiting_list']
+                        }
+                    },
+                    required: false,
+                    include: include_members === 'true' ? [
+                        {
+                            model: Member,
+                            attributes: ['id', 'full_name']
+                        }
+                    ] : []
                 }
             ],
             order: [['date_start', 'ASC'], ['time_start', 'ASC']]
         });
         
-        // Format data untuk calendar
+        // Format data untuk calendar dengan informasi slot
         const formattedSchedules = schedules.map(schedule => {
-            return {
+            // Hitung booking berdasarkan status
+            const signupBookings = schedule.Bookings.filter(b => b.status === 'signup');
+            const waitlistBookings = schedule.Bookings.filter(b => b.status === 'waiting_list');
+            
+            // Tentukan kapasitas maksimal berdasarkan tipe kelas
+            const maxCapacity = schedule.type === 'semi_private' ? 4 : 
+                               schedule.type === 'private' ? 1 : 20;
+            
+            // Hitung slot tersisa
+            const availableSlots = Math.max(0, maxCapacity - signupBookings.length);
+            const isFull = availableSlots === 0;
+            const hasWaitlist = waitlistBookings.length > 0;
+            
+            // Status kelas
+            let status = 'available';
+            if (isFull && hasWaitlist) {
+                status = 'full_with_waitlist';
+            } else if (isFull) {
+                status = 'full';
+            } else if (signupBookings.length < (schedule.min_signup || 1)) {
+                status = 'minimum_not_met';
+            }
+            
+            // Cek apakah sudah melewati cancel buffer time
+            const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
+            const currentDateTime = new Date();
+            const cancelBufferMinutes = schedule.cancel_buffer_minutes || 120;
+            const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
+            const isPastCancelDeadline = currentDateTime > cancelDeadline;
+            
+            const scheduleData = {
                 id: schedule.id,
                 class_name: schedule.Class?.class_name || '',
                 class_color: schedule.Class?.color_sign || '#000000',
                 trainer_name: schedule.Trainer?.title || '',
+                trainer_picture: schedule.Trainer?.picture || '',
                 type: schedule.type,
                 date: schedule.date_start,
                 time_start: schedule.time_start,
-                time_end: schedule.time_end
+                time_end: schedule.time_end,
+                
+                // Informasi slot dan booking
+                max_capacity: maxCapacity,
+                current_signups: signupBookings.length,
+                waitlist_count: waitlistBookings.length,
+                available_slots: availableSlots,
+                min_signup: schedule.min_signup || 1,
+                
+                // Status kelas
+                status: status,
+                is_full: isFull,
+                has_waitlist: hasWaitlist,
+                is_past_cancel_deadline: isPastCancelDeadline,
+                
+                // Informasi tambahan
+                cancel_buffer_minutes: cancelBufferMinutes,
+                can_book: !isPastCancelDeadline && (availableSlots > 0 || hasWaitlist),
+                can_cancel: !isPastCancelDeadline
             };
+            
+            // Tambahkan detail member jika diminta
+            if (include_members === 'true') {
+                scheduleData.signup_members = signupBookings.map(b => ({
+                    id: b.Member.id,
+                    name: b.Member.full_name
+                }));
+                scheduleData.waitlist_members = waitlistBookings.map(b => ({
+                    id: b.Member.id,
+                    name: b.Member.full_name
+                }));
+            }
+            
+            return scheduleData;
         });
         
         // Group schedules by date for easier calendar rendering
@@ -1378,6 +1399,12 @@ const getScheduleCalendar = async (req, res) => {
             schedulesByDate[date].push(schedule);
         });
         
+        // Hitung statistik
+        const totalSchedules = formattedSchedules.length;
+        const availableSchedules = formattedSchedules.filter(s => s.can_book).length;
+        const fullSchedules = formattedSchedules.filter(s => s.is_full).length;
+        const minimumNotMetSchedules = formattedSchedules.filter(s => s.status === 'minimum_not_met').length;
+        
         res.status(200).json({
             success: true,
             message: 'Schedule calendar data retrieved successfully',
@@ -1385,7 +1412,15 @@ const getScheduleCalendar = async (req, res) => {
                 month: targetMonth,
                 year: targetYear,
                 filter_type: type || 'all',
-                total_schedules: formattedSchedules.length,
+                include_members: include_members === 'true',
+                
+                // Statistik
+                total_schedules: totalSchedules,
+                available_schedules: availableSchedules,
+                full_schedules: fullSchedules,
+                minimum_not_met_schedules: minimumNotMetSchedules,
+                
+                // Data calendar
                 schedules_by_date: schedulesByDate,
                 schedules: formattedSchedules
             }

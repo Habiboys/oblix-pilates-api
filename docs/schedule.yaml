@@ -4,19 +4,24 @@ paths:
       tags:
         - Schedule Management
       summary: Get all group schedules
-      description: Retrieve all group schedules with pagination and search
+      description: |
+        Retrieve all group schedules with pagination and search.
+        Returns detailed information including booking status, available slots, and member details.
       parameters:
         - in: query
           name: page
           schema:
             type: integer
             default: 1
+            minimum: 1
           description: Page number
         - in: query
           name: limit
           schema:
             type: integer
             default: 10
+            minimum: 1
+            maximum: 100
           description: Number of items per page
         - in: query
           name: search
@@ -45,9 +50,18 @@ paths:
                           schedules:
                             type: array
                             items:
-                              $ref: '#/components/schemas/GroupSchedule'
+                              $ref: '#/components/schemas/GroupScheduleDetail'
                           pagination:
                             $ref: '#/components/schemas/PaginationInfo'
+                          filters:
+                            type: object
+                            properties:
+                              search:
+                                type: string
+                                nullable: true
+                              date:
+                                type: string
+                                nullable: true
         '500':
           description: Internal server error
           content:
@@ -119,7 +133,9 @@ paths:
       tags:
         - Schedule Management
       summary: Get group schedule by ID
-      description: Retrieve a specific group schedule by its ID
+      description: |
+        Retrieve a specific group schedule by ID.
+        Returns detailed information including all booking details and member information.
       parameters:
         - in: path
           name: id
@@ -139,7 +155,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/GroupSchedule'
+                        $ref: '#/components/schemas/GroupScheduleDetail'
         '404':
           description: Schedule not found
           content:
@@ -269,54 +285,64 @@ paths:
       tags:
         - Schedule Management
       summary: Get all semi-private schedules
-      description: Retrieve all semi-private schedules with pagination and search
+      description: |
+        Retrieve all semi-private schedules with pagination and search.
+        Returns detailed information including booking status, available slots, and member details.
       parameters:
-        - name: page
-          in: query
+        - in: query
+          name: page
           schema:
             type: integer
             default: 1
             minimum: 1
           description: Page number
-        - name: limit
-          in: query
+        - in: query
+          name: limit
           schema:
             type: integer
             default: 10
             minimum: 1
             maximum: 100
           description: Number of items per page
-        - name: search
-          in: query
+        - in: query
+          name: search
           schema:
             type: string
           description: Search by class name
-        - name: date
-          in: query
+        - in: query
+          name: date
           schema:
             type: string
             format: date
-          description: Filter by specific date
+          description: Filter by specific date (YYYY-MM-DD)
       responses:
         '200':
           description: Semi-private schedules retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Semi-private schedules retrieved successfully
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
                     properties:
-                      schedules:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/GroupSchedule'
-                      pagination:
-                        $ref: '#/components/schemas/Pagination'
+                      data:
+                        type: object
+                        properties:
+                          schedules:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/SemiPrivateScheduleDetail'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
+                          filters:
+                            type: object
+                            properties:
+                              search:
+                                type: string
+                                nullable: true
+                              date:
+                                type: string
+                                nullable: true
         '500':
           description: Internal server error
           content:
@@ -389,10 +415,12 @@ paths:
       tags:
         - Schedule Management
       summary: Get semi-private schedule by ID
-      description: Retrieve a specific semi-private schedule by its ID
+      description: |
+        Retrieve a specific semi-private schedule by ID.
+        Returns detailed information including all booking details and member information.
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -404,13 +432,12 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Semi-private schedule retrieved successfully
-                  data:
-                    $ref: '#/components/schemas/GroupSchedule'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SemiPrivateScheduleDetail'
         '404':
           description: Schedule not found
           content:
@@ -432,8 +459,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -497,8 +524,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -545,54 +572,64 @@ paths:
       tags:
         - Schedule Management
       summary: Get all private schedules
-      description: Retrieve all private schedules with pagination and search
+      description: |
+        Retrieve all private schedules with pagination and search.
+        Returns detailed information including booking status, assigned member, and member details.
       parameters:
-        - name: page
-          in: query
+        - in: query
+          name: page
           schema:
             type: integer
             default: 1
             minimum: 1
           description: Page number
-        - name: limit
-          in: query
+        - in: query
+          name: limit
           schema:
             type: integer
             default: 10
             minimum: 1
             maximum: 100
           description: Number of items per page
-        - name: search
-          in: query
+        - in: query
+          name: search
           schema:
             type: string
           description: Search by class name
-        - name: date
-          in: query
+        - in: query
+          name: date
           schema:
             type: string
             format: date
-          description: Filter by specific date
+          description: Filter by specific date (YYYY-MM-DD)
       responses:
         '200':
           description: Private schedules retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Private schedules retrieved successfully
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
                     properties:
-                      schedules:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/PrivateSchedule'
-                      pagination:
-                        $ref: '#/components/schemas/Pagination'
+                      data:
+                        type: object
+                        properties:
+                          schedules:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PrivateScheduleDetail'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
+                          filters:
+                            type: object
+                            properties:
+                              search:
+                                type: string
+                                nullable: true
+                              date:
+                                type: string
+                                nullable: true
         '500':
           description: Internal server error
           content:
@@ -678,10 +715,12 @@ paths:
       tags:
         - Schedule Management
       summary: Get private schedule by ID
-      description: Retrieve a specific private schedule by its ID
+      description: |
+        Retrieve a specific private schedule by ID.
+        Returns detailed information including assigned member and all booking details.
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -693,13 +732,12 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: Private schedule retrieved successfully
-                  data:
-                    $ref: '#/components/schemas/PrivateSchedule'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PrivateScheduleDetail'
         '404':
           description: Schedule not found
           content:
@@ -721,8 +759,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -786,8 +824,8 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1126,6 +1164,532 @@ components:
           description: "Schedule picture/banner"
           example: "schedule_banner_1.jpg"
 
+    GroupScheduleDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Pilates Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        trainer_description:
+          type: string
+          example: "Certified pilates instructor with 5 years experience"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "group"
+        date_start:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:00"
+        time_end:
+          type: string
+          format: time
+          example: "08:00"
+        max_capacity:
+          type: integer
+          description: "Maximum capacity for this schedule type"
+          example: 20
+        current_signups:
+          type: integer
+          description: "Number of confirmed bookings"
+          example: 15
+        waitlist_count:
+          type: integer
+          description: "Number of people on waiting list"
+          example: 3
+        cancelled_count:
+          type: integer
+          description: "Number of cancelled bookings"
+          example: 2
+        available_slots:
+          type: integer
+          description: "Available spots remaining"
+          example: 5
+        min_signup:
+          type: integer
+          description: "Minimum signup required"
+          example: 5
+        status:
+          type: string
+          enum: [available, full, full_with_waitlist, minimum_not_met]
+          description: "Current status of the schedule"
+          example: "available"
+        is_full:
+          type: boolean
+          description: "Whether the schedule is at full capacity"
+          example: false
+        has_waitlist:
+          type: boolean
+          description: "Whether there are people on waiting list"
+          example: true
+        is_past_cancel_deadline:
+          type: boolean
+          description: "Whether past the cancellation deadline"
+          example: false
+        can_book:
+          type: boolean
+          description: "Whether booking is still allowed"
+          example: true
+        can_cancel:
+          type: boolean
+          description: "Whether cancellation is still allowed"
+          example: true
+        booking_deadline_hour:
+          type: integer
+          description: "Hours before class when booking closes"
+          example: 24
+        waitlist_lock_minutes:
+          type: integer
+          description: "Minutes before class when waitlist locks"
+          example: 30
+        cancel_buffer_minutes:
+          type: integer
+          description: "Minutes before class for auto-cancellation"
+          example: 120
+        repeat_type:
+          type: string
+          enum: [none, daily, weekly, monthly]
+          example: "none"
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+          example: "2025-12-31"
+        parent_schedule_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-07-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-07-01T10:00:00Z"
+        signup_bookings:
+          type: array
+          description: "List of confirmed bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+        waitlist_bookings:
+          type: array
+          description: "List of waitlist bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+        cancelled_bookings:
+          type: array
+          description: "List of cancelled bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+
+    SemiPrivateSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Chair Basic"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "semi_private"
+        date:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:10"
+        time_end:
+          type: string
+          format: time
+          example: "08:10"
+        pax:
+          type: integer
+          description: "Maximum capacity"
+          example: 10
+        booking_count:
+          type: integer
+          description: "Number of confirmed bookings"
+          example: 8
+        waiting_list_count:
+          type: integer
+          description: "Number of people on waiting list"
+          example: 2
+        available_spots:
+          type: integer
+          description: "Available spots remaining"
+          example: 2
+        is_full:
+          type: boolean
+          description: "Whether the schedule is at full capacity"
+          example: false
+        has_waiting_list:
+          type: boolean
+          description: "Whether there are people on waiting list"
+          example: true
+        assigned_member:
+          type: object
+          nullable: true
+          description: "For private schedules only"
+          properties:
+            id:
+              type: string
+              format: uuid
+              nullable: true
+            name:
+              type: string
+              nullable: true
+          example:
+            id: "member-uuid-1"
+            name: "John Doe"
+        bookings:
+          type: array
+          description: "List of current bookings"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              member_name:
+                type: string
+            example:
+              id: "booking-uuid-1"
+              status: "signup"
+              member_name: "John Doe"
+        picture:
+          type: string
+          nullable: true
+          description: "Schedule picture/banner"
+          example: "schedule_banner_1.jpg"
+
+    SemiPrivateScheduleDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Pilates Intermediate"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        trainer_description:
+          type: string
+          example: "Certified pilates instructor with 5 years experience"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "semi_private"
+        date_start:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:00"
+        time_end:
+          type: string
+          format: time
+          example: "08:00"
+        max_capacity:
+          type: integer
+          description: "Maximum capacity for this schedule type"
+          example: 4
+        current_signups:
+          type: integer
+          description: "Number of confirmed bookings"
+          example: 3
+        waitlist_count:
+          type: integer
+          description: "Number of people on waiting list"
+          example: 1
+        cancelled_count:
+          type: integer
+          description: "Number of cancelled bookings"
+          example: 0
+        available_slots:
+          type: integer
+          description: "Available spots remaining"
+          example: 1
+        min_signup:
+          type: integer
+          description: "Minimum signup required"
+          example: 2
+        status:
+          type: string
+          enum: [available, full, full_with_waitlist, minimum_not_met]
+          description: "Current status of the schedule"
+          example: "available"
+        is_full:
+          type: boolean
+          description: "Whether the schedule is at full capacity"
+          example: false
+        has_waitlist:
+          type: boolean
+          description: "Whether there are people on waiting list"
+          example: true
+        is_past_cancel_deadline:
+          type: boolean
+          description: "Whether past the cancellation deadline"
+          example: false
+        can_book:
+          type: boolean
+          description: "Whether booking is still allowed"
+          example: true
+        can_cancel:
+          type: boolean
+          description: "Whether cancellation is still allowed"
+          example: true
+        cancel_buffer_minutes:
+          type: integer
+          description: "Minutes before class for auto-cancellation"
+          example: 120
+        repeat_type:
+          type: string
+          enum: [none, daily, weekly, monthly]
+          example: "none"
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+          example: "2025-12-31"
+        parent_schedule_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-07-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-07-01T10:00:00Z"
+        signup_bookings:
+          type: array
+          description: "List of confirmed bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+        waitlist_bookings:
+          type: array
+          description: "List of waitlist bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+        cancelled_bookings:
+          type: array
+          description: "List of cancelled bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, waiting_list, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+
     PrivateSchedule:
       type: object
       properties:
@@ -1225,6 +1789,194 @@ components:
           nullable: true
           description: "Schedule picture/banner"
           example: "schedule_banner_1.jpg"
+
+    PrivateScheduleDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        class_name:
+          type: string
+          example: "Pilates Advanced"
+        class_color:
+          type: string
+          description: "Hex color code for calendar display"
+          example: "#4F46E5"
+        trainer_name:
+          type: string
+          example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainer_photo_1.jpg"
+        trainer_description:
+          type: string
+          example: "Certified pilates instructor with 5 years experience"
+        type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "private"
+        date_start:
+          type: string
+          format: date
+          example: "2025-07-15"
+        time_start:
+          type: string
+          format: time
+          example: "07:00"
+        time_end:
+          type: string
+          format: time
+          example: "08:00"
+        max_capacity:
+          type: integer
+          description: "Maximum capacity for this schedule type"
+          example: 1
+        current_signups:
+          type: integer
+          description: "Number of confirmed bookings"
+          example: 1
+        waitlist_count:
+          type: integer
+          description: "Number of people on waiting list"
+          example: 0
+        cancelled_count:
+          type: integer
+          description: "Number of cancelled bookings"
+          example: 0
+        available_slots:
+          type: integer
+          description: "Available spots remaining"
+          example: 0
+        min_signup:
+          type: integer
+          description: "Minimum signup required"
+          example: 1
+        status:
+          type: string
+          enum: [available, booked]
+          description: "Current status of the schedule"
+          example: "booked"
+        is_booked:
+          type: boolean
+          description: "Whether the schedule is booked"
+          example: true
+        is_past_cancel_deadline:
+          type: boolean
+          description: "Whether past the cancellation deadline"
+          example: false
+        can_book:
+          type: boolean
+          description: "Whether booking is still allowed"
+          example: false
+        can_cancel:
+          type: boolean
+          description: "Whether cancellation is still allowed"
+          example: true
+        assigned_member:
+          type: object
+          nullable: true
+          description: "Member assigned to this private schedule"
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+            phone:
+              type: string
+        cancel_buffer_minutes:
+          type: integer
+          description: "Minutes before class for auto-cancellation"
+          example: 120
+        repeat_type:
+          type: string
+          enum: [none, daily, weekly, monthly]
+          example: "none"
+        schedule_until:
+          type: string
+          format: date
+          nullable: true
+          example: "2025-12-31"
+        parent_schedule_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-07-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-07-01T10:00:00Z"
+        signup_bookings:
+          type: array
+          description: "List of confirmed bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
+        cancelled_bookings:
+          type: array
+          description: "List of cancelled bookings with member details"
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              member_id:
+                type: string
+                format: uuid
+              member_name:
+                type: string
+              member_phone:
+                type: string
+              member_email:
+                type: string
+              status:
+                type: string
+                enum: [signup, cancelled]
+              attendance:
+                type: string
+                enum: [present, absent]
+                description: "Attendance status"
+              notes:
+                type: string
+                nullable: true
+              created_at:
+                type: string
+                format: date-time
 
     CreateGroupScheduleRequest:
       type: object

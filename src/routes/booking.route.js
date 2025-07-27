@@ -3,7 +3,13 @@ const router = express.Router();
 const bookingController = require('../controllers/booking.controller');
 const { validateToken } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
-const { createBookingSchema, updateBookingStatusSchema } = require('../validations/booking.validation');
+const { 
+    createBookingSchema, 
+    updateBookingStatusSchema, 
+    updateAttendanceSchema, 
+    adminCancelBookingSchema,
+    updateScheduleAttendanceSchema
+} = require('../validations/booking.validation');
 
 // Get all bookings
 router.get('/', validateToken, bookingController.getAllBookings);
@@ -17,8 +23,17 @@ router.post('/', validateToken, validate(createBookingSchema), bookingController
 // Update booking status
 router.patch('/:id/status', validateToken, validate(updateBookingStatusSchema), bookingController.updateBookingStatus);
 
+// Update attendance
+router.patch('/:id/attendance', validateToken, validate(updateAttendanceSchema), bookingController.updateAttendance);
+
+// Update schedule attendance (bulk)
+router.patch('/schedule/:schedule_id/attendance', validateToken, validate(updateScheduleAttendanceSchema), bookingController.updateScheduleAttendance);
+
 // Cancel booking
 router.post('/:id/cancel', validateToken, bookingController.cancelBooking);
+
+// Admin cancel booking
+router.post('/:id/admin-cancel', validateToken, validate(adminCancelBookingSchema), bookingController.adminCancelBooking);
 
 // Delete booking
 router.delete('/:id', validateToken, bookingController.deleteBooking);
@@ -29,9 +44,7 @@ router.get('/member/:member_id/sessions', validateToken, bookingController.getMe
 // Get bookings by member ID
 router.get('/member/:member_id/bookings', validateToken, bookingController.getBookingsByMember);
 
-// Admin endpoints for auto-cancel and statistics
-router.post('/admin/auto-cancel', validateToken, bookingController.runAutoCancel);
-router.post('/admin/insufficient-cancel', validateToken, bookingController.runInsufficientCancel);
+// Admin statistics
 router.get('/admin/statistics', validateToken, bookingController.getBookingStats);
 
 module.exports = router; 

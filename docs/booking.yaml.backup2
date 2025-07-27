@@ -98,7 +98,7 @@ paths:
                   format: uuid
                   description: ID of the member making the booking
                   example: "123e4567-e89b-12d3-a456-426614174001"
-                notes:
+              notes:
                   type: string
                   maxLength: 500
                   description: Optional notes for the booking
@@ -228,15 +228,13 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - status
               properties:
                 status:
                   type: string
                   enum: [signup, waiting_list, cancelled]
                   description: New status for the booking
                   example: "signup"
-                notes:
+              notes:
                   type: string
                   maxLength: 500
                   description: Optional notes for the status change
@@ -297,7 +295,7 @@ paths:
                   enum: [present, absent]
                   description: Attendance status
                   example: "present"
-                notes:
+              notes:
                   type: string
                   maxLength: 500
                   description: Optional notes for the attendance
@@ -327,11 +325,11 @@ paths:
                         type: string
                         enum: [present, absent]
                         example: "present"
-                      notes:
+                    notes:
                         type: string
                         nullable: true
                         example: "Hadir tepat waktu"
-                      updated_at:
+                        updated_at:
                         type: string
                         format: date-time
                         example: "2025-07-15T07:00:00Z"
@@ -390,7 +388,7 @@ paths:
                         enum: [present, absent]
                         description: Attendance status
                         example: "present"
-                      notes:
+                    notes:
                         type: string
                         maxLength: 500
                         description: Optional notes for the attendance
@@ -458,11 +456,11 @@ paths:
                               type: string
                               enum: [present, absent]
                               example: "present"
-                            notes:
+                          notes:
                               type: string
                               nullable: true
                               example: "Hadir tepat waktu"
-                            updated_at:
+                              updated_at:
                               type: string
                               format: date-time
                               example: "2025-07-15T07:00:00Z"
@@ -594,7 +592,7 @@ paths:
                         type: string
                         enum: [cancelled]
                         example: "cancelled"
-                      notes:
+                    notes:
                         type: string
                         example: "Admin cancelled: Member requested cancellation"
                       cancelled_at:
@@ -807,7 +805,7 @@ components:
         attendance:
           type: string
           enum: [present, absent]
-          description: Attendance status (default present)
+          description: Attendance status (default: present)
           example: "present"
         notes:
           type: string
@@ -975,4 +973,4 @@ components:
           example: 50
         itemsPerPage:
           type: integer
-          example: 10
+          example: 10 
