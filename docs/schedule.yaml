@@ -2116,7 +2116,7 @@ components:
         repeat_days:
           type: array
           items:
-            type: integer
+          type: integer
             minimum: 0
             maximum: 6
           nullable: true
@@ -2208,7 +2208,7 @@ components:
         repeat_days:
           type: array
           items:
-            type: integer
+          type: integer
             minimum: 0
             maximum: 6
           nullable: true
@@ -2307,7 +2307,7 @@ components:
         repeat_days:
           type: array
           items:
-            type: integer
+          type: integer
             minimum: 0
             maximum: 6
           nullable: true
@@ -2399,7 +2399,7 @@ components:
         repeat_days:
           type: array
           items:
-            type: integer
+          type: integer
             minimum: 0
             maximum: 6
           nullable: true
@@ -2489,7 +2489,7 @@ components:
           default: "none"
           example: "none"
         schedule_until:
-          type: string
+              type: string
           format: date
           nullable: true
           example: "2025-02-28"
@@ -2523,11 +2523,11 @@ components:
           maximum: 1440
           example: 120
         picture:
-          type: string
+              type: string
           format: binary
           nullable: true
           description: "Schedule picture/banner"
-      example:
+          example:
         class_id: "class-uuid-123"
         trainer_id: "trainer-uuid-456"
         member_id: "member-uuid-789"
@@ -2580,9 +2580,9 @@ components:
           enum: [none, weekly]
           example: "none"
         schedule_until:
-          type: string
+              type: string
           format: date
-          nullable: true
+              nullable: true
           example: "2025-02-28"
           description: "Required when repeat_type is 'weekly'"
         repeat_days:
@@ -2614,9 +2614,9 @@ components:
           maximum: 1440
           example: 120
         picture:
-          type: string
+              type: string
           format: binary
-          nullable: true
+              nullable: true
           description: "Schedule picture/banner"
       example:
         id: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"

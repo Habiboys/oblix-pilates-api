@@ -72,11 +72,21 @@ const getMyPackages = async (req, res) => {
       // Get total sessions based on package type
       let totalSessions = 0;
       let groupSessions = 0;
+      let semiPrivateSessions = 0;
       let privateSessions = 0;
       
       if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
         totalSessions = memberPackage.Package.PackageMembership.session || 0;
-        groupSessions = totalSessions; // All sessions are group sessions
+        // Untuk membership, session type ditentukan oleh category
+        const categoryName = memberPackage.Package.PackageMembership.Category?.category_name?.toLowerCase();
+        if (categoryName === 'semi_private') {
+          semiPrivateSessions = totalSessions;
+        } else if (categoryName === 'private') {
+          privateSessions = totalSessions;
+        } else {
+          // Default ke group (termasuk category 'group' atau category lain)
+          groupSessions = totalSessions;
+        }
       } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
         groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
         privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
@@ -93,11 +103,29 @@ const getMyPackages = async (req, res) => {
 
       // Use updated session data from MemberPackage
       const usedGroupSessions = memberPackage.used_group_session || 0;
+      const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
       const usedPrivateSessions = memberPackage.used_private_session || 0;
       const remainingGroupSessions = memberPackage.remaining_group_session || 0;
+      const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
       const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
       
-      const totalUsedSessions = usedGroupSessions + usedPrivateSessions;
+      // Calculate total used sessions based on package type
+      let totalUsedSessions = 0;
+      if (memberPackage.Package?.type === 'membership') {
+        // Untuk membership, gunakan session type berdasarkan category
+        const categoryName = memberPackage.Package.PackageMembership?.Category?.category_name?.toLowerCase();
+        if (categoryName === 'semi_private') {
+          totalUsedSessions = usedSemiPrivateSessions;
+        } else if (categoryName === 'private') {
+          totalUsedSessions = usedPrivateSessions;
+        } else {
+          totalUsedSessions = usedGroupSessions;
+        }
+      } else {
+        // Untuk paket lain, jumlahkan group dan private
+        totalUsedSessions = usedGroupSessions + usedPrivateSessions;
+      }
+
       const progressPercentage = totalSessions > 0 ? (totalUsedSessions / totalSessions) * 100 : 0;
 
       return {
@@ -111,10 +139,13 @@ const getMyPackages = async (req, res) => {
         remaining_session: Math.max(0, totalSessions - totalUsedSessions),
         progress_percentage: Math.round(progressPercentage),
         group_sessions: groupSessions,
+        semi_private_sessions: semiPrivateSessions,
         private_sessions: privateSessions,
         used_group_session: usedGroupSessions,
+        used_semi_private_session: usedSemiPrivateSessions,
         used_private_session: usedPrivateSessions,
         remaining_group_session: remainingGroupSessions,
+        remaining_semi_private_session: remainingSemiPrivateSessions,
         remaining_private_session: remainingPrivateSessions,
         is_active: (() => {
           const isNotExpired = new Date(memberPackage.end_date) >= currentDate;
@@ -168,6 +199,13 @@ const getMyPackages = async (req, res) => {
             remaining: currentActivePackage.remaining_group_session || 0,
             progress_percentage: currentActivePackage.group_sessions > 0 ? 
               Math.round(((currentActivePackage.used_group_session || 0) / currentActivePackage.group_sessions) * 100) : 0
+          },
+          session_semi_private_classes: {
+            used: currentActivePackage.used_semi_private_session || 0,
+            total: currentActivePackage.semi_private_sessions,
+            remaining: currentActivePackage.remaining_semi_private_session || 0,
+            progress_percentage: currentActivePackage.semi_private_sessions > 0 ? 
+              Math.round(((currentActivePackage.used_semi_private_session || 0) / currentActivePackage.semi_private_sessions) * 100) : 0
           },
           session_private_classes: {
             used: currentActivePackage.used_private_session || 0,

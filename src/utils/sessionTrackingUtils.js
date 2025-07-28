@@ -1,4 +1,4 @@
-const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Booking, Schedule } = require('../models');
+const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Booking, Schedule, Category } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -77,7 +77,7 @@ const calculateAvailableSessions = async (memberId) => {
             {
                 model: Package,
                 include: [
-                    { model: PackageMembership },
+                    { model: PackageMembership, include: [{ model: Category }] },
                     { model: PackageFirstTrial },
                     { model: PackagePromo },
                     { model: PackageBonus }
@@ -92,33 +92,59 @@ const calculateAvailableSessions = async (memberId) => {
     for (const memberPackage of memberPackages) {
         const package = memberPackage.Package;
         let totalSessions = 0;
+        let sessionType = 'group'; // default
 
         // Ambil sesi berdasarkan tipe paket
         switch (package.type) {
             case 'membership':
                 if (package.PackageMembership) {
                     totalSessions = package.PackageMembership.session || 0;
+                    // Untuk membership, session type ditentukan oleh category
+                    const categoryName = package.PackageMembership.Category?.category_name?.toLowerCase();
+                    if (categoryName === 'semi_private') {
+                        sessionType = 'semi_private';
+                    } else if (categoryName === 'private') {
+                        sessionType = 'private';
+                    }
                 }
                 break;
             case 'first_trial':
                 if (package.PackageFirstTrial) {
-                    totalSessions = (package.PackageFirstTrial.group_session || 0) + (package.PackageFirstTrial.private_session || 0);
+                    totalSessions = (package.PackageFirstTrial.group_session || 0) + 
+                                  (package.PackageFirstTrial.private_session || 0);
                 }
                 break;
             case 'promo':
                 if (package.PackagePromo) {
-                    totalSessions = (package.PackagePromo.group_session || 0) + (package.PackagePromo.private_session || 0);
+                    totalSessions = (package.PackagePromo.group_session || 0) + 
+                                  (package.PackagePromo.private_session || 0);
                 }
                 break;
             case 'bonus':
                 if (package.PackageBonus) {
-                    totalSessions = (package.PackageBonus.group_session || 0) + (package.PackageBonus.private_session || 0);
+                    totalSessions = (package.PackageBonus.group_session || 0) + 
+                                  (package.PackageBonus.private_session || 0);
                 }
                 break;
         }
 
         // Gunakan remaining sessions yang sudah diupdate di MemberPackage
-        const availableSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.remaining_private_session || 0);
+        let availableSessions = 0;
+        if (package.type === 'membership') {
+            // Untuk membership, gunakan session type berdasarkan category
+            if (sessionType === 'semi_private') {
+                availableSessions = memberPackage.remaining_semi_private_session || 0;
+            } else if (sessionType === 'private') {
+                availableSessions = memberPackage.remaining_private_session || 0;
+            } else {
+                availableSessions = memberPackage.remaining_group_session || 0;
+            }
+        } else {
+            // Untuk paket lain, jumlahkan semua remaining sessions
+            availableSessions = (memberPackage.remaining_group_session || 0) + 
+                              (memberPackage.remaining_private_session || 0);
+        }
+        
         const usedSessions = totalSessions - availableSessions;
         
         totalAvailableSessions += availableSessions;
@@ -128,6 +154,7 @@ const calculateAvailableSessions = async (memberId) => {
                 package_id: package.id,
                 package_type: package.type,
                 package_name: package.name,
+                session_type: sessionType,
                 available_sessions: availableSessions,
                 total_sessions: totalSessions,
                 used_sessions: usedSessions
@@ -273,12 +300,12 @@ const getMemberSessionSummary = async (memberId) => {
  * @param {string} packageId - ID package
  * @param {string} newBookingId - ID booking yang baru dibuat (optional)
  */
-const updateSessionUsage = async (memberPackageId, memberId, packageId, newBookingId = null) => {
+const updateSessionUsage = async (memberPackageId, memberId, packageId, newBookingId = null, sessionType = null) => {
   try {
     // Ambil data package untuk mengetahui total session
     const package = await Package.findByPk(packageId, {
       include: [
-        { model: PackageMembership },
+        { model: PackageMembership, include: [{ model: Category }] },
         { model: PackageFirstTrial },
         { model: PackagePromo },
         { model: PackageBonus }
@@ -295,18 +322,26 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     let totalPrivateSessions = 0;
 
     if (package.type === 'membership' && package.PackageMembership) {
-      totalGroupSessions = package.PackageMembership.session || 0;
+      // Untuk membership, session type ditentukan oleh category
+      const categoryName = package.PackageMembership.Category?.category_name?.toLowerCase();
+      const sessionCount = package.PackageMembership.session || 0;
+      
+      if (categoryName === 'semi_private') {
+        totalSemiPrivateSessions = sessionCount;
+      } else if (categoryName === 'private') {
+        totalPrivateSessions = sessionCount;
+      } else {
+        // Default ke group (termasuk category 'group' atau category lain)
+        totalGroupSessions = sessionCount;
+      }
     } else if (package.type === 'first_trial' && package.PackageFirstTrial) {
       totalGroupSessions = package.PackageFirstTrial.group_session || 0;
-      totalSemiPrivateSessions = package.PackageFirstTrial.semi_private_session || 0;
       totalPrivateSessions = package.PackageFirstTrial.private_session || 0;
     } else if (package.type === 'promo' && package.PackagePromo) {
       totalGroupSessions = package.PackagePromo.group_session || 0;
-      totalSemiPrivateSessions = package.PackagePromo.semi_private_session || 0;
       totalPrivateSessions = package.PackagePromo.private_session || 0;
     } else if (package.type === 'bonus' && package.PackageBonus) {
       totalGroupSessions = package.PackageBonus.group_session || 0;
-      totalSemiPrivateSessions = package.PackageBonus.semi_private_session || 0;
       totalPrivateSessions = package.PackageBonus.private_session || 0;
     }
 

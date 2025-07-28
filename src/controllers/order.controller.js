@@ -708,6 +708,27 @@ const paymentNotification = async (req, res) => {
             endDate.setMonth(endDate.getMonth() + order.duration_value);
           }
 
+          // Get package details to determine session type based on category
+          const package = await Package.findByPk(order.package_id, {
+            include: [
+              {
+                model: PackageMembership,
+                include: [{ model: Category }]
+              }
+            ]
+          });
+
+          // Determine session type based on package category
+          let sessionType = 'group'; // default
+          if (package && package.PackageMembership && package.PackageMembership.Category) {
+            const categoryName = package.PackageMembership.Category.category_name.toLowerCase();
+            if (categoryName === 'semi_private') {
+              sessionType = 'semi_private';
+            } else if (categoryName === 'private') {
+              sessionType = 'private';
+            }
+          }
+
           // Create MemberPackage record
           const memberPackage = await MemberPackage.create({
             member_id: order.member_id,
@@ -717,15 +738,15 @@ const paymentNotification = async (req, res) => {
             end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
           });
 
-          // Update session usage untuk member package baru
+          // Update session usage untuk member package baru dengan session type yang benar
           try {
-            await updateSessionUsage(memberPackage.id, order.member_id, order.package_id);
-            console.log(`Session usage updated for new member package ${memberPackage.id}`);
+            await updateSessionUsage(memberPackage.id, order.member_id, order.package_id, null, sessionType);
+            console.log(`Session usage updated for new member package ${memberPackage.id} with session type: ${sessionType}`);
           } catch (error) {
             console.error('Error updating session usage for new member package:', error);
           }
 
-          console.log(`MemberPackage created successfully for order ${order.order_number}`);
+          console.log(`MemberPackage created successfully for order ${order.order_number} with session type: ${sessionType}`);
         } else {
           console.log(`MemberPackage already exists for order ${order.order_number}`);
         }
