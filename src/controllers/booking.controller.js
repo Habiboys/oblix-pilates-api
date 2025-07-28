@@ -186,12 +186,19 @@ const createUserBooking = async (req, res) => {
                 }
             });
             
+            logger.info(`🔍 Looking for member package: member_id=${member_id}, package_id=${selectedPackageId}`);
+            logger.info(`📦 Found member package: ${memberPackage ? memberPackage.id : 'NOT FOUND'}`);
+            
             if (memberPackage) {
-                await updateSessionUsage(memberPackage.id, member_id, selectedPackageId, booking.id);
-                logger.info(`✅ Session usage updated for member ${member_id}, package ${selectedPackageId}, booking ${booking.id}`);
+                logger.info(`🔄 Updating session usage for member package ${memberPackage.id}`);
+                const updateResult = await updateSessionUsage(memberPackage.id, member_id, selectedPackageId, booking.id);
+                logger.info(`✅ Session usage updated successfully:`, updateResult);
+            } else {
+                logger.error(`❌ Member package not found for member_id=${member_id}, package_id=${selectedPackageId}`);
             }
         } catch (error) {
             logger.error(`❌ Failed to update session usage: ${error.message}`);
+            logger.error(`❌ Error stack: ${error.stack}`);
         }
 
         // Send WhatsApp confirmation (async, don't wait for response)

@@ -1,6 +1,7 @@
-const { Schedule, Class, Trainer, Booking, MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category } = require('../models');
 const { Op } = require('sequelize');
-const { sortPackagesByPriority } = require('../utils/sessionTrackingUtils');
+const { Schedule, Class, Trainer, Booking, Member, Package, MemberPackage, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category } = require('../models');
+const { calculateAvailableSessions } = require('../utils/sessionTrackingUtils');
+const logger = require('../config/logger');
 
 // Get available classes for a specific date
 const getAvailableClasses = async (req, res) => {
@@ -73,30 +74,17 @@ const getAvailableClasses = async (req, res) => {
     };
 
     if (memberPackages.length > 0) {
-      // Gunakan utility function untuk mengurutkan paket berdasarkan prioritas
-      const sortedPackages = sortPackagesByPriority(memberPackages);
-      priorityPackage = sortedPackages[0];
-
-      if (priorityPackage) {
-        // Calculate remaining sessions based on package type
-        const package = priorityPackage.Package;
+      // Gunakan calculateAvailableSessions untuk mendapatkan paket yang konsisten
+      const sessionInfo = await calculateAvailableSessions(memberId);
+      
+      if (sessionInfo.packageDetails.length > 0) {
+        // Ambil paket dengan prioritas tertinggi (bonus > promo > first_trial > membership)
+        const priorityPackageDetail = sessionInfo.packageDetails[0];
         
-        if (package.PackageMembership && package.PackageMembership.Category) {
-          const categoryName = package.PackageMembership.Category.category_name.toLowerCase();
-          const sessionCount = package.PackageMembership.session || 0;
-          
-          if (categoryName.includes('group') || categoryName.includes('semi')) {
-            remainingSessions.group = priorityPackage.remaining_group_session || 0;
-          } else if (categoryName.includes('private')) {
-            remainingSessions.private = priorityPackage.remaining_private_session || 0;
-          }
-        } else if (package.PackageFirstTrial) {
-          remainingSessions.group = priorityPackage.remaining_group_session || 0;
-          remainingSessions.private = priorityPackage.remaining_private_session || 0;
-        } else if (package.PackagePromo) {
-          remainingSessions.group = priorityPackage.remaining_group_session || 0;
-          remainingSessions.private = priorityPackage.remaining_private_session || 0;
-        } else if (package.PackageBonus) {
+        // Cari member package yang sesuai
+        priorityPackage = memberPackages.find(mp => mp.package_id === priorityPackageDetail.package_id);
+        
+        if (priorityPackage) {
           remainingSessions.group = priorityPackage.remaining_group_session || 0;
           remainingSessions.private = priorityPackage.remaining_private_session || 0;
         }
