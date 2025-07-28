@@ -1,5 +1,5 @@
 const { Booking, Schedule, Member, Package, MemberPackage } = require('../models');
-const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionUtils');
+const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion } = require('../utils/bookingUtils');
 const { validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 const { updateSessionUsage } = require('../utils/sessionTrackingUtils');

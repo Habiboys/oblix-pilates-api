@@ -1,6 +1,6 @@
-const { Schedule, Class, Trainer, Booking, MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category } = require('../models');
+const { Schedule, Class, Trainer, Member, User, Package, MemberPackage } = require('../models');
 const { Op } = require('sequelize');
-const { sortPackagesByPriority } = require('../utils/sessionUtils');
+const { sortPackagesByPriority } = require('../utils/sessionTrackingUtils');
 
 // Get available classes for a specific date
 const getAvailableClasses = async (req, res) => {
