@@ -1,5 +1,5 @@
-const { MemberPackage, Package, Order, Payment, Booking, Member, PackageMembership, Category, PackageFirstTrial, PackagePromo, PackageBonus } = require('../models');
-const { Op } = require('sequelize');
+const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category, Order, Booking } = require('../models');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage } = require('../utils/sessionTrackingUtils');
 
 const getMyPackages = async (req, res) => {
   try {
@@ -12,6 +12,9 @@ const getMyPackages = async (req, res) => {
         message: 'Only members can view packages'
       });
     }
+
+    // Update session usage untuk semua member packages terlebih dahulu
+    await updateAllMemberPackagesSessionUsage(member_id);
 
     // Get all member packages with related data
     const memberPackages = await MemberPackage.findAll({
@@ -53,8 +56,6 @@ const getMyPackages = async (req, res) => {
       order: [['end_date', 'DESC']]
     });
 
-
-
     // Get current active package (end_date >= today)
     const currentDate = new Date();
     const activePackage = memberPackages.find(mp => {
@@ -66,92 +67,72 @@ const getMyPackages = async (req, res) => {
       return isNotExpired && (hasValidOrder || isBonusPackage);
     });
 
-    // Get used sessions for each package from booking table
-    const packagesWithUsage = await Promise.all(
-      memberPackages.map(async (memberPackage) => {
-        // Count used sessions for this specific package from booking table
-        const usedSessions = await Booking.count({
-          where: {
-            member_id,
-            package_id: memberPackage.package_id,
-            status: 'signup'
-          }
-        });
+    // Process packages with updated session data
+    const packagesWithUsage = memberPackages.map((memberPackage) => {
+      // Get total sessions based on package type
+      let totalSessions = 0;
+      let groupSessions = 0;
+      let privateSessions = 0;
+      
+      if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+        totalSessions = memberPackage.Package.PackageMembership.session || 0;
+        groupSessions = totalSessions; // All sessions are group sessions
+      } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
+        groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
+        privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
+        totalSessions = groupSessions + privateSessions;
+      } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
+        groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
+        privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
+        totalSessions = groupSessions + privateSessions;
+      } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
+        groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
+        privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
+        totalSessions = groupSessions + privateSessions;
+      }
 
-        // Get total sessions based on package type
-        let totalSessions = 0;
-        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
-          totalSessions = memberPackage.Package.PackageMembership.session || 0;
-        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
-          totalSessions = (memberPackage.Package.PackageFirstTrial.group_session || 0) + 
-                         (memberPackage.Package.PackageFirstTrial.private_session || 0);
-        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
-          totalSessions = (memberPackage.Package.PackagePromo.group_session || 0) + 
-                         (memberPackage.Package.PackagePromo.private_session || 0);
-        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonu) {
-          totalSessions = (memberPackage.Package.PackageBonu.group_session || 0) + 
-                         (memberPackage.Package.PackageBonu.private_session || 0);
+      // Use updated session data from MemberPackage
+      const usedGroupSessions = memberPackage.used_group_session || 0;
+      const usedPrivateSessions = memberPackage.used_private_session || 0;
+      const remainingGroupSessions = memberPackage.remaining_group_session || 0;
+      const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
+      
+      const totalUsedSessions = usedGroupSessions + usedPrivateSessions;
+      const progressPercentage = totalSessions > 0 ? (totalUsedSessions / totalSessions) * 100 : 0;
+
+      return {
+        id: memberPackage.id,
+        package_name: memberPackage.Package?.name || (memberPackage.Package?.type === 'bonus' ? 'Paket Bonus' : 'Unknown Package'),
+        package_type: memberPackage.Package?.type || 'unknown',
+        start_date: memberPackage.start_date,
+        end_date: memberPackage.end_date,
+        total_session: totalSessions,
+        used_session: totalUsedSessions,
+        remaining_session: Math.max(0, totalSessions - totalUsedSessions),
+        progress_percentage: Math.round(progressPercentage),
+        group_sessions: groupSessions,
+        private_sessions: privateSessions,
+        used_group_session: usedGroupSessions,
+        used_private_session: usedPrivateSessions,
+        remaining_group_session: remainingGroupSessions,
+        remaining_private_session: remainingPrivateSessions,
+        is_active: (() => {
+          const isNotExpired = new Date(memberPackage.end_date) >= currentDate;
+          const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
+          const isBonusPackage = memberPackage.Package?.type === 'bonus';
+          
+          return isNotExpired && (hasValidOrder || isBonusPackage);
+        })(),
+        order: {
+          id: memberPackage.Order?.id,
+          order_number: memberPackage.Order?.order_number,
+          invoice_number: memberPackage.Order?.order_number,
+          payment_date: memberPackage.Order?.paid_at,
+          total_amount: memberPackage.Order?.total_amount,
+          payment_status: memberPackage.Order?.payment_status
         }
-        
-        // Calculate progress percentage
-        const progressPercentage = totalSessions > 0 ? (usedSessions / totalSessions) * 100 : 0;
-
-        // Get session breakdown for different package types
-        let groupSessions = 0;
-        let privateSessions = 0;
-        
-        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
-          // For membership, all sessions are group sessions
-          groupSessions = memberPackage.Package.PackageMembership.session || 0;
-        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
-          groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
-          privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
-        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
-          groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
-          privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
-        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonu) {
-          groupSessions = memberPackage.Package.PackageBonu.group_session || 0;
-          privateSessions = memberPackage.Package.PackageBonu.private_session || 0;
-        }
-
-        // Debug log untuk paket bonus
-        if (memberPackage.Package?.type === 'bonus') {
-          console.log(`Debug: Bonus package ${memberPackage.Package.name}:`);
-          console.log(`  PackageBonu:`, memberPackage.Package.PackageBonu);
-          console.log(`  Group sessions: ${groupSessions}`);
-          console.log(`  Private sessions: ${privateSessions}`);
-        }
-
-        return {
-          id: memberPackage.id,
-          package_name: memberPackage.Package?.name || (memberPackage.Package?.type === 'bonus' ? 'Paket Bonus' : 'Unknown Package'),
-          package_type: memberPackage.Package?.type || 'unknown',
-          start_date: memberPackage.start_date,
-          end_date: memberPackage.end_date,
-          total_session: totalSessions,
-          used_session: usedSessions,
-          remaining_session: Math.max(0, totalSessions - usedSessions),
-          progress_percentage: Math.round(progressPercentage),
-          group_sessions: groupSessions,
-          private_sessions: privateSessions,
-          is_active: (() => {
-            const isNotExpired = new Date(memberPackage.end_date) >= currentDate;
-            const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
-            const isBonusPackage = memberPackage.Package?.type === 'bonus';
-            
-            return isNotExpired && (hasValidOrder || isBonusPackage);
-          })(),
-          order: {
-            id: memberPackage.Order?.id,
-            order_number: memberPackage.Order?.order_number,
-            invoice_number: memberPackage.Order?.order_number,
-            payment_date: memberPackage.Order?.paid_at,
-            total_amount: memberPackage.Order?.total_amount,
-            payment_status: memberPackage.Order?.payment_status
-          }
-        };
-      })
-    );
+      };
+    });
 
     // Separate active package and history
     const currentActivePackage = packagesWithUsage.find(pkg => pkg.is_active);
