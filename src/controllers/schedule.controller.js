@@ -1120,7 +1120,6 @@ const createPrivateSchedule = async (req, res) => {
                 schedule_id: schedule.id,
                 member_id: member_id,
                 package_id: allocation.package_id,
-                session_left: allocation.session_left,
                 status: 'signup',
                 booking_date: new Date(),
                 notes: `Auto booking for private schedule using ${allocation.package_type} package`
@@ -1479,7 +1478,7 @@ whereClause.date_start = {
                         }
                     },
                     required: false,
-                    attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'session_left', 'status', 'createdAt', 'updatedAt'],
+                    attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'createdAt', 'updatedAt'],
                     include: include_members === 'true' ? [
                         {
                             model: Member,

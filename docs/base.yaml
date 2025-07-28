@@ -255,8 +255,7 @@ components:
         package_id:
           type: string
           format: uuid
-        session_left:
-          type: integer
+      
 
     # MemberPackage Schemas
     MemberPackage:

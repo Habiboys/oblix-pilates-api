@@ -136,14 +136,12 @@ const createUserBooking = async (req, res) => {
         // Buat alokasi untuk 1 sesi (sistem akan memilih paket berdasarkan prioritas)
         const allocation = await createSessionAllocation(member_id, 1);
         const selectedPackageId = allocation[0].package_id;
-        const sessionLeft = allocation[0].session_left;
 
         // Buat booking
         const booking = await Booking.create({
             schedule_id,
             member_id,
             package_id: selectedPackageId,
-            session_left: sessionLeft,
             status: bookingStatus,
             booking_date: new Date(),
             notes: bookingNotes

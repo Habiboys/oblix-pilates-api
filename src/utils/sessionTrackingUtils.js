@@ -233,8 +233,7 @@ const createSessionAllocation = async (memberId, requiredSessions) => {
             sessionIndex: i,
             package_id: selectedPackage.package_id,
             package_type: selectedPackage.package_type,
-            package_name: selectedPackage.package_name,
-            session_left: selectedPackage.available_sessions - sessionsUsedInCurrentPackage - 1
+            package_name: selectedPackage.package_name
         });
         
         sessionsUsedInCurrentPackage++;

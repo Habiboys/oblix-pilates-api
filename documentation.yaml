@@ -240,8 +240,7 @@ components:
         package_id:
           type: string
           format: uuid
-        session_left:
-          type: integer
+     
     MemberPackage:
       type: object
       properties:

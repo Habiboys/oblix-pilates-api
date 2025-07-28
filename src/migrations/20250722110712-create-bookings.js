@@ -40,10 +40,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      session_left: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
+
       status: {
         type: Sequelize.ENUM('signup', 'waiting_list', 'cancelled'),
         allowNull: false,

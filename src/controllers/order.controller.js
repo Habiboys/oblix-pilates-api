@@ -1,4 +1,4 @@
-const { Order, Package, Member, User, MemberPackage, Booking, Payment, PackageMembership, Category } = require('../models');  
+const { Order, Package, Member, User, MemberPackage, Booking, Payment, PackageMembership, Category, PackagePromo, PackageFirstTrial, PackageBonus } = require('../models');  
 const { Op } = require('sequelize');
 const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');

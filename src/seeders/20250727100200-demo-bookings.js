@@ -40,14 +40,12 @@ module.exports = {
           for (let i = 0; i < numBookings; i++) {
             const memberIndex = i % memberIds.length;
             const packageIndex = i % 3; // Use only group packages (first 3)
-            const sessionLeft = Math.floor(Math.random() * 15) + 5; // 5-19 sessions left
             
             bookings.push({
               id: `booking-${bookingCounter++}`,
               schedule_id: morningScheduleId,
               member_id: memberIds[memberIndex],
               package_id: packageIds[packageIndex],
-              session_left: sessionLeft,
               status: 'signup',
               createdAt: now,
               updatedAt: now
@@ -60,14 +58,12 @@ module.exports = {
             for (let i = 0; i < waitingBookings; i++) {
               const memberIndex = i % memberIds.length;
               const packageIndex = i % 3;
-              const sessionLeft = Math.floor(Math.random() * 15) + 5;
               
               bookings.push({
                 id: `booking-${bookingCounter++}`,
                 schedule_id: morningScheduleId,
                 member_id: memberIds[memberIndex],
                 package_id: packageIds[packageIndex],
-                session_left: sessionLeft,
                 status: 'waiting_list',
                 createdAt: now,
                 updatedAt: now
@@ -83,14 +79,12 @@ module.exports = {
           for (let i = 0; i < numEveningBookings; i++) {
             const memberIndex = i % memberIds.length;
             const packageIndex = i % 3;
-            const sessionLeft = Math.floor(Math.random() * 15) + 5;
             
             bookings.push({
               id: `booking-${bookingCounter++}`,
               schedule_id: eveningScheduleId,
               member_id: memberIds[memberIndex],
               package_id: packageIds[packageIndex],
-              session_left: sessionLeft,
               status: 'signup',
               createdAt: now,
               updatedAt: now
@@ -107,14 +101,12 @@ module.exports = {
           for (let i = 0; i < numSemiBookings; i++) {
             const memberIndex = i % memberIds.length;
             const packageIndex = i % 3;
-            const sessionLeft = Math.floor(Math.random() * 10) + 3;
             
             bookings.push({
               id: `booking-${bookingCounter++}`,
               schedule_id: semiPrivateScheduleId,
               member_id: memberIds[memberIndex],
               package_id: packageIds[packageIndex],
-              session_left: sessionLeft,
               status: 'signup',
               createdAt: now,
               updatedAt: now
@@ -133,7 +125,6 @@ module.exports = {
             schedule_id: privateScheduleId,
             member_id: memberIds[assignedMemberIndex],
             package_id: packageIds[4], // Use promo package for private
-            session_left: Math.floor(Math.random() * 8) + 2, // 2-9 sessions left
             status: 'signup',
             createdAt: now,
             updatedAt: now
@@ -148,7 +139,6 @@ module.exports = {
             schedule_id: cancelledScheduleId,
             member_id: memberIds[0],
             package_id: packageIds[0],
-            session_left: Math.floor(Math.random() * 15) + 5,
             status: 'cancelled',
             createdAt: now,
             updatedAt: now
