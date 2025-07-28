@@ -117,16 +117,10 @@ const calculateAvailableSessions = async (memberId) => {
                 break;
         }
 
-        // Hitung sesi yang sudah digunakan dari booking
-        const usedSessions = await Booking.count({
-            where: { 
-                member_id: memberId,
-                package_id: package.id,
-                status: 'signup'
-            }
-        });
-
-        const availableSessions = Math.max(0, totalSessions - usedSessions);
+        // Gunakan remaining sessions yang sudah diupdate di MemberPackage
+        const availableSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.remaining_private_session || 0);
+        const usedSessions = totalSessions - availableSessions;
+        
         totalAvailableSessions += availableSessions;
 
         if (availableSessions > 0) {
@@ -278,8 +272,9 @@ const getMemberSessionSummary = async (memberId) => {
  * @param {string} memberPackageId - ID member package
  * @param {string} memberId - ID member
  * @param {string} packageId - ID package
+ * @param {string} newBookingId - ID booking yang baru dibuat (optional)
  */
-const updateSessionUsage = async (memberPackageId, memberId, packageId) => {
+const updateSessionUsage = async (memberPackageId, memberId, packageId, newBookingId = null) => {
   try {
     // Ambil data package untuk mengetahui total session
     const package = await Package.findByPk(packageId, {
@@ -342,6 +337,28 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId) => {
         }
       }
     });
+
+    // Jika ada booking baru, tambahkan ke perhitungan
+    if (newBookingId) {
+      const newBooking = await Booking.findByPk(newBookingId, {
+        include: [
+          {
+            model: Schedule,
+            attributes: ['type']
+          }
+        ]
+      });
+
+      if (newBooking && newBooking.Schedule) {
+        if (newBooking.Schedule.type === 'group') {
+          usedGroupSessions++;
+        } else if (newBooking.Schedule.type === 'private') {
+          usedPrivateSessions++;
+        } else if (newBooking.Schedule.type === 'semi_private') {
+          usedGroupSessions++; // Default sebagai group
+        }
+      }
+    }
 
     // Hitung remaining sessions
     const remainingGroupSessions = Math.max(0, totalGroupSessions - usedGroupSessions);

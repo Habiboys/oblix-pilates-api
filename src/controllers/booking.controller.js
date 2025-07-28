@@ -187,8 +187,8 @@ const createUserBooking = async (req, res) => {
             });
             
             if (memberPackage) {
-                await updateSessionUsage(memberPackage.id, member_id, selectedPackageId);
-                logger.info(`✅ Session usage updated for member ${member_id}, package ${selectedPackageId}`);
+                await updateSessionUsage(memberPackage.id, member_id, selectedPackageId, booking.id);
+                logger.info(`✅ Session usage updated for member ${member_id}, package ${selectedPackageId}, booking ${booking.id}`);
             }
         } catch (error) {
             logger.error(`❌ Failed to update session usage: ${error.message}`);
