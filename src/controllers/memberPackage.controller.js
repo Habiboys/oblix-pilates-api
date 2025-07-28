@@ -76,16 +76,20 @@ const getMyPackages = async (req, res) => {
       let privateSessions = 0;
       
       if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
-        totalSessions = memberPackage.Package.PackageMembership.session || 0;
         // Untuk membership, session type ditentukan oleh category
         const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+        const sessionCount = memberPackage.Package.PackageMembership.session || 0;
+        
         if (categoryName === 'Semi-Private Class') {
-          semiPrivateSessions = totalSessions;
+          semiPrivateSessions = sessionCount;
+          totalSessions = sessionCount;
         } else if (categoryName === 'Private Class') {
-          privateSessions = totalSessions;
+          privateSessions = sessionCount;
+          totalSessions = sessionCount;
         } else {
           // Default ke group (termasuk 'Group Class' atau category lain)
-          groupSessions = totalSessions;
+          groupSessions = sessionCount;
+          totalSessions = sessionCount;
         }
       } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
         groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;

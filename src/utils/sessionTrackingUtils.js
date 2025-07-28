@@ -131,18 +131,19 @@ const calculateAvailableSessions = async (memberId) => {
         // Gunakan remaining sessions yang sudah diupdate di MemberPackage
         let availableSessions = 0;
         if (package.type === 'membership') {
-            // Untuk membership, gunakan session type berdasarkan category
-            if (sessionType === 'semi_private') {
-                availableSessions = memberPackage.remaining_semi_private_session || 0;
-            } else if (sessionType === 'private') {
-                availableSessions = memberPackage.remaining_private_session || 0;
-            } else {
-                availableSessions = memberPackage.remaining_group_session || 0;
-            }
+          // Untuk membership, gunakan session type berdasarkan category
+          const categoryName = package.PackageMembership.Category?.category_name;
+          if (categoryName === 'Semi-Private Class') {
+            availableSessions = memberPackage.remaining_semi_private_session || 0;
+          } else if (categoryName === 'Private Class') {
+            availableSessions = memberPackage.remaining_private_session || 0;
+          } else {
+            availableSessions = memberPackage.remaining_group_session || 0;
+          }
         } else {
-            // Untuk paket lain, jumlahkan semua remaining sessions
-            availableSessions = (memberPackage.remaining_group_session || 0) + 
-                              (memberPackage.remaining_private_session || 0);
+          // Untuk paket lain, jumlahkan semua remaining sessions
+          availableSessions = (memberPackage.remaining_group_session || 0) + 
+                            (memberPackage.remaining_private_session || 0);
         }
         
         const usedSessions = totalSessions - availableSessions;

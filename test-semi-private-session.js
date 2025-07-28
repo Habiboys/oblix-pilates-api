@@ -53,13 +53,14 @@ async function testSemiPrivateSession() {
           console.log('✅ Package has semi_private sessions!');
           if (currentPackage.package_type === 'membership') {
             console.log('✅ Correct: Semi_private sessions only in membership package');
+            console.log('   - Expected category: Semi-Private Class');
           } else {
             console.log('❌ Error: Semi_private sessions found in non-membership package');
           }
         } else {
           console.log('⚠️ Package has no semi_private sessions');
           if (currentPackage.package_type === 'membership') {
-            console.log('⚠️ Membership package has no semi_private sessions (might be group/private category)');
+            console.log('⚠️ Membership package has no semi_private sessions (might be Group Class/Private Class category)');
           } else {
             console.log('✅ Correct: Non-membership package has no semi_private sessions');
           }
