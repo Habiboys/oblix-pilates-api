@@ -7516,6 +7516,92 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/schedules/cancel-tasks/status:
+    get:
+      tags:
+        - Schedule Management
+      summary: Get scheduled cancel tasks status
+      description: Get the current status of all scheduled cancel tasks for dynamic scheduling
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Scheduled cancel tasks status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Scheduled cancel tasks status retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      total_scheduled:
+                        type: integer
+                        description: Total number of scheduled cancel tasks
+                        example: 5
+                      scheduled_schedules:
+                        type: array
+                        items:
+                          type: string
+                          format: uuid
+                        description: Array of schedule IDs that have scheduled cancel tasks
+                        example:
+                          - 6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d
+                          - 7c9f5e3f-2b4d-5f9c-0e6b-3d6a9f2c5e0a
+        '401':
+          $ref: ./base.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./base.yaml#/components/responses/Forbidden
+        '500':
+          $ref: ./base.yaml#/components/responses/InternalServerError
+  /api/schedules/cancel-tasks/refresh:
+    post:
+      tags:
+        - Schedule Management
+      summary: Refresh dynamic cancel scheduling
+      description: Manually refresh the dynamic cancel scheduling system to pick up new or updated schedules
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dynamic cancel scheduling refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Dynamic cancel scheduling refreshed successfully
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        example: true
+                      scheduled_count:
+                        type: integer
+                        description: Number of schedules scheduled for auto-cancel
+                        example: 8
+                      total_schedules:
+                        type: integer
+                        description: Total number of schedules processed
+                        example: 12
+        '401':
+          $ref: ./base.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./base.yaml#/components/responses/Forbidden
+        '500':
+          $ref: ./base.yaml#/components/responses/InternalServerError
   /api/booking:
     get:
       tags:
@@ -9237,6 +9323,295 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /member/my-classes:
+    get:
+      tags:
+        - Member Management
+      summary: Get member's classes by type
+      description: Get member's classes filtered by type (upcoming, waitlist, post, cancelled)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Type of classes to retrieve
+          required: false
+          schema:
+            type: string
+            enum:
+              - upcoming
+              - waitlist
+              - post
+              - cancelled
+            default: upcoming
+      responses:
+        '200':
+          description: My classes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: My upcoming classes retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: upcoming
+                      total_classes:
+                        type: integer
+                        example: 3
+                      classes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            'no':
+                              type: integer
+                              example: 1
+                            booking_id:
+                              type: string
+                              format: uuid
+                              example: 6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d
+                            class_date:
+                              type: string
+                              format: date
+                              example: '2025-07-29'
+                            time:
+                              type: string
+                              example: 07:30:00 - 08:30:00
+                            course:
+                              type: string
+                              example: Beginner Pilates
+                            coach:
+                              type: string
+                              example: Coach Lauren
+                            spot:
+                              type: string
+                              example: 9/10
+                            status:
+                              type: string
+                              enum:
+                                - signup
+                                - waiting_list
+                                - cancelled
+                              example: signup
+                            schedule_id:
+                              type: string
+                              format: uuid
+                            class_id:
+                              type: string
+                              format: uuid
+                            trainer_id:
+                              type: string
+                              format: uuid
+                            notes:
+                              type: string
+                              nullable: true
+                            created_at:
+                              type: string
+                              format: date-time
+                            updated_at:
+                              type: string
+                              format: date-time
+                      additional_info:
+                        type: object
+                        nullable: true
+                        properties:
+                          message:
+                            type: string
+                            example: >-
+                              If you're waitlisted, you'll be automatically added up to 120 mins before class if there's
+                              space—we'll notify you either way.
+        '400':
+          $ref: ./base.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./base.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./base.yaml#/components/responses/NotFound
+        '500':
+          $ref: ./base.yaml#/components/responses/InternalServerError
+  /member/my-classes/{booking_id}/cancel:
+    put:
+      tags:
+        - Member Management
+      summary: Cancel a booking
+      description: Cancel a specific booking for the authenticated member
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          description: Booking ID to cancel
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking cancelled successfully
+                  data:
+                    type: object
+                    properties:
+                      booking_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: cancelled
+                      cancelled_at:
+                        type: string
+                        format: date-time
+        '400':
+          description: Cannot cancel booking
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Cannot cancel booking. Cancellation deadline was 120 minutes before class.
+                  data:
+                    type: object
+                    properties:
+                      schedule_time:
+                        type: string
+                        format: date-time
+                      cancel_deadline:
+                        type: string
+                        format: date-time
+                      current_time:
+                        type: string
+                        format: date-time
+        '401':
+          $ref: ./base.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./base.yaml#/components/responses/NotFound
+        '500':
+          $ref: ./base.yaml#/components/responses/InternalServerError
+  /member/my-classes/{booking_id}/details:
+    get:
+      tags:
+        - Member Management
+      summary: Get booking details
+      description: Get detailed information about a specific booking
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: booking_id
+          in: path
+          description: Booking ID to get details for
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Booking details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking details retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      booking_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        enum:
+                          - signup
+                          - waiting_list
+                          - cancelled
+                        example: signup
+                      class_date:
+                        type: string
+                        format: date
+                        example: '2025-07-29'
+                      time:
+                        type: string
+                        example: 07:30:00 - 08:30:00
+                      course:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                            example: Beginner Pilates
+                          description:
+                            type: string
+                            nullable: true
+                          color:
+                            type: string
+                            example: '#FF6B6B'
+                      coach:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type: string
+                            example: Coach Lauren
+                          picture:
+                            type: string
+                            nullable: true
+                          description:
+                            type: string
+                            nullable: true
+                      schedule_type:
+                        type: string
+                        enum:
+                          - group
+                          - semi_private
+                          - private
+                        example: group
+                      notes:
+                        type: string
+                        nullable: true
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+        '401':
+          $ref: ./base.yaml#/components/responses/Unauthorized
+        '404':
+          $ref: ./base.yaml#/components/responses/NotFound
+        '500':
+          $ref: ./base.yaml#/components/responses/InternalServerError
   /check-class:
     get:
       tags:

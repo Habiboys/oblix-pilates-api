@@ -7,43 +7,70 @@ const {
   createMemberSchema,
   updateMemberSchema,
   getMembersQuerySchema,
-  memberIdSchema
+  memberIdSchema,
+  getMyClassesSchema,
+  cancelBookingSchema,
+  getBookingDetailsSchema
 } = require('../validations/member.validation');
 
-// Apply authentication middleware to all routes
-router.use(validateToken);
-router.use(checkRole('admin'));
+// My Classes endpoints (user only - no admin role required) - HARUS DI ATAS ROUTE DENGAN PARAMETER
+router.get('/my-classes', 
+  validateToken, 
+  validate(getMyClassesSchema, 'query'), 
+  memberController.getMyClasses
+);
 
-// Get all members with pagination and search
+router.put('/my-classes/:booking_id/cancel', 
+  validateToken, 
+  validate(cancelBookingSchema, 'params'), 
+  memberController.cancelBooking
+);
+
+router.get('/my-classes/:booking_id/details', 
+  validateToken, 
+  validate(getBookingDetailsSchema, 'params'), 
+  memberController.getBookingDetails
+);
+
+// Admin routes (require admin role)
 router.get('/', 
+  validateToken,
+  checkRole('admin'),
   validate(getMembersQuerySchema, 'query'),
   memberController.getAllMembers
 );
 
-// Get member statistics
-router.get('/stats', memberController.getMemberStats);
+router.get('/stats', 
+  validateToken,
+  checkRole('admin'),
+  memberController.getMemberStats
+);
 
-// Get member by ID
 router.get('/:id',
+  validateToken,
+  checkRole('admin'),
   validate(memberIdSchema, 'params'),
   memberController.getMemberById
 );
 
-// Create new member
 router.post('/',
+  validateToken,
+  checkRole('admin'),
   validate(createMemberSchema, 'body'),
   memberController.createMember
 );
 
-// Update member
 router.put('/:id',
+  validateToken,
+  checkRole('admin'),
   validate(memberIdSchema, 'params'),
   validate(updateMemberSchema, 'body'),
   memberController.updateMember
 );
 
-// Delete member
 router.delete('/:id',
+  validateToken,
+  checkRole('admin'),
   validate(memberIdSchema, 'params'),
   memberController.deleteMember
 );

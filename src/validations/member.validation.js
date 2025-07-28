@@ -201,9 +201,38 @@ const memberIdSchema = Joi.object({
     })
 });
 
+// Schema untuk My Classes query parameters
+const getMyClassesSchema = Joi.object({
+    type: Joi.string().valid('upcoming', 'waitlist', 'post', 'cancelled').default('upcoming').messages({
+        'string.empty': 'Type parameter is required',
+        'any.only': 'Type must be one of: upcoming, waitlist, post, cancelled'
+    })
+});
+
+// Schema untuk cancel booking parameters
+const cancelBookingSchema = Joi.object({
+    booking_id: Joi.string().uuid().required().messages({
+        'string.empty': 'Booking ID is required',
+        'string.uuid': 'Booking ID must be a valid UUID',
+        'any.required': 'Booking ID is required'
+    })
+});
+
+// Schema untuk get booking details parameters
+const getBookingDetailsSchema = Joi.object({
+    booking_id: Joi.string().uuid().required().messages({
+        'string.empty': 'Booking ID is required',
+        'string.uuid': 'Booking ID must be a valid UUID',
+        'any.required': 'Booking ID is required'
+    })
+});
+
 module.exports = {
   createMemberSchema,
   updateMemberSchema,
   getMembersQuerySchema,
-  memberIdSchema
+  memberIdSchema,
+  getMyClassesSchema,
+  cancelBookingSchema,
+  getBookingDetailsSchema
 }; 
