@@ -6,8 +6,15 @@ const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePro
  * @returns {Promise<Object>} Object berisi total sesi dan detail paket
  */
 const calculateAvailableSessions = async (memberId) => {
+    const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
     const memberPackages = await MemberPackage.findAll({
-        where: { member_id: memberId },
+        where: { 
+            member_id: memberId,
+            end_date: {
+                [require('sequelize').Op.gte]: currentDate // Hanya paket yang masih berlaku
+            }
+        },
         include: [
             {
                 model: Package,

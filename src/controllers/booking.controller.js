@@ -1,6 +1,7 @@
 const { Booking, Schedule, Member, Package } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
+const { validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 const twilioService = require('../services/twilio.service');
 const logger = require('../config/logger');
 
@@ -225,6 +226,24 @@ const createBooking = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Member sudah melakukan booking untuk schedule ini'
+            });
+        }
+
+        // Validasi konflik jadwal member
+        const memberConflict = await validateMemberScheduleConflict(
+            member_id,
+            schedule.date_start,
+            schedule.time_start,
+            schedule.time_end
+        );
+
+        if (memberConflict.hasConflict) {
+            return res.status(400).json({
+                success: false,
+                message: 'Member memiliki jadwal yang bentrok dengan schedule ini',
+                data: {
+                    conflicts: memberConflict.conflicts
+                }
             });
         }
 

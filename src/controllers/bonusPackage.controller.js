@@ -221,9 +221,25 @@ const createBonusPackage = async (req, res) => {
       });
     }
 
+    // Calculate package duration
+    const startDate = new Date();
+    let endDate = new Date();
+    
+    // Calculate end date based on duration dari package yang sudah dibuat
+    if (newPackage.duration_unit === 'week') {
+      endDate.setDate(endDate.getDate() + (newPackage.duration_value * 7));
+    } else if (newPackage.duration_unit === 'month') {
+      endDate.setMonth(endDate.getMonth() + newPackage.duration_value);
+    }
+
+    // Log untuk debugging
+    logger.info(`Package duration calculation: start_date=${startDate.toISOString().split('T')[0]}, end_date=${endDate.toISOString().split('T')[0]}, duration_value=${newPackage.duration_value}, duration_unit=${newPackage.duration_unit}`);
+
     await MemberPackage.create({
       member_id: member_id,
-      package_id: newPackage.id
+      package_id: newPackage.id,
+      start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+      end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
     }, { transaction: t });
 
     await t.commit();
@@ -308,9 +324,22 @@ const updateBonusPackage = async (req, res) => {
         where: { package_id: package.id }
       });
 
+      // Calculate package duration
+      const startDate = new Date();
+      let endDate = new Date();
+      
+      // Calculate end date based on duration
+      if (package.duration_unit === 'week') {
+        endDate.setDate(endDate.getDate() + (package.duration_value * 7));
+      } else if (package.duration_unit === 'month') {
+        endDate.setMonth(endDate.getMonth() + package.duration_value);
+      }
+
       await MemberPackage.create({
         member_id: member_id,
-        package_id: package.id
+        package_id: package.id,
+        start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+        end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
       });
     }
 

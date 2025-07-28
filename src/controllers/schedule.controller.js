@@ -1,6 +1,7 @@
 const { Schedule, Class, Trainer, Member, Booking } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
+const { validateTrainerScheduleConflict, validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 const ScheduleService = require('../services/schedule.service');
 const twilioService = require('../services/twilio.service');
 const logger = require('../config/logger');
@@ -196,6 +197,24 @@ const createGroupSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Trainer not found'
+            });
+        }
+
+        // Validasi konflik jadwal trainer
+        const trainerConflict = await validateTrainerScheduleConflict(
+            trainer_id,
+            date_start,
+            time_start,
+            time_end
+        );
+
+        if (trainerConflict.hasConflict) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Trainer memiliki jadwal yang bentrok dengan schedule ini',
+                data: {
+                    conflicts: trainerConflict.conflicts
+                }
             });
         }
 
@@ -566,6 +585,24 @@ const createSemiPrivateSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Trainer not found'
+            });
+        }
+
+        // Validasi konflik jadwal trainer
+        const trainerConflict = await validateTrainerScheduleConflict(
+            trainer_id,
+            date_start,
+            time_start,
+            time_end
+        );
+
+        if (trainerConflict.hasConflict) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Trainer memiliki jadwal yang bentrok dengan schedule ini',
+                data: {
+                    conflicts: trainerConflict.conflicts
+                }
             });
         }
 
@@ -945,6 +982,42 @@ const createPrivateSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Member not found'
+            });
+        }
+
+        // Validasi konflik jadwal trainer
+        const trainerConflict = await validateTrainerScheduleConflict(
+            trainer_id,
+            date_start,
+            time_start,
+            time_end
+        );
+
+        if (trainerConflict.hasConflict) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Trainer memiliki jadwal yang bentrok dengan schedule ini',
+                data: {
+                    conflicts: trainerConflict.conflicts
+                }
+            });
+        }
+
+        // Validasi konflik jadwal member
+        const memberConflict = await validateMemberScheduleConflict(
+            member_id,
+            date_start,
+            time_start,
+            time_end
+        );
+
+        if (memberConflict.hasConflict) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Member memiliki jadwal yang bentrok dengan schedule ini',
+                data: {
+                    conflicts: memberConflict.conflicts
+                }
             });
         }
 

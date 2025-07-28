@@ -701,14 +701,10 @@ const paymentNotification = async (req, res) => {
           let endDate = new Date();
           
           // Calculate end date based on duration
-          if (order.duration_unit === 'days') {
-            endDate.setDate(endDate.getDate() + order.duration_value);
-          } else if (order.duration_unit === 'weeks') {
+          if (order.duration_unit === 'week') {
             endDate.setDate(endDate.getDate() + (order.duration_value * 7));
-          } else if (order.duration_unit === 'months') {
+          } else if (order.duration_unit === 'month') {
             endDate.setMonth(endDate.getMonth() + order.duration_value);
-          } else if (order.duration_unit === 'years') {
-            endDate.setFullYear(endDate.getFullYear() + order.duration_value);
           }
 
           // Create MemberPackage record
@@ -717,9 +713,7 @@ const paymentNotification = async (req, res) => {
             package_id: order.package_id,
             order_id: order.id,
             start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-            end_date: endDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-            total_session: order.session_count || 0,
-            used_session: 0
+            end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
           });
 
           console.log(`MemberPackage created successfully for order ${order.order_number}`);
