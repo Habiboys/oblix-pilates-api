@@ -33,7 +33,6 @@ router.post('/',
 
 router.put('/:id/cancel', 
     validateToken,
-    validate(cancelBookingSchema, 'body'),
     bookingController.cancelBooking
 );
 
