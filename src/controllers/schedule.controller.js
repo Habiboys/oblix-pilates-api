@@ -1297,14 +1297,37 @@ const getScheduleCalendar = async (req, res) => {
         // Build where clause
         const whereClause = {};
         
-        // Filter by month and year
-     const startDate = new Date(targetYear, targetMonth - 1, 1);
-const endDate = new Date(targetYear, targetMonth, 0); // Last day of month
 
-const startDateStr = new Date(targetYear, targetMonth - 1, 1).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
-const endDateStr = new Date(targetYear, targetMonth, 0).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+// Hitung tanggal awal dan akhir bulan
+const firstDayOfMonth = new Date(targetYear, targetMonth - 1, 1);
+const lastDayOfMonth = new Date(targetYear, targetMonth, 0);
 
-console.log('Date range:', startDateStr, 'to', endDateStr); // Untuk debugging
+// Tentukan hari dalam seminggu (0 = Minggu, 1 = Senin, ..., 6 = Sabtu)
+const firstDayOfWeek = firstDayOfMonth.getDay();
+const lastDayOfWeek = lastDayOfMonth.getDay();
+
+// Hitung berapa hari yang perlu ditambahkan dari bulan sebelumnya
+// Jika hari pertama bulan adalah Minggu (0), tidak perlu tambahan
+// Jika hari pertama bulan adalah Senin (1), tambahkan 1 hari, dst.
+const daysFromPrevMonth = firstDayOfWeek;
+
+// Hitung berapa hari yang perlu ditambahkan dari bulan berikutnya
+// Jika hari terakhir bulan adalah Sabtu (6), tidak perlu tambahan
+// Jika hari terakhir bulan adalah Jumat (5), tambahkan 1 hari, dst.
+const daysFromNextMonth = 6 - lastDayOfWeek;
+
+// Buat tanggal awal dan akhir yang disesuaikan
+const adjustedStartDate = new Date(firstDayOfMonth);
+adjustedStartDate.setDate(firstDayOfMonth.getDate() - daysFromPrevMonth);
+
+const adjustedEndDate = new Date(lastDayOfMonth);
+adjustedEndDate.setDate(lastDayOfMonth.getDate() + daysFromNextMonth);
+
+// Konversi ke format YYYY-MM-DD dengan timezone yang benar
+const startDateStr = adjustedStartDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+const endDateStr = adjustedEndDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+
+console.log('Date range with auto adjustment:', startDateStr, 'to', endDateStr); // Untuk debugging
 
 whereClause.date_start = {
     [Op.between]: [startDateStr, endDateStr]
