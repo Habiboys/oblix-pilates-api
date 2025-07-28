@@ -197,9 +197,39 @@ const createBonusPackage = async (req, res) => {
       });
     }
 
-    // Create bonus package
+    // Create bonus package with unique name
+    const currentDate = new Date();
+    const dateString = currentDate.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+    
+    // Check if there are existing bonus packages created today
+    const todayStart = new Date(currentDate);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(currentDate);
+    todayEnd.setHours(23, 59, 59, 999);
+    
+    const existingBonusToday = await Package.count({
+      where: {
+        type: 'bonus',
+        createdAt: {
+          [Op.between]: [todayStart, todayEnd]
+        }
+      },
+      transaction: t
+    });
+    
+    let packageName = `Paket Bonus ${dateString}`;
+    if (existingBonusToday > 0) {
+      const suffix = String.fromCharCode(97 + existingBonusToday); // a, b, c, etc.
+      packageName = `Paket Bonus ${dateString} ${suffix}`;
+    }
+    
     const newPackage = await Package.create({
       type: 'bonus',
+      name: packageName,
       duration_value: parseInt(duration_value),
       duration_unit,
     }, { transaction: t });

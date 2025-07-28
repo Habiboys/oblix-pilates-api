@@ -53,11 +53,18 @@ const getMyPackages = async (req, res) => {
       order: [['end_date', 'DESC']]
     });
 
+
+
     // Get current active package (end_date >= today)
     const currentDate = new Date();
-    const activePackage = memberPackages.find(mp => 
-      new Date(mp.end_date) >= currentDate && mp.Order?.payment_status === 'paid'
-    );
+    const activePackage = memberPackages.find(mp => {
+      const isNotExpired = new Date(mp.end_date) >= currentDate;
+      const hasValidOrder = mp.Order?.payment_status === 'paid';
+      const isBonusPackage = mp.Package?.type === 'bonus';
+      
+      // Paket aktif jika: tidak expired DAN (memiliki order yang paid ATAU adalah paket bonus)
+      return isNotExpired && (hasValidOrder || isBonusPackage);
+    });
 
     // Get used sessions for each package from booking table
     const packagesWithUsage = await Promise.all(
@@ -81,9 +88,9 @@ const getMyPackages = async (req, res) => {
         } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
           totalSessions = (memberPackage.Package.PackagePromo.group_session || 0) + 
                          (memberPackage.Package.PackagePromo.private_session || 0);
-        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-          totalSessions = (memberPackage.Package.PackageBonus.group_session || 0) + 
-                         (memberPackage.Package.PackageBonus.private_session || 0);
+        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonu) {
+          totalSessions = (memberPackage.Package.PackageBonu.group_session || 0) + 
+                         (memberPackage.Package.PackageBonu.private_session || 0);
         }
         
         // Calculate progress percentage
@@ -91,7 +98,7 @@ const getMyPackages = async (req, res) => {
 
         return {
           id: memberPackage.id,
-          package_name: memberPackage.Package?.name || 'Unknown Package',
+          package_name: memberPackage.Package?.name || (memberPackage.Package?.type === 'bonus' ? 'Paket Bonus' : 'Unknown Package'),
           package_type: memberPackage.Package?.type || 'unknown',
           start_date: memberPackage.start_date,
           end_date: memberPackage.end_date,
@@ -99,7 +106,13 @@ const getMyPackages = async (req, res) => {
           used_session: usedSessions,
           remaining_session: Math.max(0, totalSessions - usedSessions),
           progress_percentage: Math.round(progressPercentage),
-          is_active: new Date(memberPackage.end_date) >= currentDate && memberPackage.Order?.payment_status === 'paid',
+          is_active: (() => {
+            const isNotExpired = new Date(memberPackage.end_date) >= currentDate;
+            const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
+            const isBonusPackage = memberPackage.Package?.type === 'bonus';
+            
+            return isNotExpired && (hasValidOrder || isBonusPackage);
+          })(),
           order: {
             id: memberPackage.Order?.id,
             order_number: memberPackage.Order?.order_number,
@@ -115,16 +128,21 @@ const getMyPackages = async (req, res) => {
     // Separate active package and history
     const currentActivePackage = packagesWithUsage.find(pkg => pkg.is_active);
     const packageHistory = packagesWithUsage
-      .filter(pkg => pkg.order.payment_status === 'paid')
+      .filter(pkg => {
+        // Include paket yang memiliki order paid ATAU paket bonus
+        const hasValidOrder = pkg.order.payment_status === 'paid';
+        const isBonusPackage = pkg.package_type === 'bonus';
+        return hasValidOrder || isBonusPackage;
+      })
       .map((pkg, index) => ({
         no: index + 1,
-        invoice_number: pkg.order.invoice_number,
-        payment_date: pkg.order.payment_date,
+        invoice_number: pkg.order.invoice_number || 'BONUS-PACKAGE',
+        payment_date: pkg.order.payment_date || pkg.start_date,
         expired_date: pkg.end_date,
         package_name: pkg.package_name,
         session_count: pkg.total_session,
-        price: pkg.order.total_amount,
-        order_id: pkg.order.id
+        price: pkg.order.total_amount || '0.00',
+        order_id: pkg.order.id || null
       }));
 
     // Format response
@@ -133,7 +151,7 @@ const getMyPackages = async (req, res) => {
       message: 'My packages retrieved successfully',
       data: {
         current_active_package: currentActivePackage ? {
-          package_name: currentActivePackage.package_name,
+          package_name: currentActivePackage.package_name || (currentActivePackage.package_type === 'bonus' ? 'Paket Bonus' : 'Unknown Package'),
           validity_until: currentActivePackage.end_date,
           session_group_classes: {
             used: currentActivePackage.used_session,

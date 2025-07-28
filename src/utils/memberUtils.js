@@ -91,8 +91,8 @@ const calculateMemberSessionStats = async (memberId) => {
       const package = memberPackage.Package;
       
       // Check membership package
-      if (package.PackageMembership) {
-        const sessionCount = package.PackageMembership.session;
+      if (package.PackageMembership && package.PackageMembership.Category && package.PackageMembership.Category.name) {
+        const sessionCount = package.PackageMembership.session || 0;
         const categoryName = package.PackageMembership.Category.name.toLowerCase();
         
         totalSessions += sessionCount;
@@ -109,8 +109,8 @@ const calculateMemberSessionStats = async (memberId) => {
       
       // Check first trial package
       if (package.PackageFirstTrial) {
-        const groupSessions = package.PackageFirstTrial.group_session;
-        const privateSessions = package.PackageFirstTrial.private_session;
+        const groupSessions = package.PackageFirstTrial.group_session || 0;
+        const privateSessions = package.PackageFirstTrial.private_session || 0;
         
         totalSessions += groupSessions + privateSessions;
         sessionBreakdown.group.total += groupSessions;
@@ -119,8 +119,8 @@ const calculateMemberSessionStats = async (memberId) => {
       
       // Check promo package
       if (package.PackagePromo) {
-        const groupSessions = package.PackagePromo.group_session;
-        const privateSessions = package.PackagePromo.private_session;
+        const groupSessions = package.PackagePromo.group_session || 0;
+        const privateSessions = package.PackagePromo.private_session || 0;
         
         totalSessions += groupSessions + privateSessions;
         sessionBreakdown.group.total += groupSessions;
@@ -129,8 +129,8 @@ const calculateMemberSessionStats = async (memberId) => {
       
       // Check bonus package
       if (package.PackageBonus) {
-        const groupSessions = package.PackageBonus.group_session;
-        const privateSessions = package.PackageBonus.private_session;
+        const groupSessions = package.PackageBonus.group_session || 0;
+        const privateSessions = package.PackageBonus.private_session || 0;
         
         totalSessions += groupSessions + privateSessions;
         sessionBreakdown.group.total += groupSessions;
@@ -183,7 +183,7 @@ const calculateMemberSessionStats = async (memberId) => {
       totalUsedSessions += 1;
       
       // Check membership package
-      if (package.PackageMembership) {
+      if (package.PackageMembership && package.PackageMembership.Category && package.PackageMembership.Category.name) {
         const categoryName = package.PackageMembership.Category.name.toLowerCase();
         
         // Add to breakdown based on category
