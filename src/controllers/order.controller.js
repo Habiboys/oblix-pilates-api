@@ -721,10 +721,10 @@ const paymentNotification = async (req, res) => {
           // Determine session type based on package category
           let sessionType = 'group'; // default
           if (package && package.PackageMembership && package.PackageMembership.Category) {
-            const categoryName = package.PackageMembership.Category.category_name.toLowerCase();
-            if (categoryName === 'semi_private') {
+            const categoryName = package.PackageMembership.Category.category_name;
+            if (categoryName === 'Semi-Private Class') {
               sessionType = 'semi_private';
-            } else if (categoryName === 'private') {
+            } else if (categoryName === 'Private Class') {
               sessionType = 'private';
             }
           }

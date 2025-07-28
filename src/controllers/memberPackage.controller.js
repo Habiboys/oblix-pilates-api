@@ -78,13 +78,13 @@ const getMyPackages = async (req, res) => {
       if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
         totalSessions = memberPackage.Package.PackageMembership.session || 0;
         // Untuk membership, session type ditentukan oleh category
-        const categoryName = memberPackage.Package.PackageMembership.Category?.category_name?.toLowerCase();
-        if (categoryName === 'semi_private') {
+        const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+        if (categoryName === 'Semi-Private Class') {
           semiPrivateSessions = totalSessions;
-        } else if (categoryName === 'private') {
+        } else if (categoryName === 'Private Class') {
           privateSessions = totalSessions;
         } else {
-          // Default ke group (termasuk category 'group' atau category lain)
+          // Default ke group (termasuk 'Group Class' atau category lain)
           groupSessions = totalSessions;
         }
       } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
@@ -113,10 +113,10 @@ const getMyPackages = async (req, res) => {
       let totalUsedSessions = 0;
       if (memberPackage.Package?.type === 'membership') {
         // Untuk membership, gunakan session type berdasarkan category
-        const categoryName = memberPackage.Package.PackageMembership?.Category?.category_name?.toLowerCase();
-        if (categoryName === 'semi_private') {
+        const categoryName = memberPackage.Package.PackageMembership?.Category?.category_name;
+        if (categoryName === 'Semi-Private Class') {
           totalUsedSessions = usedSemiPrivateSessions;
-        } else if (categoryName === 'private') {
+        } else if (categoryName === 'Private Class') {
           totalUsedSessions = usedPrivateSessions;
         } else {
           totalUsedSessions = usedGroupSessions;
