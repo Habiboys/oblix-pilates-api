@@ -2659,7 +2659,6 @@ components:
           type: string
           format: binary
           description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
-paths:
   /auth/register:
     post:
       tags:
@@ -9343,40 +9342,5 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-tags:
-  - name: Authentication
-    description: User authentication and authorization endpoints
-  - name: Content Management
-    description: Banner, blog, FAQ, gallery, and testimonial management endpoints
-  - name: Profile Management
-    description: User profile management endpoints
-  - name: Trainer Management
-    description: Trainer management endpoints
-  - name: Membership Package Management
-    description: Membership package management endpoints
-  - name: Trial Package Management
-    description: Trial package management endpoints
-  - name: Promo Package Management
-    description: Promo package management endpoints
-  - name: Bonus Package Management
-    description: Bonus package management endpoints
-  - name: Staff Management
-    description: Staff management endpoints
-  - name: Category Management
-    description: Category management endpoints
-  - name: Order Management
-    description: Order and payment management endpoints
-  - name: Payment
-    description: Payment-related endpoints for Midtrans integration
-  - name: Schedule Management
-    description: Schedule management endpoints for group, semi-private, and private classes
-  - name: Booking Management
-    description: Booking management endpoints for group and semi-private schedules
-  - name: Member Package Management
-    description: Member package management and tracking endpoints
-  - name: Class Management
-    description: Class management endpoints
-  - name: Member Management
-    description: Member management endpoints
-  - name: Check Class
-    description: Check class endpoints
+# Include reminder endpoints
+$ref: './docs/reminder.yaml'

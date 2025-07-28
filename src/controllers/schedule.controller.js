@@ -68,9 +68,12 @@ const createRepeatSchedules = async (scheduleData, repeatType, scheduleUntil, re
             schedules.push(schedule);
         }
     } else {
-        // Single schedule
+        // Single schedule - gunakan date_start yang diberikan atau tanggal hari ini
+        const finalDateStart = scheduleData.date_start || new Date().toISOString().split('T')[0];
+        
         const schedule = await Schedule.create({
             ...scheduleData,
+            date_start: finalDateStart,
             repeat_days: repeatType === 'weekly' ? repeatDays : null
         });
         schedules.push(schedule);
@@ -201,30 +204,17 @@ const createGroupSchedule = async (req, res) => {
             });
         }
 
-        // Validasi konflik jadwal trainer
-        const trainerConflict = await validateTrainerScheduleConflict(
-            trainer_id,
-            date_start,
-            time_start,
-            time_end
-        );
-
-        if (trainerConflict.hasConflict) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Trainer memiliki jadwal yang bentrok dengan schedule ini',
-                data: {
-                    conflicts: trainerConflict.conflicts
-                }
-            });
-        }
-
         // Validate repeat_type
         if (repeat_type === 'weekly' && !schedule_until) {
             return res.status(400).json({
                 status: 'error',
                 message: 'Schedule until date is required for weekly repeat'
             });
+        }
+
+        // Jika bukan weekly dan tidak ada date_start, gunakan hari ini
+        if (repeat_type !== 'weekly' && !date_start) {
+            date_start = new Date().toISOString().split('T')[0];
         }
 
         // Handle picture upload if exists
@@ -253,6 +243,32 @@ const createGroupSchedule = async (req, res) => {
 
         // Create schedule(s) berdasarkan repeat type
         const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until, repeat_days);
+
+        // Cek konflik jadwal trainer untuk semua schedule yang akan dibuat
+        for (const schedule of createdSchedules) {
+            const trainerConflict = await validateTrainerScheduleConflict(
+                trainer_id,
+                schedule.date_start, // Gunakan date_start dari schedule yang akan dibuat
+                time_start,
+                time_end,
+                schedule.id // Exclude schedule yang sedang dibuat
+            );
+
+            if (trainerConflict.hasConflict) {
+                // Hapus schedule yang sudah dibuat jika ada konflik
+                for (const createdSchedule of createdSchedules) {
+                    await createdSchedule.destroy();
+                }
+                
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Trainer memiliki jadwal yang bentrok pada ${schedule.date_start}`,
+                    data: {
+                    conflicts: trainerConflict.conflicts
+                    }
+                });
+            }
+        }
 
         // Fetch created schedule dengan associations (ambil yang pertama untuk response)
         const createdSchedule = await Schedule.findByPk(createdSchedules[0].id, {
@@ -605,30 +621,17 @@ const createSemiPrivateSchedule = async (req, res) => {
             });
         }
 
-        // Validasi konflik jadwal trainer
-        const trainerConflict = await validateTrainerScheduleConflict(
-            trainer_id,
-            date_start,
-            time_start,
-            time_end
-        );
-
-        if (trainerConflict.hasConflict) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Trainer memiliki jadwal yang bentrok dengan schedule ini',
-                data: {
-                    conflicts: trainerConflict.conflicts
-                }
-            });
-        }
-
         // Validate repeat_type
         if (repeat_type === 'weekly' && !schedule_until) {
             return res.status(400).json({
                 status: 'error',
                 message: 'Schedule until date is required for weekly repeat'
             });
+        }
+
+        // Jika bukan weekly dan tidak ada date_start, gunakan hari ini
+        if (repeat_type !== 'weekly' && !date_start) {
+            date_start = new Date().toISOString().split('T')[0];
         }
 
         // Handle picture upload if exists
@@ -657,6 +660,32 @@ const createSemiPrivateSchedule = async (req, res) => {
 
         // Create schedule(s) berdasarkan repeat type
         const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until, repeat_days);
+
+        // Cek konflik jadwal trainer untuk semua schedule yang akan dibuat
+        for (const schedule of createdSchedules) {
+            const trainerConflict = await validateTrainerScheduleConflict(
+                trainer_id,
+                schedule.date_start, // Gunakan date_start dari schedule yang akan dibuat
+                time_start,
+                time_end,
+                schedule.id // Exclude schedule yang sedang dibuat
+            );
+
+            if (trainerConflict.hasConflict) {
+                // Hapus schedule yang sudah dibuat jika ada konflik
+                for (const createdSchedule of createdSchedules) {
+                    await createdSchedule.destroy();
+                }
+                
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Trainer memiliki jadwal yang bentrok pada ${schedule.date_start}`,
+                    data: {
+                        conflicts: trainerConflict.conflicts
+                    }
+                });
+            }
+        }
 
         // Fetch created schedule dengan associations (ambil yang pertama untuk response)
         const createdSchedule = await Schedule.findByPk(createdSchedules[0].id, {
@@ -1018,41 +1047,7 @@ const createPrivateSchedule = async (req, res) => {
             });
         }
 
-        // Validasi konflik jadwal trainer
-        const trainerConflict = await validateTrainerScheduleConflict(
-            trainer_id,
-            date_start,
-            time_start,
-            time_end
-        );
-
-        if (trainerConflict.hasConflict) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Trainer memiliki jadwal yang bentrok dengan schedule ini',
-                data: {
-                    conflicts: trainerConflict.conflicts
-                }
-            });
-        }
-
-        // Validasi konflik jadwal member
-        const memberConflict = await validateMemberScheduleConflict(
-            member_id,
-            date_start,
-            time_start,
-            time_end
-        );
-
-        if (memberConflict.hasConflict) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Member memiliki jadwal yang bentrok dengan schedule ini',
-                data: {
-                    conflicts: memberConflict.conflicts
-                }
-            });
-        }
+        // Validasi konflik jadwal akan dilakukan setelah schedule dibuat
 
         // Validate repeat_type
         if (repeat_type === 'weekly' && !schedule_until) {
@@ -1060,6 +1055,11 @@ const createPrivateSchedule = async (req, res) => {
                 status: 'error',
                 message: 'Schedule until date is required for weekly repeat'
             });
+        }
+
+        // Jika bukan weekly dan tidak ada date_start, gunakan hari ini
+        if (repeat_type !== 'weekly' && !date_start) {
+            date_start = new Date().toISOString().split('T')[0];
         }
 
         // Handle picture upload if exists
@@ -1089,6 +1089,56 @@ const createPrivateSchedule = async (req, res) => {
 
         // Create schedule(s) berdasarkan repeat type
         const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until, repeat_days);
+
+        // Cek konflik jadwal trainer dan member untuk semua schedule yang akan dibuat
+        for (const schedule of createdSchedules) {
+            // Cek konflik trainer
+            const trainerConflict = await validateTrainerScheduleConflict(
+                trainer_id,
+                schedule.date_start,
+                time_start,
+                time_end,
+                schedule.id
+            );
+
+            if (trainerConflict.hasConflict) {
+                // Hapus schedule yang sudah dibuat jika ada konflik
+                for (const createdSchedule of createdSchedules) {
+                    await createdSchedule.destroy();
+                }
+                
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Trainer memiliki jadwal yang bentrok pada ${schedule.date_start}`,
+                    data: {
+                        conflicts: trainerConflict.conflicts
+                    }
+                });
+            }
+
+            // Cek konflik member
+            const memberConflict = await validateMemberScheduleConflict(
+                member_id,
+                schedule.date_start,
+                time_start,
+                time_end
+            );
+
+            if (memberConflict.hasConflict) {
+                // Hapus schedule yang sudah dibuat jika ada konflik
+                for (const createdSchedule of createdSchedules) {
+                    await createdSchedule.destroy();
+                }
+                
+                return res.status(400).json({
+                    status: 'error',
+                    message: `Member memiliki jadwal yang bentrok pada ${schedule.date_start}`,
+                    data: {
+                        conflicts: memberConflict.conflicts
+                    }
+                });
+            }
+        }
 
         // Cek jatah sesi member sebelum booking
         const sessionValidation = await validateSessionAvailability(member_id, createdSchedules.length);

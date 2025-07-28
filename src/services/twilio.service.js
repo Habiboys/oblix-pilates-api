@@ -429,39 +429,112 @@ Terima kasih! 🙏
  */
 const sendAdminCancellation = async (phoneNumber, memberName, className, date, time, reason) => {
     try {
-        const scheduleDate = new Date(`${date}T${time}`);
-        const formattedDate = scheduleDate.toLocaleDateString('id-ID', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        const formattedTime = scheduleDate.toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const message = `🔔 *PEMBATALAN KELAS OLEH ADMIN*
 
-        const message = `🚫 *BOOKING DIBATALKAN* 🚫
+Halo ${memberName},
 
-Halo ${memberName}! 👋
+Kelas Anda telah dibatalkan oleh admin:
 
-Booking Anda untuk kelas berikut telah dibatalkan oleh admin:
+📅 *Jadwal:*
+• Kelas: ${className}
+• Tanggal: ${date}
+• Waktu: ${time}
 
-📅 *Tanggal*: ${formattedDate}
-⏰ *Waktu*: ${formattedTime}
-🏷️ *Kelas*: ${className}
-📝 *Alasan*: ${reason}
+❌ *Alasan:* ${reason}
 
-Silakan booking kelas lain yang tersedia atau hubungi kami untuk informasi lebih lanjut.
+Untuk informasi lebih lanjut, silakan hubungi admin studio.
 
-Terima kasih atas pengertiannya! 🙏
-
+Terima kasih,
 *Oblix Pilates Studio*`;
 
         return await sendWhatsAppMessage(phoneNumber, message);
 
     } catch (error) {
-        logger.error('Error sending admin cancellation:', error);
+        logger.error('Error sending admin cancellation notification:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
+
+/**
+ * Send low session reminder
+ * @param {Object} reminderData - Reminder data object
+ * @returns {Promise<Object>} Send result
+ */
+const sendLowSessionReminder = async (reminderData) => {
+    try {
+        const { member_name, phone_number, package_name, package_details, remaining_sessions, end_date, days_remaining } = reminderData;
+
+        const message = `⚠️ *REMINDER: Sesi Paket Hampir Habis*
+
+Halo ${member_name},
+
+Paket Anda hampir habis sesinya:
+
+📦 *Paket:* ${package_name}
+📋 *Detail:* ${package_details}
+🔢 *Sesi Tersisa:* ${remaining_sessions} sesi
+📅 *Berakhir:* ${end_date} (${days_remaining} hari lagi)
+
+💡 *Saran:*
+• Segera booking kelas untuk menggunakan sesi yang tersisa
+• Pertimbangkan untuk membeli paket baru sebelum masa berlaku berakhir
+
+Untuk informasi lebih lanjut, silakan hubungi admin studio.
+
+Terima kasih,
+*Oblix Pilates Studio*`;
+
+        return await sendWhatsAppMessage(phone_number, message);
+
+    } catch (error) {
+        logger.error('Error sending low session reminder:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+};
+
+/**
+ * Send expiry reminder
+ * @param {Object} reminderData - Reminder data object
+ * @returns {Promise<Object>} Send result
+ */
+const sendExpiryReminder = async (reminderData) => {
+    try {
+        const { member_name, phone_number, package_name, package_details, remaining_sessions, end_date, days_remaining } = reminderData;
+
+        const message = `⏰ *REMINDER: Paket Akan Berakhir*
+
+Halo ${member_name},
+
+Paket Anda akan segera berakhir:
+
+📦 *Paket:* ${package_name}
+📋 *Detail:* ${package_details}
+🔢 *Sesi Tersisa:* ${remaining_sessions} sesi
+📅 *Berakhir:* ${end_date} (${days_remaining} hari lagi)
+
+🚨 *Penting:*
+• Sesi yang tidak digunakan akan hangus setelah masa berlaku berakhir
+• Segera gunakan sesi yang tersisa atau beli paket baru
+
+💡 *Saran:*
+• Booking kelas segera untuk menggunakan sesi yang tersisa
+• Pertimbangkan untuk membeli paket baru sebelum berakhir
+
+Untuk informasi lebih lanjut, silakan hubungi admin studio.
+
+Terima kasih,
+*Oblix Pilates Studio*`;
+
+        return await sendWhatsAppMessage(phone_number, message);
+
+    } catch (error) {
+        logger.error('Error sending expiry reminder:', error);
         return {
             success: false,
             error: error.message
@@ -477,5 +550,7 @@ module.exports = {
     sendWaitlistPromotion,
     sendClassCancellation,
     sendAttendanceNotification,
-    sendAdminCancellation
+    sendAdminCancellation,
+    sendLowSessionReminder,
+    sendExpiryReminder
 }; 

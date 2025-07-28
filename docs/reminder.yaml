@@ -1,0 +1,277 @@
+paths:
+  /reminder/low-session:
+    post:
+      tags:
+        - Reminder
+      summary: Send low session reminder
+      description: |
+        Mengirim reminder WhatsApp untuk member yang sesi paketnya hampir habis.
+        
+        **Kriteria:**
+        - Member dengan paket yang masih berlaku
+        - Total sesi tersisa <= threshold (default: 2 sesi)
+        - Sesi tersisa > 0 (tidak habis total)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                remaining_sessions:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 2
+                  example: 2
+                  description: Jumlah sesi tersisa untuk trigger reminder
+      responses:
+        '200':
+          description: Low session reminder sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Low session reminder sent successfully"
+                  data:
+                    type: object
+                    properties:
+                      total_sent:
+                        type: integer
+                        example: 5
+                        description: Jumlah reminder yang berhasil dikirim
+                      reminders:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            member_name:
+                              type: string
+                              example: "John Doe"
+                            phone_number:
+                              type: string
+                              example: "+628123456789"
+                            package_name:
+                              type: string
+                              example: "Monthly Package"
+                            remaining_sessions:
+                              type: integer
+                              example: 2
+                            sent_at:
+                              type: string
+                              format: date-time
+                              example: "2025-01-28T10:30:00.000Z"
+                      threshold:
+                        type: integer
+                        example: 2
+                        description: Threshold sesi yang digunakan
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reminder/expiry:
+    post:
+      tags:
+        - Reminder
+      summary: Send expiry reminder
+      description: |
+        Mengirim reminder WhatsApp untuk member yang paketnya akan segera berakhir.
+        
+        **Kriteria:**
+        - Member dengan paket yang akan berakhir dalam X hari
+        - Paket masih memiliki sesi tersisa
+        - Member belum mendapat reminder sebelumnya
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days_before_expiry:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                  default: 7
+                  example: 7
+                  description: Jumlah hari sebelum expiry untuk trigger reminder
+      responses:
+        '200':
+          description: Expiry reminder sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Expiry reminder sent successfully"
+                  data:
+                    type: object
+                    properties:
+                      total_sent:
+                        type: integer
+                        example: 3
+                        description: Jumlah reminder yang berhasil dikirim
+                      reminders:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            member_name:
+                              type: string
+                              example: "Jane Smith"
+                            phone_number:
+                              type: string
+                              example: "+628123456789"
+                            package_name:
+                              type: string
+                              example: "Monthly Package"
+                            days_remaining:
+                              type: integer
+                              example: 5
+                            remaining_sessions:
+                              type: integer
+                              example: 8
+                            sent_at:
+                              type: string
+                              format: date-time
+                              example: "2025-01-28T10:30:00.000Z"
+                      threshold:
+                        type: integer
+                        example: 7
+                        description: Threshold hari yang digunakan
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reminder/all:
+    post:
+      tags:
+        - Reminder
+      summary: Send all package reminders
+      description: |
+        Mengirim semua reminder paket sekaligus (low session + expiry).
+        
+        **Yang dikirim:**
+        - Low session reminder (≤ 2 sesi tersisa)
+        - Expiry reminder (7 hari sebelum berakhir)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: All package reminders sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "All package reminders sent successfully"
+                  data:
+                    type: object
+                    properties:
+                      total_sent:
+                        type: integer
+                        example: 8
+                        description: Total reminder yang dikirim
+                      low_session:
+                        type: object
+                        properties:
+                          total_sent:
+                            type: integer
+                            example: 5
+                          reminders:
+                            type: array
+                            items:
+                              type: object
+                      expiry:
+                        type: object
+                        properties:
+                          total_sent:
+                            type: integer
+                            example: 3
+                          reminders:
+                            type: array
+                            items:
+                              type: object
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Error message"
+        error:
+          type: string
+          example: "Detailed error information" 
