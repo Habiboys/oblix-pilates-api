@@ -9,8 +9,7 @@ const {
   getMembersQuerySchema,
   memberIdSchema,
   getMyClassesSchema,
-  cancelBookingSchema,
-  getBookingDetailsSchema
+
 } = require('../validations/member.validation');
 
 // My Classes endpoints (user only - no admin role required) - HARUS DI ATAS ROUTE DENGAN PARAMETER
@@ -20,17 +19,6 @@ router.get('/my-classes',
   memberController.getMyClasses
 );
 
-router.put('/my-classes/:booking_id/cancel', 
-  validateToken, 
-  validate(cancelBookingSchema, 'params'), 
-  memberController.cancelBooking
-);
-
-router.get('/my-classes/:booking_id/details', 
-  validateToken, 
-  validate(getBookingDetailsSchema, 'params'), 
-  memberController.getBookingDetails
-);
 
 // Admin routes (require admin role)
 router.get('/', 

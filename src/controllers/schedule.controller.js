@@ -68,12 +68,9 @@ const createRepeatSchedules = async (scheduleData, repeatType, scheduleUntil, re
             schedules.push(schedule);
         }
     } else {
-        // Single schedule - gunakan date_start yang diberikan atau tanggal hari ini
-        const finalDateStart = scheduleData.date_start || new Date().toISOString().split('T')[0];
-        
+        // Single schedule - gunakan date_start yang diberikan
         const schedule = await Schedule.create({
             ...scheduleData,
-            date_start: finalDateStart,
             repeat_days: repeatType === 'weekly' ? repeatDays : null
         });
         schedules.push(schedule);
@@ -212,9 +209,12 @@ const createGroupSchedule = async (req, res) => {
             });
         }
 
-        // Jika bukan weekly dan tidak ada date_start, gunakan hari ini
-        if (repeat_type !== 'weekly' && !date_start) {
-            date_start = new Date().toISOString().split('T')[0];
+        // date_start wajib untuk semua jenis schedule
+        if (!date_start) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'date_start is required for all schedules'
+            });
         }
 
         // Handle picture upload if exists
@@ -384,6 +384,14 @@ const updateGroupSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Schedule until date is required for weekly repeat'
+            });
+        }
+
+        // date_start wajib untuk semua jenis schedule
+        if (!date_start) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'date_start is required for all schedules'
             });
         }
 
@@ -629,9 +637,12 @@ const createSemiPrivateSchedule = async (req, res) => {
             });
         }
 
-        // Jika bukan weekly dan tidak ada date_start, gunakan hari ini
-        if (repeat_type !== 'weekly' && !date_start) {
-            date_start = new Date().toISOString().split('T')[0];
+        // date_start wajib untuk semua jenis schedule
+        if (!date_start) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'date_start is required for all schedules'
+            });
         }
 
         // Handle picture upload if exists
@@ -801,6 +812,14 @@ const updateSemiPrivateSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Schedule until date is required for weekly repeat'
+            });
+        }
+
+        // date_start wajib untuk semua jenis schedule
+        if (!date_start) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'date_start is required for all schedules'
             });
         }
 
@@ -1057,9 +1076,12 @@ const createPrivateSchedule = async (req, res) => {
             });
         }
 
-        // Jika bukan weekly dan tidak ada date_start, gunakan hari ini
-        if (repeat_type !== 'weekly' && !date_start) {
-            date_start = new Date().toISOString().split('T')[0];
+        // date_start wajib untuk semua jenis schedule
+        if (!date_start) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'date_start is required for all schedules'
+            });
         }
 
         // Handle picture upload if exists
@@ -1314,6 +1336,14 @@ const updatePrivateSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Schedule until date is required for weekly repeat'
+            });
+        }
+
+        // date_start wajib untuk semua jenis schedule
+        if (!date_start) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'date_start is required for all schedules'
             });
         }
 

@@ -240,7 +240,6 @@ components:
         package_id:
           type: string
           format: uuid
-     
     MemberPackage:
       type: object
       properties:
@@ -2659,6 +2658,7 @@ components:
           type: string
           format: binary
           description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+paths:
   /auth/register:
     post:
       tags:
@@ -7215,30 +7215,18 @@ components:
                             type: string
                           email:
                             type: string
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+      example:
+        class_id: class-uuid-123
+        trainer_id: trainer-uuid-456
+        member_id: member-uuid-789
+        date_start: '2025-01-29'
+        time_start: '07:00'
+        time_end: '08:00'
+        repeat_type: none
+        booking_deadline_hour: 24
+        waitlist_lock_minutes: 30
+        min_signup: 1
+        cancel_buffer_minutes: 120
   /schedule/private/{id}:
     get:
       tags:
@@ -9105,181 +9093,6 @@ components:
           $ref: ./base.yaml#/components/responses/NotFound
         '500':
           $ref: ./base.yaml#/components/responses/InternalServerError
-  /member/my-classes/{booking_id}/cancel:
-    put:
-      tags:
-        - Member Management
-      summary: Cancel a booking
-      description: Cancel a specific booking for the authenticated member
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: booking_id
-          in: path
-          description: Booking ID to cancel
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Booking cancelled successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Booking cancelled successfully
-                  data:
-                    type: object
-                    properties:
-                      booking_id:
-                        type: string
-                        format: uuid
-                      status:
-                        type: string
-                        example: cancelled
-                      cancelled_at:
-                        type: string
-                        format: date-time
-        '400':
-          description: Cannot cancel booking
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Cannot cancel booking. Cancellation deadline was 120 minutes before class.
-                  data:
-                    type: object
-                    properties:
-                      schedule_time:
-                        type: string
-                        format: date-time
-                      cancel_deadline:
-                        type: string
-                        format: date-time
-                      current_time:
-                        type: string
-                        format: date-time
-        '401':
-          $ref: ./base.yaml#/components/responses/Unauthorized
-        '404':
-          $ref: ./base.yaml#/components/responses/NotFound
-        '500':
-          $ref: ./base.yaml#/components/responses/InternalServerError
-  /member/my-classes/{booking_id}/details:
-    get:
-      tags:
-        - Member Management
-      summary: Get booking details
-      description: Get detailed information about a specific booking
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: booking_id
-          in: path
-          description: Booking ID to get details for
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Booking details retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Booking details retrieved successfully
-                  data:
-                    type: object
-                    properties:
-                      booking_id:
-                        type: string
-                        format: uuid
-                      status:
-                        type: string
-                        enum:
-                          - signup
-                          - waiting_list
-                          - cancelled
-                        example: signup
-                      class_date:
-                        type: string
-                        format: date
-                        example: '2025-07-29'
-                      time:
-                        type: string
-                        example: 07:30:00 - 08:30:00
-                      course:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uuid
-                          name:
-                            type: string
-                            example: Beginner Pilates
-                          description:
-                            type: string
-                            nullable: true
-                          color:
-                            type: string
-                            example: '#FF6B6B'
-                      coach:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            format: uuid
-                          name:
-                            type: string
-                            example: Coach Lauren
-                          picture:
-                            type: string
-                            nullable: true
-                          description:
-                            type: string
-                            nullable: true
-                      schedule_type:
-                        type: string
-                        enum:
-                          - group
-                          - semi_private
-                          - private
-                        example: group
-                      notes:
-                        type: string
-                        nullable: true
-                      created_at:
-                        type: string
-                        format: date-time
-                      updated_at:
-                        type: string
-                        format: date-time
-        '401':
-          $ref: ./base.yaml#/components/responses/Unauthorized
-        '404':
-          $ref: ./base.yaml#/components/responses/NotFound
-        '500':
-          $ref: ./base.yaml#/components/responses/InternalServerError
   /check-class:
     get:
       tags:
@@ -9342,5 +9155,40 @@ components:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-# Include reminder endpoints
-$ref: './docs/reminder.yaml'
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Content Management
+    description: Banner, blog, FAQ, gallery, and testimonial management endpoints
+  - name: Profile Management
+    description: User profile management endpoints
+  - name: Trainer Management
+    description: Trainer management endpoints
+  - name: Membership Package Management
+    description: Membership package management endpoints
+  - name: Trial Package Management
+    description: Trial package management endpoints
+  - name: Promo Package Management
+    description: Promo package management endpoints
+  - name: Bonus Package Management
+    description: Bonus package management endpoints
+  - name: Staff Management
+    description: Staff management endpoints
+  - name: Category Management
+    description: Category management endpoints
+  - name: Order Management
+    description: Order and payment management endpoints
+  - name: Payment
+    description: Payment-related endpoints for Midtrans integration
+  - name: Schedule Management
+    description: Schedule management endpoints for group, semi-private, and private classes
+  - name: Booking Management
+    description: Booking management endpoints for group and semi-private schedules
+  - name: Member Package Management
+    description: Member package management and tracking endpoints
+  - name: Class Management
+    description: Class management endpoints
+  - name: Member Management
+    description: Member management endpoints
+  - name: Check Class
+    description: Check class endpoints
