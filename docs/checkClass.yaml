@@ -187,6 +187,12 @@ components:
           enum: [signup, waiting_list, null]
           example: null
           description: Current booking status if already booked
+        booking_id:
+          type: string
+          format: uuid
+          nullable: true
+          example: "770e8400-e29b-41d4-a716-446655440002"
+          description: ID of the member's booking for this schedule (null if not booked)
         available_sessions:
           type: integer
           example: 8

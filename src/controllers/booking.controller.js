@@ -89,7 +89,10 @@ const createUserBooking = async (req, res) => {
         const existingBooking = await Booking.findOne({
             where: {
                 schedule_id,
-                member_id
+                member_id,
+                status: {
+                    [require('sequelize').Op.in]: ['signup', 'waiting_list'] // Hanya cek booking yang aktif
+                }
             }
         });
 
@@ -428,17 +431,39 @@ const cancelBooking = async (req, res) => {
             logger.error(`❌ Failed to update session usage after cancel: ${error.message}`);
         }
 
-        // Proses waitlist promotion
-        const promotedBooking = await processWaitlistPromotion(booking.schedule_id);
+        // Process waitlist promotion jika booking yang di-cancel adalah signup
+        let promotionResult = null;
+        if (booking.status === 'signup') {
+            try {
+                promotionResult = await processWaitlistPromotion(booking.schedule_id);
+                if (promotionResult) {
+                    logger.info(`✅ Waitlist promotion successful for schedule ${booking.schedule_id}. Promoted: ${promotionResult.Member?.full_name}`);
+                } else {
+                    logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id}`);
+                }
+            } catch (error) {
+                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+            }
+        }
 
         res.json({
             success: true,
             message: 'Booking berhasil dibatalkan',
             data: {
                 booking_id: booking.id,
+                schedule_id: booking.schedule_id,
+                member_name: booking.Member.full_name,
+                class_name: booking.Schedule.Class.class_name,
+                schedule_date: booking.Schedule.date_start,
+                schedule_time: booking.Schedule.time_start,
                 status: booking.status,
                 cancelled_at: booking.updatedAt,
-                promoted_from_waitlist: promotedBooking
+                promoted_from_waitlist: promotionResult ? {
+                    member_name: promotionResult.Member?.full_name,
+                    member_phone: promotionResult.Member?.phone_number,
+                    booking_id: promotionResult.id,
+                    promoted_at: promotionResult.updatedAt
+                } : null
             }
         });
     } catch (error) {
