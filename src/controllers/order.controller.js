@@ -43,15 +43,39 @@ const createOrder = async (req, res) => {
     }
 
     // Check if promo package is still valid (if applicable)
-    if (package.type === 'promo' && package.expired_at) {
-      if (new Date() > package.expired_at) {
-        await transaction.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'Paket promo sudah expired'
-        });
-      }
+    if (package.type === 'promo') {
+  const packagePromo = await PackagePromo.findOne({
+    where: { package_id: package.id }
+  });
+
+  if (packagePromo) {
+    const currentTime = new Date();
+    const startTime = new Date(packagePromo.start_time);
+    const endTime = new Date(packagePromo.end_time);
+
+    if (currentTime < startTime) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Paket promo belum tersedia untuk dibeli'
+      });
     }
+
+    if (currentTime > endTime) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Paket promo sudah berakhir'
+      });
+    }
+  } else {
+    await transaction.rollback();
+    return res.status(400).json({
+      success: false,
+      message: 'Data promo tidak valid'
+    });
+  }
+}
 
     // Prevent purchase of bonus packages (they should be given automatically)
     if (package.type === 'bonus') {

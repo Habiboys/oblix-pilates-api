@@ -1298,15 +1298,17 @@ const getScheduleCalendar = async (req, res) => {
         const whereClause = {};
         
         // Filter by month and year
-        const startDate = new Date(targetYear, targetMonth - 1, 1);
-        const endDate = new Date(targetYear, targetMonth, 0); // Last day of month
-        
-        whereClause.date_start = {
-            [Op.between]: [
-                startDate.toISOString().split('T')[0],
-                endDate.toISOString().split('T')[0]
-            ]
-        };
+     const startDate = new Date(targetYear, targetMonth - 1, 1);
+const endDate = new Date(targetYear, targetMonth, 0); // Last day of month
+
+const startDateStr = new Date(targetYear, targetMonth - 1, 1).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+const endDateStr = new Date(targetYear, targetMonth, 0).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+
+console.log('Date range:', startDateStr, 'to', endDateStr); // Untuk debugging
+
+whereClause.date_start = {
+    [Op.between]: [startDateStr, endDateStr]
+};
         
         // Filter by type if provided
         if (type && ['group', 'semi_private', 'private'].includes(type)) {
