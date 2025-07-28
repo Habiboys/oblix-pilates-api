@@ -43,10 +43,10 @@ const updateBookingStatusSchema = Joi.object({
 
 // Schema untuk cancel booking
 const cancelBookingSchema = Joi.object({
-    reason: Joi.string().max(500).optional().messages({
+    reason: Joi.string().max(500).allow('', null).optional().messages({
         'string.max': 'Reason cannot exceed 500 characters'
     })
-});
+}).or('reason').optional();
 
 
 
