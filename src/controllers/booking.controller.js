@@ -332,13 +332,13 @@ const updateBookingStatus = async (req, res) => {
 // Cancel booking for authenticated user
 const cancelBooking = async (req, res) => {
     try {
-        const { booking_id } = req.params;
+        const { id } = req.params;
         const { reason } = req.body || {};
         const cancelReason = reason || 'Booking dibatalkan oleh user';
 
         const booking = await Booking.findOne({
             where: {
-                id: booking_id,
+                id: id,
             },
             include: [
                 {
