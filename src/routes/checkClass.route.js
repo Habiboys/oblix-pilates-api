@@ -6,6 +6,6 @@ const { validate } = require('../middlewares/validation.middleware');
 const { checkClassQuerySchema } = require('../validations/checkClass.validation');
 
 // Get available classes for a specific date
-router.get('/', validateToken, validate(checkClassQuerySchema), getAvailableClasses);
+router.get('/', validateToken, validate(checkClassQuerySchema, 'query'), getAvailableClasses);
 
 module.exports = router; 
