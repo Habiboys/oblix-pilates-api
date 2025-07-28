@@ -151,9 +151,9 @@ try {
     if (!user) {
         return res.status(400).json({ message: 'User not found' });
     }
-    if (!user.isActive) {
-        return res.status(400).json({ message: 'User is not active' });
-    }
+    // if (!user.isActive) {
+    //     return res.status(400).json({ message: 'User is not active' });
+    // }
     
     // Use environment variable for JWT expiry, default to 24h for development
     const jwtExpiry = process.env.JWT_EXPIRY || '24h';
