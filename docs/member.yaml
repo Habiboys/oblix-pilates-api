@@ -370,6 +370,8 @@ components:
           description: Associated user ID
         User:
           $ref: '#/components/schemas/User'
+        sessionStats:
+          $ref: '#/components/schemas/MemberSessionStats'
         created_at:
           type: string
           format: date-time
@@ -494,3 +496,55 @@ components:
         role:
           type: string
           enum: [admin, user]
+
+    MemberSessionStats:
+      type: object
+      properties:
+        totalSessions:
+          type: integer
+          description: Total sessions from all active packages
+        totalUsedSessions:
+          type: integer
+          description: Total sessions that have been used
+        totalRemainingSessions:
+          type: integer
+          description: Total remaining sessions
+        sessionBreakdown:
+          type: object
+          properties:
+            group:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: Total group sessions
+                used:
+                  type: integer
+                  description: Used group sessions
+                remaining:
+                  type: integer
+                  description: Remaining group sessions
+            semi_private:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: Total semi-private sessions
+                used:
+                  type: integer
+                  description: Used semi-private sessions
+                remaining:
+                  type: integer
+                  description: Remaining semi-private sessions
+            private:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: Total private sessions
+                used:
+                  type: integer
+                  description: Used private sessions
+                remaining:
+                  type: integer
+                  description: Remaining private sessions

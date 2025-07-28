@@ -1,7 +1,7 @@
 const { User, Member } = require('../models');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
-const { generateMemberCode } = require('../utils/memberUtils');
+const { generateMemberCode, calculateMemberSessionStats } = require('../utils/memberUtils');
 
 // Get all members with pagination and search
 const getAllMembers = async (req, res) => {
@@ -40,11 +40,22 @@ const getAllMembers = async (req, res) => {
 
     const totalPages = Math.ceil(count / limit);
 
+    // Calculate session statistics for each member
+    const membersWithStats = await Promise.all(
+      members.map(async (member) => {
+        const sessionStats = await calculateMemberSessionStats(member.id);
+        return {
+          ...member.toJSON(),
+          sessionStats
+        };
+      })
+    );
+
     res.json({
       success: true,
       message: 'Members retrieved successfully',
       data: {
-        members,
+        members: membersWithStats,
         pagination: {
           currentPage: parseInt(page),
           totalPages,
@@ -85,10 +96,16 @@ const getMemberById = async (req, res) => {
       });
     }
 
+    // Calculate session statistics
+    const sessionStats = await calculateMemberSessionStats(id);
+
     res.json({
       success: true,
       message: 'Member retrieved successfully',
-      data: member
+      data: {
+        ...member.toJSON(),
+        sessionStats
+      }
     });
   } catch (error) {
     console.error('Error getting member:', error);
@@ -181,10 +198,16 @@ const createMember = async (req, res) => {
       ]
     });
 
+    // Calculate session statistics
+    const sessionStats = await calculateMemberSessionStats(createdMember.id);
+
     res.status(201).json({
       success: true,
       message: 'Member created successfully',
-      data: createdMember
+      data: {
+        ...createdMember.toJSON(),
+        sessionStats
+      }
     });
   } catch (error) {
     console.error('Error creating member:', error);
@@ -304,10 +327,16 @@ const updateMember = async (req, res) => {
       ]
     });
 
+    // Calculate session statistics
+    const sessionStats = await calculateMemberSessionStats(updatedMember.id);
+
     res.json({
       success: true,
       message: 'Member updated successfully',
-      data: updatedMember
+      data: {
+        ...updatedMember.toJSON(),
+        sessionStats
+      }
     });
   } catch (error) {
     console.error('Error updating member:', error);
