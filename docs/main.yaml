@@ -49,8 +49,14 @@ $ref: './booking.yaml'
 # Import member package management endpoints
 $ref: './memberPackage.yaml'
 
+# Import member management endpoints
+$ref: './member.yaml'
+
 # Import test endpoints
 $ref: './test.yaml'
+
+# Import class management endpoints
+$ref: './class.yaml'
 
 # Add tags for better organization
 tags:
@@ -80,5 +86,11 @@ tags:
     description: Class booking and reservation system
   - name: Member Package Management
     description: User package history and tracking
+  - name: Member Management
+    description: Member registration and management by admin
   - name: Test & Development
     description: Testing endpoints for development and integration 
+  - name: Class Management
+    description: Class type and configuration management
+  - name: Member Management
+    description: Member registration and management by admin

@@ -203,6 +203,17 @@ if (classDoc) {
   console.log('❌ Failed to load class.yaml');
 }
 
+// Load and merge member management endpoints
+const memberDoc = loadYamlFile(path.join(__dirname, 'member.yaml'));
+if (memberDoc) {
+  console.log('📋 Member doc paths:', Object.keys(memberDoc.paths || {}));
+  mergePaths(baseDoc, memberDoc);
+  console.log('✅ Merged member management endpoints');
+} else {
+  console.log('❌ Failed to load member.yaml');
+}
+
+
 
 
   // Add tags
@@ -270,6 +281,10 @@ if (classDoc) {
   {
     name: 'Class Management',
     description: 'Class management endpoints'
+  },
+  {
+    name: 'Member Management',
+    description: 'Member management endpoints'
   }
   ];
 

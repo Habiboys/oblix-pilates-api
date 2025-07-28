@@ -1,0 +1,389 @@
+const { User, Member } = require('../models');
+const { Op } = require('sequelize');
+const bcrypt = require('bcryptjs');
+const { generateMemberCode } = require('../utils/memberUtils');
+
+// Get all members with pagination and search
+const getAllMembers = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', status = '' } = req.query;
+    const offset = (page - 1) * limit;
+
+    const whereClause = {};
+    
+    if (search) {
+      whereClause[Op.or] = [
+        { full_name: { [Op.iLike]: `%${search}%` } },
+        { username: { [Op.iLike]: `%${search}%` } },
+        { member_code: { [Op.iLike]: `%${search}%` } },
+        { phone_number: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const { count, rows: members } = await Member.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'email', 'role']
+        }
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['createdAt', 'DESC']]
+    });
+
+    const totalPages = Math.ceil(count / limit);
+
+    res.json({
+      success: true,
+      message: 'Members retrieved successfully',
+      data: {
+        members,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages,
+          totalItems: count,
+          itemsPerPage: parseInt(limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error getting members:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get member by ID
+const getMemberById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const member = await Member.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'email', 'role']
+        }
+      ]
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Member retrieved successfully',
+      data: member
+    });
+  } catch (error) {
+    console.error('Error getting member:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Create new member
+const createMember = async (req, res) => {
+  try {
+    const {
+      full_name,
+      username,
+      phone_number,
+      dob,
+      address,
+      email,
+      password,
+      picture
+    } = req.body;
+
+    // Check if username already exists
+    const existingMember = await Member.findOne({
+      where: { username }
+    });
+
+    if (existingMember) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username sudah digunakan'
+      });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({
+      where: { email }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email sudah digunakan'
+      });
+    }
+
+    // Generate member code
+    const memberCode = await generateMemberCode();
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user first
+    const user = await User.create({
+      email,
+      password: hashedPassword,
+      role: 'user'
+    });
+
+    // Create member
+    const member = await Member.create({
+      member_code: memberCode,
+      username,
+      full_name,
+      phone_number,
+      dob: new Date(dob),
+      address,
+      date_of_join: new Date(),
+      picture,
+      status: 'active',
+      user_id: user.id
+    });
+
+    // Fetch member with user data
+    const createdMember = await Member.findByPk(member.id, {
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'email', 'role']
+        }
+      ]
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Member created successfully',
+      data: createdMember
+    });
+  } catch (error) {
+    console.error('Error creating member:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Update member
+const updateMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      full_name,
+      username,
+      phone_number,
+      dob,
+      address,
+      email,
+      password,
+      picture,
+      status
+    } = req.body;
+
+    const member = await Member.findByPk(id, {
+      include: [
+        {
+          model: User
+        }
+      ]
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    // Check if username already exists (excluding current member)
+    if (username && username !== member.username) {
+      const existingMember = await Member.findOne({
+        where: { 
+          username,
+          id: { [Op.ne]: id }
+        }
+      });
+
+      if (existingMember) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username sudah digunakan'
+        });
+      }
+    }
+
+    // Check if email already exists (excluding current user)
+    if (email && email !== member.User.email) {
+      const existingUser = await User.findOne({
+        where: { 
+          email,
+          id: { [Op.ne]: member.user_id }
+        }
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email sudah digunakan'
+        });
+      }
+    }
+
+    // Update member data
+    const updateData = {};
+    if (full_name) updateData.full_name = full_name;
+    if (username) updateData.username = username;
+    if (phone_number) updateData.phone_number = phone_number;
+    if (dob) updateData.dob = new Date(dob);
+    if (address !== undefined) updateData.address = address;
+    if (picture !== undefined) updateData.picture = picture;
+    if (status) updateData.status = status;
+
+    await member.update(updateData);
+
+    // Update user data
+    const userUpdateData = {};
+    if (email) userUpdateData.email = email;
+    if (password) {
+      userUpdateData.password = await bcrypt.hash(password, 10);
+    }
+
+    if (Object.keys(userUpdateData).length > 0) {
+      await member.User.update(userUpdateData);
+    }
+
+    // Fetch updated member
+    const updatedMember = await Member.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'email', 'role']
+        }
+      ]
+    });
+
+    res.json({
+      success: true,
+      message: 'Member updated successfully',
+      data: updatedMember
+    });
+  } catch (error) {
+    console.error('Error updating member:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Delete member
+const deleteMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const member = await Member.findByPk(id, {
+      include: [
+        {
+          model: User
+        }
+      ]
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    // Delete member first (due to foreign key constraint)
+    await member.destroy();
+
+    // Delete associated user
+    await member.User.destroy();
+
+    res.json({
+      success: true,
+      message: 'Member deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting member:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get member statistics
+const getMemberStats = async (req, res) => {
+  try {
+    const totalMembers = await Member.count();
+    const activeMembers = await Member.count({
+      where: { status: 'active' }
+    });
+    const inactiveMembers = await Member.count({
+      where: { status: 'inactive' }
+    });
+
+    // Get members joined this month
+    const currentDate = new Date();
+    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+    const newMembersThisMonth = await Member.count({
+      where: {
+        date_of_join: {
+          [Op.between]: [firstDayOfMonth, lastDayOfMonth]
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Member statistics retrieved successfully',
+      data: {
+        totalMembers,
+        activeMembers,
+        inactiveMembers,
+        newMembersThisMonth
+      }
+    });
+  } catch (error) {
+    console.error('Error getting member stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+module.exports = {
+  getAllMembers,
+  getMemberById,
+  createMember,
+  updateMember,
+  deleteMember,
+  getMemberStats
+}; 

@@ -1,0 +1,496 @@
+paths:
+  # Member endpoints
+  /member:
+    get:
+      tags:
+        - Member Management
+      summary: Get all members
+      description: Retrieve all members with pagination and search functionality (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search term for member name, username, member code, or phone number
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, inactive]
+          description: Filter by member status
+      responses:
+        '200':
+          description: Members retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          members:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Member'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Member Management
+      summary: Create new member
+      description: Create a new member (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMemberRequest'
+      responses:
+        '201':
+          description: Member created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+        '400':
+          description: Validation error or user with same username/email exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /member/stats:
+    get:
+      tags:
+        - Member Management
+      summary: Get member statistics
+      description: Get member statistics including total, active, inactive, and new members this month (Admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Member statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MemberStats'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /member/{id}:
+    get:
+      tags:
+        - Member Management
+      summary: Get member by ID
+      description: Retrieve a specific member by their ID (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Member ID
+      responses:
+        '200':
+          description: Member retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Member Management
+      summary: Update member
+      description: Update an existing member's information (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Member ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRequest'
+      responses:
+        '200':
+          description: Member updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Member'
+        '400':
+          description: Validation error or user with same username/email exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Member Management
+      summary: Delete member
+      description: Delete a member and their associated user account (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Member ID
+      responses:
+        '200':
+          description: Member deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique member ID
+        member_code:
+          type: string
+          description: Auto-generated member code (e.g., MBR240001)
+        username:
+          type: string
+          description: Unique username for member
+        full_name:
+          type: string
+          description: Full name of the member
+        phone_number:
+          type: string
+          description: Phone number of the member
+        dob:
+          type: string
+          format: date
+          description: Date of birth
+        address:
+          type: string
+          nullable: true
+          description: Address of the member
+        date_of_join:
+          type: string
+          format: date-time
+          description: Date when member joined
+        picture:
+          type: string
+          nullable: true
+          description: URL to member's profile picture
+        status:
+          type: string
+          enum: [active, inactive]
+          description: Member status
+        user_id:
+          type: string
+          format: uuid
+          description: Associated user ID
+        User:
+          $ref: '#/components/schemas/User'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateMemberRequest:
+      type: object
+      required:
+        - full_name
+        - username
+        - phone_number
+        - dob
+        - email
+        - password
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 150
+          description: Full name of the member
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9]+$'
+          description: Unique username (alphanumeric only)
+        phone_number:
+          type: string
+          pattern: '^(\+62|62|0)8[1-9][0-9]{6,9}$'
+          description: Indonesian phone number format
+        dob:
+          type: string
+          format: date
+          description: Date of birth (YYYY-MM-DD)
+        address:
+          type: string
+          maxLength: 500
+          description: Address of the member (optional)
+        email:
+          type: string
+          format: email
+          description: Email address for login
+        password:
+          type: string
+          minLength: 6
+          description: Password for login
+        picture:
+          type: string
+          format: uri
+          description: URL to profile picture (optional)
+
+    UpdateMemberRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 150
+          description: Full name of the member
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9]+$'
+          description: Unique username (alphanumeric only)
+        phone_number:
+          type: string
+          pattern: '^(\+62|62|0)8[1-9][0-9]{6,9}$'
+          description: Indonesian phone number format
+        dob:
+          type: string
+          format: date
+          description: Date of birth (YYYY-MM-DD)
+        address:
+          type: string
+          maxLength: 500
+          description: Address of the member
+        email:
+          type: string
+          format: email
+          description: Email address for login
+        password:
+          type: string
+          minLength: 6
+          description: Password for login (optional for update)
+        picture:
+          type: string
+          format: uri
+          description: URL to profile picture
+        status:
+          type: string
+          enum: [active, inactive]
+          description: Member status
+
+    MemberStats:
+      type: object
+      properties:
+        totalMembers:
+          type: integer
+          description: Total number of members
+        activeMembers:
+          type: integer
+          description: Number of active members
+        inactiveMembers:
+          type: integer
+          description: Number of inactive members
+        newMembersThisMonth:
+          type: integer
+          description: Number of new members joined this month
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, user]
