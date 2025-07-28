@@ -29,6 +29,7 @@ const getAllMembers = async (req, res) => {
       include: [
         {
           model: User,
+          where: { role: 'user' },
           attributes: ['id', 'email', 'role']
         }
       ],
@@ -66,10 +67,12 @@ const getMemberById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const member = await Member.findByPk(id, {
+    const member = await Member.findOne({
+      where: { id },
       include: [
         {
           model: User,
+          where: { role: 'user' },
           attributes: ['id', 'email', 'role']
         }
       ]
@@ -112,7 +115,13 @@ const createMember = async (req, res) => {
 
     // Check if username already exists
     const existingMember = await Member.findOne({
-      where: { username }
+      where: { username },
+      include: [
+        {
+          model: User,
+          where: { role: 'user' }
+        }
+      ]
     });
 
     if (existingMember) {
@@ -124,7 +133,7 @@ const createMember = async (req, res) => {
 
     // Check if email already exists
     const existingUser = await User.findOne({
-      where: { email }
+      where: { email, role: 'user' }
     });
 
     if (existingUser) {
@@ -166,6 +175,7 @@ const createMember = async (req, res) => {
       include: [
         {
           model: User,
+          where: { role: 'user' },
           attributes: ['id', 'email', 'role']
         }
       ]
@@ -201,10 +211,12 @@ const updateMember = async (req, res) => {
       status
     } = req.body;
 
-    const member = await Member.findByPk(id, {
+    const member = await Member.findOne({
+      where: { id },
       include: [
         {
-          model: User
+          model: User,
+          where: { role: 'user' }
         }
       ]
     });
@@ -222,7 +234,13 @@ const updateMember = async (req, res) => {
         where: { 
           username,
           id: { [Op.ne]: id }
-        }
+        },
+        include: [
+          {
+            model: User,
+            where: { role: 'user' }
+          }
+        ]
       });
 
       if (existingMember) {
@@ -238,6 +256,7 @@ const updateMember = async (req, res) => {
       const existingUser = await User.findOne({
         where: { 
           email,
+          role: 'user',
           id: { [Op.ne]: member.user_id }
         }
       });
@@ -274,10 +293,12 @@ const updateMember = async (req, res) => {
     }
 
     // Fetch updated member
-    const updatedMember = await Member.findByPk(id, {
+    const updatedMember = await Member.findOne({
+      where: { id },
       include: [
         {
           model: User,
+          where: { role: 'user' },
           attributes: ['id', 'email', 'role']
         }
       ]
@@ -302,10 +323,12 @@ const deleteMember = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const member = await Member.findByPk(id, {
+    const member = await Member.findOne({
+      where: { id },
       include: [
         {
-          model: User
+          model: User,
+          where: { role: 'user' }
         }
       ]
     });
@@ -339,12 +362,33 @@ const deleteMember = async (req, res) => {
 // Get member statistics
 const getMemberStats = async (req, res) => {
   try {
-    const totalMembers = await Member.count();
-    const activeMembers = await Member.count({
-      where: { status: 'active' }
+    const totalMembers = await Member.count({
+      include: [
+        {
+          model: User,
+          where: { role: 'user' }
+        }
+      ]
     });
+    
+    const activeMembers = await Member.count({
+      where: { status: 'active' },
+      include: [
+        {
+          model: User,
+          where: { role: 'user' }
+        }
+      ]
+    });
+    
     const inactiveMembers = await Member.count({
-      where: { status: 'inactive' }
+      where: { status: 'inactive' },
+      include: [
+        {
+          model: User,
+          where: { role: 'user' }
+        }
+      ]
     });
 
     // Get members joined this month
@@ -357,7 +401,13 @@ const getMemberStats = async (req, res) => {
         date_of_join: {
           [Op.between]: [firstDayOfMonth, lastDayOfMonth]
         }
-      }
+      },
+      include: [
+        {
+          model: User,
+          where: { role: 'user' }
+        }
+      ]
     });
 
     res.json({
