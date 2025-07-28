@@ -334,6 +334,7 @@ const cancelBooking = async (req, res) => {
     try {
         const { booking_id } = req.params;
         const { reason } = req.body || {};
+        const cancelReason = reason || 'Booking dibatalkan oleh user';
 
         const booking = await Booking.findOne({
             where: {
@@ -390,12 +391,12 @@ const cancelBooking = async (req, res) => {
         // Cancel booking
         await booking.update({
             status: 'cancelled',
-            notes: reason || 'Booking dibatalkan oleh user'
+            notes: cancelReason
         });
 
         // Send WhatsApp cancellation notification (async)
         try {
-            twilioService.sendBookingCancellation(booking, reason)
+            twilioService.sendBookingCancellation(booking, cancelReason)
                 .then(result => {
                     if (result.success) {
                         logger.info(`✅ WhatsApp cancellation sent to ${booking.Member.full_name}`);
