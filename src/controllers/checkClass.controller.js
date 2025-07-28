@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { Schedule, Class, Trainer, Booking, Member, Package, MemberPackage, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category } = require('../models');
-const { calculateAvailableSessions } = require('../utils/sessionTrackingUtils');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage } = require('../utils/sessionTrackingUtils');
 const logger = require('../config/logger');
 
 // Get available classes for a specific date
@@ -39,6 +39,9 @@ const getAvailableClasses = async (req, res) => {
     }
 
     const memberId = member.id;
+
+    // Update session usage untuk semua member packages terlebih dahulu
+    await updateAllMemberPackagesSessionUsage(memberId);
 
     // Get member's active packages with priority
     const memberPackages = await MemberPackage.findAll({
@@ -184,6 +187,7 @@ const getAvailableClasses = async (req, res) => {
           can_book: canBook && !isBooked,
           is_booked: isBooked,
           booking_status: existingBooking?.status || null,
+          booking_id: existingBooking?.id || null, // Tambahkan booking_id
           available_sessions: availableSessions
         };
       })
