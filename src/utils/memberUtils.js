@@ -41,10 +41,10 @@ const generateMemberCode = async () => {
   return memberCode;
 };
 
-// Calculate member session statistics
+// Calculate member session statistics using new tracking system
 const calculateMemberSessionStats = async (memberId) => {
   try {
-    // Get all active member packages
+    // Get all active member packages with tracking data
     const memberPackages = await MemberPackage.findAll({
       where: {
         member_id: memberId,
@@ -86,9 +86,13 @@ const calculateMemberSessionStats = async (memberId) => {
       private: { total: 0, used: 0, remaining: 0 }
     };
 
-    // Calculate total sessions from packages
+    // Calculate sessions using tracking data from member_packages table
     for (const memberPackage of memberPackages) {
       const package = memberPackage.Package;
+      
+      // Get total sessions from package definition
+      let packageGroupSessions = 0;
+      let packagePrivateSessions = 0;
       
       // Check membership package
       if (package.PackageMembership && package.PackageMembership.Category && package.PackageMembership.Category.name) {
@@ -100,10 +104,13 @@ const calculateMemberSessionStats = async (memberId) => {
         // Add to breakdown based on category
         if (categoryName.includes('group')) {
           sessionBreakdown.group.total += sessionCount;
+          packageGroupSessions = sessionCount;
         } else if (categoryName.includes('semi') || categoryName.includes('semi-private')) {
           sessionBreakdown.semi_private.total += sessionCount;
+          packageGroupSessions = sessionCount; // Semi-private counted as group
         } else if (categoryName.includes('private')) {
           sessionBreakdown.private.total += sessionCount;
+          packagePrivateSessions = sessionCount;
         }
       }
       
@@ -115,6 +122,8 @@ const calculateMemberSessionStats = async (memberId) => {
         totalSessions += groupSessions + privateSessions;
         sessionBreakdown.group.total += groupSessions;
         sessionBreakdown.private.total += privateSessions;
+        packageGroupSessions = groupSessions;
+        packagePrivateSessions = privateSessions;
       }
       
       // Check promo package
@@ -125,91 +134,35 @@ const calculateMemberSessionStats = async (memberId) => {
         totalSessions += groupSessions + privateSessions;
         sessionBreakdown.group.total += groupSessions;
         sessionBreakdown.private.total += privateSessions;
+        packageGroupSessions = groupSessions;
+        packagePrivateSessions = privateSessions;
       }
       
       // Check bonus package
-      if (package.PackageBonus) {
-        const groupSessions = package.PackageBonus.group_session || 0;
-        const privateSessions = package.PackageBonus.private_session || 0;
+      if (package.PackageBonu) {
+        const groupSessions = package.PackageBonu.group_session || 0;
+        const privateSessions = package.PackageBonu.private_session || 0;
         
         totalSessions += groupSessions + privateSessions;
         sessionBreakdown.group.total += groupSessions;
         sessionBreakdown.private.total += privateSessions;
+        packageGroupSessions = groupSessions;
+        packagePrivateSessions = privateSessions;
       }
-    }
 
-    // Get used sessions from bookings
-    const bookings = await Booking.findAll({
-      where: {
-        member_id: memberId,
-        status: 'signup',
-        attendance: 'present'
-      },
-      include: [
-        {
-          model: Package,
-          include: [
-            {
-              model: PackageMembership,
-              include: [
-                {
-                  model: Category
-                }
-              ]
-            },
-            {
-              model: PackageFirstTrial
-            },
-            {
-              model: PackagePromo
-            },
-            {
-              model: PackageBonus
-            }
-          ]
-        },
-        {
-          model: Schedule,
-          as: 'Schedule'
-        }
-      ]
-    });
-
-    // Calculate used sessions
-    for (const booking of bookings) {
-      const package = booking.Package;
-      const scheduleType = booking.Schedule?.type || 'group'; // Default to group if no schedule info
+      // Use tracking data from member_packages table
+      const usedGroupSessions = memberPackage.used_group_session || 0;
+      const usedPrivateSessions = memberPackage.used_private_session || 0;
       
-      totalUsedSessions += 1;
-      
-      // Check membership package
-      if (package.PackageMembership && package.PackageMembership.Category && package.PackageMembership.Category.name) {
-        const categoryName = package.PackageMembership.Category.name.toLowerCase();
-        
-        // Add to breakdown based on category
-        if (categoryName.includes('group')) {
-          sessionBreakdown.group.used += 1;
-        } else if (categoryName.includes('semi') || categoryName.includes('semi-private')) {
-          sessionBreakdown.semi_private.used += 1;
-        } else if (categoryName.includes('private')) {
-          sessionBreakdown.private.used += 1;
-        }
-      } else {
-        // For non-membership packages, use schedule type
-        if (scheduleType === 'group') {
-          sessionBreakdown.group.used += 1;
-        } else if (scheduleType === 'semi_private') {
-          sessionBreakdown.semi_private.used += 1;
-        } else if (scheduleType === 'private') {
-          sessionBreakdown.private.used += 1;
-        }
-      }
+      totalUsedSessions += usedGroupSessions + usedPrivateSessions;
+      sessionBreakdown.group.used += usedGroupSessions;
+      sessionBreakdown.private.used += usedPrivateSessions;
     }
 
     // Calculate remaining sessions
-    sessionBreakdown.group.remaining = sessionBreakdown.group.total - sessionBreakdown.group.used;
-    sessionBreakdown.semi_private.remaining = sessionBreakdown.semi_private.total - sessionBreakdown.semi_private.used;
-    sessionBreakdown.private.remaining = sessionBreakdown.private.total - sessionBreakdown.private.used;
+    sessionBreakdown.group.remaining = Math.max(0, sessionBreakdown.group.total - sessionBreakdown.group.used);
+    sessionBreakdown.semi_private.remaining = Math.max(0, sessionBreakdown.semi_private.total - sessionBreakdown.semi_private.used);
+    sessionBreakdown.private.remaining = Math.max(0, sessionBreakdown.private.total - sessionBreakdown.private.used);
 
     const totalRemainingSessions = totalSessions - totalUsedSessions;
 

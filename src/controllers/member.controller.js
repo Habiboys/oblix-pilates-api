@@ -13,10 +13,10 @@ const getAllMembers = async (req, res) => {
     
     if (search) {
       whereClause[Op.or] = [
-        { full_name: { [Op.iLike]: `%${search}%` } },
-        { username: { [Op.iLike]: `%${search}%` } },
-        { member_code: { [Op.iLike]: `%${search}%` } },
-        { phone_number: { [Op.iLike]: `%${search}%` } }
+        { full_name: { [Op.like]: `%${search}%` } },
+        { username: { [Op.like]: `%${search}%` } },
+        { member_code: { [Op.like]: `%${search}%` } },
+        { phone_number: { [Op.like]: `%${search}%` } }
       ];
     }
 
