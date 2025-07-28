@@ -1,6 +1,63 @@
 const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Booking } = require('../models');
 
 /**
+ * Mendapatkan skor prioritas paket berdasarkan tipe dan masa berlaku
+ * @param {string} packageType - Tipe paket
+ * @param {Date} endDate - Tanggal berakhir paket
+ * @returns {number} Skor prioritas (semakin tinggi semakin prioritas)
+ */
+const getPackagePriorityScore = (packageType, endDate) => {
+    // Prioritas berdasarkan tipe paket
+    const typePriority = {
+        'bonus': 4,      // Prioritas tertinggi
+        'promo': 3,
+        'first_trial': 2,
+        'membership': 1   // Prioritas terendah
+    };
+    
+    const baseScore = typePriority[packageType] || 0;
+    
+    // Tambahkan bonus untuk paket yang akan segera berakhir (prioritas lebih tinggi)
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil((new Date(endDate) - today) / (1000 * 60 * 60 * 24));
+    
+    // Paket yang akan berakhir dalam 30 hari mendapat bonus prioritas
+    // Semakin sedikit hari tersisa, semakin tinggi prioritasnya
+    let expiryBonus = 0;
+    if (daysUntilExpiry <= 7) {
+        expiryBonus = 50; // Prioritas sangat tinggi untuk paket yang akan berakhir dalam 7 hari
+    } else if (daysUntilExpiry <= 14) {
+        expiryBonus = 30; // Prioritas tinggi untuk paket yang akan berakhir dalam 14 hari
+    } else if (daysUntilExpiry <= 30) {
+        expiryBonus = 15; // Prioritas sedang untuk paket yang akan berakhir dalam 30 hari
+    }
+    
+    return baseScore + expiryBonus;
+};
+
+/**
+ * Mengurutkan paket berdasarkan prioritas
+ * @param {Array} packages - Array paket member
+ * @returns {Array} Array paket yang sudah diurutkan berdasarkan prioritas
+ */
+const sortPackagesByPriority = (packages) => {
+    return packages.sort((a, b) => {
+        const aScore = getPackagePriorityScore(a.Package.type, a.end_date);
+        const bScore = getPackagePriorityScore(b.Package.type, b.end_date);
+        
+        // Urutkan berdasarkan skor (descending - prioritas tertinggi dulu)
+        if (aScore !== bScore) {
+            return bScore - aScore;
+        }
+        
+        // Jika skor sama, urutkan berdasarkan end_date (yang akan berakhir duluan prioritas lebih tinggi)
+        const aEndDate = new Date(a.end_date);
+        const bEndDate = new Date(b.end_date);
+        return aEndDate - bEndDate;
+    });
+};
+
+/**
  * Menghitung total sesi yang tersedia untuk member
  * @param {string} memberId - ID member
  * @returns {Promise<Object>} Object berisi total sesi dan detail paket
@@ -121,16 +178,25 @@ const getAvailablePackagesForBooking = async (memberId, requiredSessions) => {
         return [];
     }
 
-    // Urutkan paket berdasarkan prioritas (bisa disesuaikan)
+    // Gunakan fungsi utility untuk mengurutkan paket berdasarkan prioritas
     const sortedPackages = sessionInfo.packageDetails.sort((a, b) => {
-        // Prioritas: first_trial > promo > membership > bonus
+        // Prioritas: bonus > promo > first_trial > membership
         const priority = {
-            'first_trial': 1,
-            'promo': 2,
-            'membership': 3,
-            'bonus': 4
+            'bonus': 4,      // Prioritas tertinggi
+            'promo': 3,
+            'first_trial': 2,
+            'membership': 1   // Prioritas terendah
         };
-        return priority[a.package_type] - priority[b.package_type];
+        
+        const aPriority = priority[a.package_type] || 0;
+        const bPriority = priority[b.package_type] || 0;
+        
+        if (aPriority !== bPriority) {
+            return bPriority - aPriority; // Higher priority first
+        }
+        
+        // Jika prioritas sama, urutkan berdasarkan nama paket
+        return a.package_name.localeCompare(b.package_name);
     });
 
     return sortedPackages;
@@ -210,5 +276,7 @@ module.exports = {
     validateSessionAvailability,
     getAvailablePackagesForBooking,
     createSessionAllocation,
-    getMemberSessionSummary
+    getMemberSessionSummary,
+    getPackagePriorityScore,
+    sortPackagesByPriority
 }; 

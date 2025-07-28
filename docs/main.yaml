@@ -52,6 +52,9 @@ $ref: './memberPackage.yaml'
 # Import member management endpoints
 $ref: './member.yaml'
 
+# Import check class endpoints
+$ref: './checkClass.yaml'
+
 # Import test endpoints
 $ref: './test.yaml'
 
@@ -88,6 +91,8 @@ tags:
     description: User package history and tracking
   - name: Member Management
     description: Member registration and management by admin
+  - name: Check Class
+    description: Check available classes and package priority
   - name: Test & Development
     description: Testing endpoints for development and integration 
   - name: Class Management

@@ -9226,6 +9226,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /check-class:
+    get:
+      tags:
+        - Check Class
+      summary: Get available classes for a specific date
+      description: Retrieve available classes/schedules for a specific date with package priority and remaining sessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2025-07-28'
+          description: Date to check available classes (YYYY-MM-DD format)
+      responses:
+        '200':
+          description: Available classes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Available classes retrieved successfully
+                  data:
+                    $ref: '#/components/schemas/CheckClassResponse'
+        '400':
+          description: Bad request - Invalid date format or missing date parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 tags:
   - name: Authentication
     description: User authentication and authorization endpoints
@@ -9261,3 +9312,5 @@ tags:
     description: Class management endpoints
   - name: Member Management
     description: Member management endpoints
+  - name: Check Class
+    description: Check class endpoints

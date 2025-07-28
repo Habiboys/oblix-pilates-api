@@ -12,7 +12,7 @@ const {
 
 router.post('/register', validate(registerSchema), register);
 router.post('/login', validate(loginSchema), login);
-router.post('/refresh-token', validateToken, refreshToken);
+router.post('/refresh-token',  refreshToken);
 router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
 router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
 router.get('/purchase-status', validateToken, checkPurchaseStatus);

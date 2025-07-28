@@ -8,8 +8,8 @@ const logger = require('../config/logger');
  * Berjalan setiap menit untuk presisi yang lebih baik
  */
 const startAutoCancelCron = () => {
-    // Schedule: setiap menit
-    cron.schedule('* * * * *', async () => {
+    // Schedule: setiap 15 menit
+    cron.schedule('*/15 * * * *', async () => {
         logger.info('🕐 Running auto-cancel cron job...');
         
         try {
@@ -27,13 +27,15 @@ const startAutoCancelCron = () => {
             }
         } catch (error) {
             logger.error('❌ Error in auto-cancel cron job:', error);
+            // Don't let the cron job crash the application
+            // Just log the error and continue
         }
     }, {
         scheduled: true,
         timezone: "Asia/Jakarta"
     });
 
-    logger.info('🕐 Auto-cancel cron job scheduled (every minute)');
+    logger.info('🕐 Auto-cancel cron job scheduled (every 15 minutes)');
 };
 
 /**
@@ -64,6 +66,8 @@ const startBookingReminderCron = () => {
             }
         } catch (error) {
             logger.error('❌ Error in H-1 reminder cron job:', error);
+            // Don't let the cron job crash the application
+            // Just log the error and continue
         }
     }, {
         scheduled: true,

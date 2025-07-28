@@ -15,6 +15,8 @@ const autoCancelExpiredBookings = async () => {
         
         // Get all active schedules that are within cancel buffer time
         const schedules = await Schedule.findAll({
+            // Add timeout to prevent hanging connections
+            timeout: 30000, // 30 seconds timeout
             where: {
                 date_start: {
                     [Op.gte]: currentTime.toISOString().split('T')[0] // Today or future
@@ -37,6 +39,7 @@ const autoCancelExpiredBookings = async () => {
             if (currentTime >= cancelDeadline && currentTime < scheduleDateTime) {
                 // Count current signups
                 const signupCount = await Booking.count({
+                    timeout: 10000, // 10 seconds timeout
                     where: {
                         schedule_id: schedule.id,
                         status: 'signup'
@@ -48,6 +51,7 @@ const autoCancelExpiredBookings = async () => {
                 // If signup count is less than minimum, cancel all bookings
                 if (signupCount < minSignup) {
                     const bookingsToCancel = await Booking.findAll({
+                        timeout: 15000, // 15 seconds timeout
                         where: {
                             schedule_id: schedule.id,
                             status: {

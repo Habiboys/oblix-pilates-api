@@ -213,10 +213,20 @@ if (memberDoc) {
   console.log('❌ Failed to load member.yaml');
 }
 
+// Load and merge check class endpoints
+const checkClassDoc = loadYamlFile(path.join(__dirname, 'checkClass.yaml'));
+if (checkClassDoc) {
+  console.log('📋 Check Class doc paths:', Object.keys(checkClassDoc.paths || {}));
+  mergePaths(baseDoc, checkClassDoc);
+  console.log('✅ Merged check class endpoints');
+} else {
+  console.log('❌ Failed to load checkClass.yaml');
+}
 
 
 
-  // Add tags
+
+    // Add tags
   baseDoc.tags = [
     {
       name: 'Authentication',
@@ -285,6 +295,10 @@ if (memberDoc) {
   {
     name: 'Member Management',
     description: 'Member management endpoints'
+  },
+  {
+    name: 'Check Class',
+    description: 'Check class endpoints'
   }
   ];
 
