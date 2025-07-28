@@ -1,8 +1,6 @@
 const { Booking, Schedule, Class, Trainer, Member, User } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
-const bcrypt = require('bcryptjs');
-const { generateMemberCode } = require('../utils/memberUtils');
 
 /**
  * Get member's classes based on type (upcoming, waitlist, post, cancelled)
@@ -615,7 +613,7 @@ const updateMember = async (req, res) => {
         where: { 
           username,
           id: { [Op.ne]: id }
-        }
+          }
       });
 
       if (existingMember) {
@@ -750,7 +748,7 @@ const getMemberStats = async (req, res) => {
         date_of_join: {
           [Op.between]: [firstDayOfMonth, lastDayOfMonth]
         }
-      }
+        }
     });
 
     res.json({
@@ -776,10 +774,10 @@ module.exports = {
     getMyClasses,
     cancelBooking,
     getBookingDetails,
-    getAllMembers,
-    getMemberById,
-    createMember,
-    updateMember,
-    deleteMember,
-    getMemberStats
+  getAllMembers,
+  getMemberById,
+  createMember,
+  updateMember,
+  deleteMember,
+  getMemberStats
 }; 

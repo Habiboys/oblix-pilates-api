@@ -103,10 +103,13 @@ const getAvailableClasses = async (req, res) => {
       }
     }
 
-    // Get schedules for the selected date
+    // Get schedules for the selected date (exclude private schedules)
     const schedules = await Schedule.findAll({
       where: {
-        date_start: selectedDate.toISOString().split('T')[0]
+        date_start: selectedDate.toISOString().split('T')[0],
+        type: {
+          [Op.in]: ['group', 'semi_private'] // Exclude private schedules
+        }
       },
       include: [
         {
@@ -168,24 +171,28 @@ const getAvailableClasses = async (req, res) => {
 
         const isBooked = !!existingBooking;
 
+        // Calculate available slots with proper fallback
+        const capacity = schedule.pax || 20; // Use pax field or default to 20
+        const availableSlots = Math.max(0, capacity - bookedCount);
+
         return {
           id: schedule.id,
-          date: schedule.date,
+          date: schedule.date_start,
           time_start: schedule.time_start,
           time_end: schedule.time_end,
           class: {
             id: schedule.Class?.id,
             name: schedule.Class?.class_name,
-            type: schedule.type
+            type: schedule.Class?.type || 'group'
           },
           trainer: {
             id: schedule.Trainer?.id,
             name: schedule.Trainer?.title
           },
-          capacity: schedule.capacity,
+          capacity: capacity,
           booked_count: bookedCount,
-          available_slots: schedule.capacity - bookedCount,
-          schedule_type: scheduleType,
+          available_slots: availableSlots,
+          schedule_type: schedule.type, // Use actual schedule type
           can_book: canBook && !isBooked,
           is_booked: isBooked,
           booking_status: existingBooking?.status || null,

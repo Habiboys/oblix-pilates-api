@@ -6,157 +6,36 @@ const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
 const twilioService = require('../services/twilio.service');
 const logger = require('../config/logger');
 
-// Helper function to check if booking should go to waitlist
-const shouldGoToWaitlist = async (scheduleId) => {
+
+
+
+// Create booking for authenticated user
+const createUserBooking = async (req, res) => {
     try {
-        const schedule = await Schedule.findByPk(scheduleId);
-        if (!schedule) return false;
-
-        const currentSignups = await Booking.count({
-            where: {
-                schedule_id: scheduleId,
-                status: 'signup'
-            }
-        });
-
-        const maxCapacity = schedule.type === 'semi_private' ? 4 : 20;
-        return currentSignups >= maxCapacity;
-    } catch (error) {
-        logger.error('Error checking waitlist status:', error);
-        return false;
-    }
-};
-
-// Get all bookings with pagination and filters
-const getAllBookings = async (req, res) => {
-    try {
-        const { page = 1, limit = 10, member_id, schedule_id, status } = req.query;
-        const offset = (page - 1) * limit;
-
-        const whereClause = {};
-        
-        if (member_id) whereClause.member_id = member_id;
-        if (schedule_id) whereClause.schedule_id = schedule_id;
-        if (status) whereClause.status = status;
-
-        const bookings = await Booking.findAndCountAll({
-            where: whereClause,
-            include: [
-                {
-                    model: Member,
-                    attributes: ['id', 'full_name', 'username', 'member_code']
-                },
-                {
-                    model: Schedule,
-                    include: [
-                        {
-                            model: require('../models').Class,
-                            attributes: ['id', 'class_name', 'color_sign']
-                        },
-                        {
-                            model: require('../models').Trainer,
-                            attributes: ['id', 'title', 'picture']
-                        }
-                    ]
-                },
-                {
-                    model: Package,
-                    attributes: ['id', 'name', 'type']
-                }
-            ],
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
-        });
-
-        const totalPages = Math.ceil(bookings.count / limit);
-
-        res.json({
-            success: true,
-            message: 'Bookings retrieved successfully',
-            data: {
-                bookings: bookings.rows,
-                pagination: {
-                    currentPage: parseInt(page),
-                    totalPages,
-                    totalItems: bookings.count,
-                    itemsPerPage: parseInt(limit)
-                }
-            }
-        });
-    } catch (error) {
-        logger.error('Error getting bookings:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
-
-// Get booking by ID
-const getBookingById = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const booking = await Booking.findByPk(id, {
-            include: [
-                {
-                    model: Member,
-                    attributes: ['id', 'full_name', 'username', 'member_code']
-                },
-                {
-                    model: Schedule,
-                    include: [
-                        {
-                            model: require('../models').Class,
-                            attributes: ['id', 'class_name', 'color_sign']
-                        },
-                        {
-                            model: require('../models').Trainer,
-                            attributes: ['id', 'title', 'picture']
-                        }
-                    ]
-                },
-                {
-                    model: Package,
-                    attributes: ['id', 'name', 'type']
-                }
-            ]
-        });
-
-        if (!booking) {
-            return res.status(404).json({
-                success: false,
-                message: 'Booking not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Booking retrieved successfully',
-            data: booking
-        });
-    } catch (error) {
-        logger.error('Error getting booking:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
-
-// Create new booking
-const createBooking = async (req, res) => {
-    try {
-        const { schedule_id, member_id, package_id, notes } = req.body;
+        const userId = req.user.id;
+        const { schedule_id, package_id, notes } = req.body;
 
         // Validasi input
-        if (!schedule_id || !member_id) {
+        if (!schedule_id) {
             return res.status(400).json({
                 success: false,
-                message: 'schedule_id dan member_id harus diisi'
+                message: 'schedule_id harus diisi'
             });
         }
+
+        // Get member ID from user ID
+        const member = await Member.findOne({
+            where: { user_id: userId }
+        });
+
+        if (!member) {
+            return res.status(404).json({
+                success: false,
+                message: 'Member not found'
+            });
+        }
+
+        const member_id = member.id;
 
         // Cek apakah schedule exists dan valid untuk booking
         const schedule = await Schedule.findByPk(schedule_id);
@@ -194,25 +73,16 @@ const createBooking = async (req, res) => {
             }
         });
 
-        const maxCapacity = schedule.type === 'semi_private' ? 4 : 20; // Default capacity
+        const maxCapacity = schedule.type === 'semi_private' ? 4 : schedule.pax || 20;
         const minSignup = schedule.min_signup || 1;
         
         // Tentukan status booking
         let bookingStatus = 'signup';
-        let bookingNotes = notes || 'Manual booking';
+        let bookingNotes = notes || 'User booking';
 
         if (currentSignups >= maxCapacity) {
             bookingStatus = 'waiting_list';
             bookingNotes = notes || 'Booking masuk waitlist karena kelas penuh';
-        }
-
-        // Cek apakah member exists
-        const member = await Member.findByPk(member_id);
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: 'Member tidak ditemukan'
-            });
         }
 
         // Cek apakah sudah ada booking untuk member ini di schedule ini
@@ -226,7 +96,7 @@ const createBooking = async (req, res) => {
         if (existingBooking) {
             return res.status(400).json({
                 success: false,
-                message: 'Member sudah melakukan booking untuk schedule ini'
+                message: 'Anda sudah melakukan booking untuk schedule ini'
             });
         }
 
@@ -241,7 +111,7 @@ const createBooking = async (req, res) => {
         if (memberConflict.hasConflict) {
             return res.status(400).json({
                 success: false,
-                message: 'Member memiliki jadwal yang bentrok dengan schedule ini',
+                message: 'Anda memiliki jadwal yang bentrok dengan schedule ini',
                 data: {
                     conflicts: memberConflict.conflicts
                 }
@@ -259,7 +129,7 @@ const createBooking = async (req, res) => {
             if (!sessionValidation.isValid) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Member tidak memiliki jatah sesi yang cukup',
+                    message: 'Anda tidak memiliki jatah sesi yang cukup',
                     data: {
                         required_sessions: 1,
                         available_sessions: sessionValidation.totalAvailableSessions,
@@ -284,7 +154,7 @@ const createBooking = async (req, res) => {
             if (!memberPackage) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Member tidak memiliki paket yang dipilih'
+                    message: 'Anda tidak memiliki paket yang dipilih'
                 });
             }
 
@@ -377,11 +247,27 @@ const createBooking = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Booking created successfully',
-            data: createdBooking
+            message: 'Booking berhasil dibuat',
+            data: {
+                booking_id: createdBooking.id,
+                status: createdBooking.status,
+                schedule: {
+                    id: createdBooking.Schedule.id,
+                    date: createdBooking.Schedule.date_start,
+                    time: `${createdBooking.Schedule.time_start} - ${createdBooking.Schedule.time_end}`,
+                    class: createdBooking.Schedule.Class.class_name,
+                    trainer: createdBooking.Schedule.Trainer.title
+                },
+                package: {
+                    id: createdBooking.Package.id,
+                    name: createdBooking.Package.name
+                },
+                notes: createdBooking.notes,
+                created_at: createdBooking.createdAt
+            }
         });
     } catch (error) {
-        logger.error('Error creating booking:', error);
+        logger.error('Error creating user booking:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -470,13 +356,31 @@ const updateBookingStatus = async (req, res) => {
     }
 };
 
-// Cancel booking
-const cancelBooking = async (req, res) => {
+
+// Cancel booking for authenticated user
+const cancelUserBooking = async (req, res) => {
     try {
-        const { id } = req.params;
+        const userId = req.user.id;
+        const { booking_id } = req.params;
         const { reason } = req.body;
 
-        const booking = await Booking.findByPk(id, {
+        // Get member ID from user ID
+        const member = await Member.findOne({
+            where: { user_id: userId }
+        });
+
+        if (!member) {
+            return res.status(404).json({
+                success: false,
+                message: 'Member not found'
+            });
+        }
+
+        const booking = await Booking.findOne({
+            where: {
+                id: booking_id,
+                member_id: member.id
+            },
             include: [
                 {
                     model: Schedule,
@@ -528,7 +432,7 @@ const cancelBooking = async (req, res) => {
         // Cancel booking
         await booking.update({
             status: 'cancelled',
-            notes: reason || 'Booking dibatalkan oleh member'
+            notes: reason || 'Booking dibatalkan oleh user'
         });
 
         // Send WhatsApp cancellation notification (async)
@@ -570,14 +474,16 @@ const cancelBooking = async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Booking cancelled successfully',
+            message: 'Booking berhasil dibatalkan',
             data: {
-                cancelled_booking: booking,
+                booking_id: booking.id,
+                status: booking.status,
+                cancelled_at: booking.updatedAt,
                 promoted_from_waitlist: promotedBooking
             }
         });
     } catch (error) {
-        logger.error('Error cancelling booking:', error);
+        logger.error('Error cancelling user booking:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -639,123 +545,7 @@ const deleteBooking = async (req, res) => {
     }
 };
 
-// Get member session summary
-const getMemberSessions = async (req, res) => {
-    try {
-        const { member_id } = req.params;
 
-        const member = await Member.findByPk(member_id);
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: 'Member not found'
-            });
-        }
-
-        const sessionSummary = await getMemberSessionSummary(member_id);
-
-        res.json({
-            success: true,
-            message: 'Member session summary retrieved successfully',
-            data: sessionSummary
-        });
-    } catch (error) {
-        logger.error('Error getting member sessions:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
-
-// Get bookings by member ID
-const getBookingsByMember = async (req, res) => {
-    try {
-        const { member_id } = req.params;
-        const { page = 1, limit = 10, status } = req.query;
-        const offset = (page - 1) * limit;
-
-        const member = await Member.findByPk(member_id);
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: 'Member not found'
-            });
-        }
-
-        const whereClause = { member_id };
-        if (status) whereClause.status = status;
-
-        const bookings = await Booking.findAndCountAll({
-            where: whereClause,
-            include: [
-                {
-                    model: Schedule,
-                    include: [
-                        {
-                            model: require('../models').Class,
-                            attributes: ['id', 'class_name', 'color_sign']
-                        },
-                        {
-                            model: require('../models').Trainer,
-                            attributes: ['id', 'title', 'picture']
-                        }
-                    ]
-                },
-                {
-                    model: Package,
-                    attributes: ['id', 'name', 'type']
-                }
-            ],
-            limit: parseInt(limit),
-            offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
-        });
-
-        const totalPages = Math.ceil(bookings.count / limit);
-
-            res.json({
-        success: true,
-        message: 'Member bookings retrieved successfully',
-        data: {
-            bookings: bookings.rows,
-            pagination: {
-                currentPage: parseInt(page),
-                totalPages,
-                totalItems: bookings.count,
-                itemsPerPage: parseInt(limit)
-            }
-        }
-    });
-} catch (error) {
-    logger.error('Error getting member bookings:', error);
-    res.status(500).json({
-        success: false,
-        message: 'Internal server error'
-    });
-}
-};
-
-
-
-// Get booking statistics
-const getBookingStats = async (req, res) => {
-    try {
-        const result = await getBookingStatistics();
-        
-        res.json({
-            success: true,
-            message: 'Booking statistics retrieved successfully',
-            data: result
-        });
-    } catch (error) {
-        logger.error('Error getting booking statistics:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
 
 // Update attendance status
 const updateAttendance = async (req, res) => {
@@ -1049,16 +839,11 @@ const adminCancelBooking = async (req, res) => {
 };
 
 module.exports = {
-    getAllBookings,
-    getBookingById,
-    createBooking,
     updateBookingStatus,
-    cancelBooking,
     deleteBooking,
-    getMemberSessions,
-    getBookingsByMember,
-    getBookingStats,
     updateAttendance,
     updateScheduleAttendance,
-    adminCancelBooking
+    adminCancelBooking,
+    createUserBooking,
+    cancelUserBooking
 }; 
