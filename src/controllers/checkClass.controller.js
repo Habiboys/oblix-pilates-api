@@ -73,6 +73,7 @@ const getAvailableClasses = async (req, res) => {
     let priorityPackage = null;
     let remainingSessions = {
       group: 0,
+      semi_private: 0,
       private: 0
     };
 
@@ -89,6 +90,7 @@ const getAvailableClasses = async (req, res) => {
         
         if (priorityPackage) {
           remainingSessions.group = priorityPackage.remaining_group_session || 0;
+          remainingSessions.semi_private = priorityPackage.remaining_semi_private_session || 0;
           remainingSessions.private = priorityPackage.remaining_private_session || 0;
         }
       }
@@ -133,7 +135,7 @@ const getAvailableClasses = async (req, res) => {
         if (schedule.type === 'private') {
           scheduleType = 'private';
         } else if (schedule.type === 'semi_private') {
-          scheduleType = 'group'; // Semi-private uses group session
+          scheduleType = 'semi_private'; // Semi-private uses semi_private session
         }
 
         // Check if member can book this schedule
@@ -143,6 +145,8 @@ const getAvailableClasses = async (req, res) => {
         if (priorityPackage) {
           if (scheduleType === 'group') {
             availableSessions = remainingSessions.group;
+          } else if (scheduleType === 'semi_private') {
+            availableSessions = remainingSessions.semi_private;
           } else if (scheduleType === 'private') {
             availableSessions = remainingSessions.private;
           }

@@ -291,18 +291,22 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
 
     // Hitung total session berdasarkan tipe package
     let totalGroupSessions = 0;
+    let totalSemiPrivateSessions = 0;
     let totalPrivateSessions = 0;
 
     if (package.type === 'membership' && package.PackageMembership) {
       totalGroupSessions = package.PackageMembership.session || 0;
     } else if (package.type === 'first_trial' && package.PackageFirstTrial) {
       totalGroupSessions = package.PackageFirstTrial.group_session || 0;
+      totalSemiPrivateSessions = package.PackageFirstTrial.semi_private_session || 0;
       totalPrivateSessions = package.PackageFirstTrial.private_session || 0;
     } else if (package.type === 'promo' && package.PackagePromo) {
       totalGroupSessions = package.PackagePromo.group_session || 0;
+      totalSemiPrivateSessions = package.PackagePromo.semi_private_session || 0;
       totalPrivateSessions = package.PackagePromo.private_session || 0;
     } else if (package.type === 'bonus' && package.PackageBonus) {
       totalGroupSessions = package.PackageBonus.group_session || 0;
+      totalSemiPrivateSessions = package.PackageBonus.semi_private_session || 0;
       totalPrivateSessions = package.PackageBonus.private_session || 0;
     }
 
@@ -322,17 +326,17 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     });
 
     let usedGroupSessions = 0;
+    let usedSemiPrivateSessions = 0;
     let usedPrivateSessions = 0;
 
     bookings.forEach(booking => {
       if (booking.Schedule) {
         if (booking.Schedule.type === 'group') {
           usedGroupSessions++;
+        } else if (booking.Schedule.type === 'semi_private') {
+          usedSemiPrivateSessions++;
         } else if (booking.Schedule.type === 'private') {
           usedPrivateSessions++;
-        } else if (booking.Schedule.type === 'semi_private') {
-          // Semi-private bisa dihitung sebagai group atau private tergantung kebijakan
-          usedGroupSessions++; // Default sebagai group
         }
       }
     });
@@ -351,23 +355,26 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       if (newBooking && newBooking.Schedule) {
         if (newBooking.Schedule.type === 'group') {
           usedGroupSessions++;
+        } else if (newBooking.Schedule.type === 'semi_private') {
+          usedSemiPrivateSessions++;
         } else if (newBooking.Schedule.type === 'private') {
           usedPrivateSessions++;
-        } else if (newBooking.Schedule.type === 'semi_private') {
-          usedGroupSessions++; // Default sebagai group
         }
       }
     }
 
     // Hitung remaining sessions
     const remainingGroupSessions = Math.max(0, totalGroupSessions - usedGroupSessions);
+    const remainingSemiPrivateSessions = Math.max(0, totalSemiPrivateSessions - usedSemiPrivateSessions);
     const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
 
     // Update member package
     await MemberPackage.update({
       used_group_session: usedGroupSessions,
+      used_semi_private_session: usedSemiPrivateSessions,
       used_private_session: usedPrivateSessions,
       remaining_group_session: remainingGroupSessions,
+      remaining_semi_private_session: remainingSemiPrivateSessions,
       remaining_private_session: remainingPrivateSessions
     }, {
       where: { id: memberPackageId }
@@ -375,10 +382,13 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
 
     return {
       total_group: totalGroupSessions,
+      total_semi_private: totalSemiPrivateSessions,
       total_private: totalPrivateSessions,
       used_group: usedGroupSessions,
+      used_semi_private: usedSemiPrivateSessions,
       used_private: usedPrivateSessions,
       remaining_group: remainingGroupSessions,
+      remaining_semi_private: remainingSemiPrivateSessions,
       remaining_private: remainingPrivateSessions
     };
 

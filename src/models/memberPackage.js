@@ -58,11 +58,23 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
       comment: 'Jumlah session private yang sudah digunakan'
     },
+    used_semi_private_session: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Jumlah session semi_private yang sudah digunakan'
+    },
     remaining_group_session: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
       comment: 'Jumlah session group yang tersisa'
+    },
+    remaining_semi_private_session: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Jumlah session semi_private yang tersisa'
     },
     remaining_private_session: {
       type: DataTypes.INTEGER,
