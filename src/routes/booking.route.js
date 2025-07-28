@@ -4,14 +4,11 @@ const bookingController = require('../controllers/booking.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
 const { 
-    createBookingSchema, 
-    updateBookingStatusSchema, 
-    cancelBookingSchema,
+
     createUserBookingSchema,
-    cancelUserBookingSchema
+    cancelBookingSchema
 } = require('../validations/booking.validation');
 
-// Admin routes (require
 
 
 router.put('/:id/attendance', 
@@ -26,24 +23,18 @@ router.put('/schedule/:schedule_id/attendance',
     bookingController.updateScheduleAttendance
 );
 
-router.put('/:id/admin-cancel', 
-    validateToken,
-    checkRole('admin'),
-    validate(cancelBookingSchema, 'body'),
-    bookingController.adminCancelBooking
-);
 
 // User routes (no admin role required)
-router.post('/member', 
+router.post('/', 
     validateToken,
     validate(createUserBookingSchema, 'body'),
     bookingController.createUserBooking
 );
 
-router.put('/member/:booking_id/cancel', 
+router.put('/:id/cancel', 
     validateToken,
-    validate(cancelUserBookingSchema, 'body'),
-    bookingController.cancelUserBooking
+    validate(cancelBookingSchema, 'body'),
+    bookingController.cancelBooking
 );
 
 module.exports = router; 

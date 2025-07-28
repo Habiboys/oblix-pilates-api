@@ -1,10 +1,10 @@
 paths:
-  /booking/member:
+  /booking:
     post:
       tags:
         - Booking Management
       summary: Create booking for authenticated user
-      description: Create a new booking for the authenticated user. System will automatically validate session availability and select appropriate package.
+      description: Create a new booking for the authenticated user. System will automatically validate session availability and select appropriate package based on priority (bonus > promo > first_trial > membership).
       security:
         - BearerAuth: []
       requestBody:
@@ -21,11 +21,6 @@ paths:
                   format: uuid
                   description: ID of the schedule to book
                   example: "123e4567-e89b-12d3-a456-426614174000"
-                package_id:
-                  type: string
-                  format: uuid
-                  description: Optional package ID to use for booking
-                  example: "123e4567-e89b-12d3-a456-426614174001"
                 notes:
                   type: string
                   maxLength: 500
@@ -86,6 +81,10 @@ paths:
                           name:
                             type: string
                             example: "Monthly Membership"
+                          type:
+                            type: string
+                            enum: [membership, first_trial, promo, bonus]
+                            example: "membership"
                       notes:
                         type: string
                         example: "Booking for group class"
@@ -125,7 +124,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /booking/member/{booking_id}/cancel:
+  /booking/{id}/cancel:
     put:
       tags:
         - Booking Management
@@ -134,7 +133,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - name: booking_id
+        - name: id
           in: path
           description: ID of the booking to cancel
           required: true
@@ -171,7 +170,7 @@ paths:
                   data:
                     type: object
                     properties:
-                      booking_id:
+                      id:
                         type: string
                         format: uuid
                         example: "123e4567-e89b-12d3-a456-426614174001"
@@ -221,7 +220,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-
 
   /booking/{id}/attendance:
     put:
@@ -440,87 +438,6 @@ paths:
                   message:
                     type: string
                     example: Schedule not found
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /booking/{id}/admin-cancel:
-    post:
-      tags:
-        - Booking Management
-      summary: Admin cancel booking
-      description: Allow admin to cancel a member's booking with optional reason
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          description: ID of the booking to cancel
-          required: true
-          schema:
-            type: string
-            format: uuid
-            example: "123e4567-e89b-12d3-a456-426614174001"
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-                  maxLength: 500
-                  description: Optional reason for cancellation
-                  example: "Member requested cancellation"
-      responses:
-        '200':
-          description: Booking cancelled successfully by admin
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: Booking cancelled successfully by admin
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                        example: "123e4567-e89b-12d3-a456-426614174001"
-                      status:
-                        type: string
-                        enum: [cancelled]
-                        example: "cancelled"
-                      notes:
-                        type: string
-                        example: "Admin cancelled: Member requested cancellation"
-                      cancelled_at:
-                        type: string
-                        format: date-time
-                        example: "2024-01-15T07:00:00Z"
-        '400':
-          description: Booking already cancelled
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: Booking is already cancelled
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
 

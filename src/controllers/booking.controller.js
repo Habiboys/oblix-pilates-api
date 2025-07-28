@@ -1,6 +1,6 @@
 const { Booking, Schedule, Member, Package, MemberPackage } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionUtils');
-const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
+const { autoCancelExpiredBookings, processWaitlistPromotion } = require('../utils/bookingUtils');
 const { validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
 const twilioService = require('../services/twilio.service');
@@ -13,7 +13,7 @@ const logger = require('../config/logger');
 const createUserBooking = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { schedule_id, package_id, notes } = req.body;
+        const { schedule_id, notes } = req.body;
 
         // Validasi input
         if (!schedule_id) {
@@ -118,59 +118,25 @@ const createUserBooking = async (req, res) => {
             });
         }
 
-        // Jika package_id tidak disediakan, gunakan utility untuk memilih paket
-        let selectedPackageId = package_id;
-        let sessionLeft = null;
-
-        if (!selectedPackageId) {
-            // Cek ketersediaan sesi
-            const sessionValidation = await validateSessionAvailability(member_id, 1);
-            
-            if (!sessionValidation.isValid) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Anda tidak memiliki jatah sesi yang cukup',
-                    data: {
-                        required_sessions: 1,
-                        available_sessions: sessionValidation.totalAvailableSessions,
-                        deficit: sessionValidation.deficit
-                    }
-                });
-            }
-
-            // Buat alokasi untuk 1 sesi
-            const allocation = await createSessionAllocation(member_id, 1);
-            selectedPackageId = allocation[0].package_id;
-            sessionLeft = allocation[0].session_left;
-        } else {
-            // Jika package_id disediakan, validasi apakah member memiliki paket ini
-            const memberPackage = await require('../models').MemberPackage.findOne({
-                where: {
-                    member_id,
-                    package_id: selectedPackageId
+        // Cek ketersediaan sesi dan buat alokasi otomatis
+        const sessionValidation = await validateSessionAvailability(member_id, 1);
+        
+        if (!sessionValidation.isValid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Anda tidak memiliki jatah sesi yang cukup',
+                data: {
+                    required_sessions: 1,
+                    available_sessions: sessionValidation.totalAvailableSessions,
+                    deficit: sessionValidation.deficit
                 }
             });
-
-            if (!memberPackage) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Anda tidak memiliki paket yang dipilih'
-                });
-            }
-
-            // Hitung session_left untuk paket yang dipilih
-            const sessionInfo = await getMemberSessionSummary(member_id);
-            const selectedPackage = sessionInfo.packages.find(pkg => pkg.package_id === selectedPackageId);
-            
-            if (!selectedPackage || selectedPackage.available_sessions <= 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Paket yang dipilih tidak memiliki sesi yang tersedia'
-                });
-            }
-
-            sessionLeft = selectedPackage.available_sessions - 1;
         }
+
+        // Buat alokasi untuk 1 sesi (sistem akan memilih paket berdasarkan prioritas)
+        const allocation = await createSessionAllocation(member_id, 1);
+        const selectedPackageId = allocation[0].package_id;
+        const sessionLeft = allocation[0].session_left;
 
         // Buat booking
         const booking = await Booking.create({
@@ -260,7 +226,8 @@ const createUserBooking = async (req, res) => {
                 },
                 package: {
                     id: createdBooking.Package.id,
-                    name: createdBooking.Package.name
+                    name: createdBooking.Package.name,
+                    type: createdBooking.Package.type
                 },
                 notes: createdBooking.notes,
                 created_at: createdBooking.createdAt
@@ -358,28 +325,19 @@ const updateBookingStatus = async (req, res) => {
 
 
 // Cancel booking for authenticated user
-const cancelUserBooking = async (req, res) => {
+const cancelBooking = async (req, res) => {
     try {
-        const userId = req.user.id;
+      
         const { booking_id } = req.params;
         const { reason } = req.body;
 
-        // Get member ID from user ID
-        const member = await Member.findOne({
-            where: { user_id: userId }
-        });
+     
 
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: 'Member not found'
-            });
-        }
+       
 
         const booking = await Booking.findOne({
             where: {
                 id: booking_id,
-                member_id: member.id
             },
             include: [
                 {
@@ -491,59 +449,6 @@ const cancelUserBooking = async (req, res) => {
     }
 };
 
-// Delete booking
-const deleteBooking = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const booking = await Booking.findByPk(id);
-        if (!booking) {
-            return res.status(404).json({
-                success: false,
-                message: 'Booking not found'
-            });
-        }
-
-        // Simpan data booking sebelum dihapus untuk update session usage
-        const bookingData = {
-            member_id: booking.member_id,
-            package_id: booking.package_id,
-            status: booking.status
-        };
-
-        await booking.destroy();
-
-        // Update session usage jika booking yang dihapus adalah signup
-        if (bookingData.status === 'signup') {
-            try {
-                const memberPackage = await require('../models').MemberPackage.findOne({
-                    where: {
-                        member_id: bookingData.member_id,
-                        package_id: bookingData.package_id
-                    }
-                });
-                
-                if (memberPackage) {
-                    await updateSessionUsage(memberPackage.id, bookingData.member_id, bookingData.package_id);
-                    logger.info(`✅ Session usage updated after deleting booking for member ${bookingData.member_id}`);
-                }
-            } catch (error) {
-                logger.error(`❌ Failed to update session usage after delete: ${error.message}`);
-            }
-        }
-
-        res.json({
-            success: true,
-            message: 'Booking deleted successfully'
-        });
-    } catch (error) {
-        logger.error('Error deleting booking:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
 
 
 
@@ -729,121 +634,13 @@ const updateScheduleAttendance = async (req, res) => {
     }
 };
 
-// Admin cancel booking
-const adminCancelBooking = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { reason } = req.body;
 
-        const booking = await Booking.findByPk(id, {
-            include: [
-                {
-                    model: Member,
-                    attributes: ['id', 'full_name', 'phone_number'],
-                    include: [
-                        {
-                            model: require('../models').User,
-                            attributes: ['email']
-                        }
-                    ]
-                },
-                {
-                    model: Schedule,
-                    include: [
-                        {
-                            model: require('../models').Class,
-                            attributes: ['class_name']
-                        },
-                        {
-                            model: require('../models').Trainer,
-                            attributes: ['title']
-                        }
-                    ]
-                }
-            ]
-        });
-
-        if (!booking) {
-            return res.status(404).json({
-                success: false,
-                message: 'Booking not found'
-            });
-        }
-
-        if (booking.status === 'cancelled') {
-            return res.status(400).json({
-                success: false,
-                message: 'Booking is already cancelled'
-            });
-        }
-
-        // Cancel booking
-        await booking.update({
-            status: 'cancelled',
-            notes: reason ? `Admin cancelled: ${reason}` : 'Admin cancelled'
-        });
-
-        // Process waitlist promotion if this was a signup booking
-        if (booking.status === 'signup') {
-            await processWaitlistPromotion(booking.schedule_id);
-        }
-
-        // Update session usage setelah admin cancel booking
-        try {
-            const memberPackage = await require('../models').MemberPackage.findOne({
-                where: {
-                    member_id: booking.member_id,
-                    package_id: booking.package_id
-                }
-            });
-            
-            if (memberPackage) {
-                await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
-                logger.info(`✅ Session usage updated after admin canceling booking for member ${booking.member_id}`);
-            }
-        } catch (error) {
-            logger.error(`❌ Failed to update session usage after admin cancel: ${error.message}`);
-        }
-
-        // Send cancellation notification
-        try {
-            await twilioService.sendAdminCancellation(
-                booking.Member.phone_number,
-                booking.Member.full_name,
-                booking.Schedule.Class.class_name,
-                booking.Schedule.date_start,
-                booking.Schedule.time_start,
-                'Admin cancelled your booking'
-            );
-        } catch (notificationError) {
-            logger.error('Error sending cancellation notification:', notificationError);
-        }
-
-        res.json({
-            success: true,
-            message: 'Booking cancelled successfully by admin',
-            data: {
-                id: booking.id,
-                status: booking.status,
-                notes: booking.notes,
-                cancelled_at: booking.updatedAt
-            }
-        });
-    } catch (error) {
-        logger.error('Error cancelling booking by admin:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-};
 
 module.exports = {
     updateBookingStatus,
-    deleteBooking,
     updateAttendance,
     updateScheduleAttendance,
-    adminCancelBooking,
     createUserBooking,
-    cancelUserBooking
+    cancelBooking
+
 }; 

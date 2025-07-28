@@ -27,9 +27,6 @@ const createUserBookingSchema = Joi.object({
         'string.uuid': 'Schedule ID must be a valid UUID',
         'any.required': 'Schedule ID is required'
     }),
-    package_id: Joi.string().uuid().optional().messages({
-        'string.uuid': 'Package ID must be a valid UUID'
-    }),
     notes: Joi.string().max(500).optional().messages({
         'string.max': 'Notes cannot exceed 500 characters'
     })
@@ -54,12 +51,7 @@ const cancelBookingSchema = Joi.object({
     })
 });
 
-// Schema untuk cancel user booking
-const cancelUserBookingSchema = Joi.object({
-    reason: Joi.string().max(500).optional().messages({
-        'string.max': 'Reason cannot exceed 500 characters'
-    })
-});
+
 
 // Schema untuk update attendance
 const updateAttendanceSchema = Joi.object({
@@ -109,7 +101,7 @@ module.exports = {
     createUserBookingSchema,
     updateBookingStatusSchema,
     cancelBookingSchema,
-    cancelUserBookingSchema,
+   
     updateAttendanceSchema,
     updateScheduleAttendanceSchema,
     adminCancelBookingSchema
