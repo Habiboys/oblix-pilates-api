@@ -229,8 +229,8 @@ const updatePromoPackage = async (req, res) => {
       reminder_session,
       group_session,
       private_session,
-      time_start,
-      time_end
+      start_time,
+      end_time
     } = req.body;
 
     const package = await Package.findOne({
@@ -281,8 +281,8 @@ const updatePromoPackage = async (req, res) => {
       await packagePromo.update({
         group_session: group_session ? parseInt(group_session) : null,
         private_session: private_session ? parseInt(private_session) : null,
-        start_time: time_start,
-        end_time: time_end
+        start_time: start_time,
+        end_time: end_time
       });
     }
 
