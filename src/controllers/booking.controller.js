@@ -13,7 +13,7 @@ const logger = require('../config/logger');
 const createUserBooking = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { schedule_id, notes } = req.body;
+        const { schedule_id } = req.body;
 
         // Validasi input
         if (!schedule_id) {
@@ -78,11 +78,11 @@ const createUserBooking = async (req, res) => {
         
         // Tentukan status booking
         let bookingStatus = 'signup';
-        let bookingNotes = notes || 'User booking';
+        let bookingNotes = 'User booking';
 
         if (currentSignups >= maxCapacity) {
             bookingStatus = 'waiting_list';
-            bookingNotes = notes || 'Booking masuk waitlist karena kelas penuh';
+            bookingNotes = 'Booking masuk waitlist karena kelas penuh';
         }
 
         // Cek apakah sudah ada booking untuk member ini di schedule ini

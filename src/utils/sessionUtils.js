@@ -90,41 +90,42 @@ const calculateAvailableSessions = async (memberId) => {
 
     for (const memberPackage of memberPackages) {
         const package = memberPackage.Package;
-        let sessions = 0;
+        let totalSessions = 0;
 
         // Ambil sesi berdasarkan tipe paket
         switch (package.type) {
             case 'membership':
                 if (package.PackageMembership) {
-                    sessions = package.PackageMembership.group_session + package.PackageMembership.private_session;
+                    totalSessions = package.PackageMembership.session || 0;
                 }
                 break;
             case 'first_trial':
                 if (package.PackageFirstTrial) {
-                    sessions = package.PackageFirstTrial.group_session + package.PackageFirstTrial.private_session;
+                    totalSessions = (package.PackageFirstTrial.group_session || 0) + (package.PackageFirstTrial.private_session || 0);
                 }
                 break;
             case 'promo':
                 if (package.PackagePromo) {
-                    sessions = package.PackagePromo.group_session + package.PackagePromo.private_session;
+                    totalSessions = (package.PackagePromo.group_session || 0) + (package.PackagePromo.private_session || 0);
                 }
                 break;
             case 'bonus':
                 if (package.PackageBonus) {
-                    sessions = package.PackageBonus.group_session + package.PackageBonus.private_session;
+                    totalSessions = (package.PackageBonus.group_session || 0) + (package.PackageBonus.private_session || 0);
                 }
                 break;
         }
 
-        // Kurangi dengan sesi yang sudah digunakan
+        // Hitung sesi yang sudah digunakan dari booking
         const usedSessions = await Booking.count({
             where: { 
                 member_id: memberId,
-                package_id: package.id
+                package_id: package.id,
+                status: 'signup'
             }
         });
 
-        const availableSessions = Math.max(0, sessions - usedSessions);
+        const availableSessions = Math.max(0, totalSessions - usedSessions);
         totalAvailableSessions += availableSessions;
 
         if (availableSessions > 0) {
@@ -133,7 +134,7 @@ const calculateAvailableSessions = async (memberId) => {
                 package_type: package.type,
                 package_name: package.name,
                 available_sessions: availableSessions,
-                total_sessions: sessions,
+                total_sessions: totalSessions,
                 used_sessions: usedSessions
             });
         }

@@ -26,9 +26,6 @@ const createUserBookingSchema = Joi.object({
         'string.empty': 'Schedule ID is required',
         'string.uuid': 'Schedule ID must be a valid UUID',
         'any.required': 'Schedule ID is required'
-    }),
-    notes: Joi.string().max(500).optional().messages({
-        'string.max': 'Notes cannot exceed 500 characters'
     })
 });
 

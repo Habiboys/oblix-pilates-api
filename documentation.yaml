@@ -7626,11 +7626,6 @@ paths:
                   format: uuid
                   description: ID of the schedule to book
                   example: 123e4567-e89b-12d3-a456-426614174000
-                notes:
-                  type: string
-                  maxLength: 500
-                  description: Optional notes for the booking
-                  example: Booking for group class
       responses:
         '201':
           description: Booking created successfully
@@ -7698,7 +7693,7 @@ paths:
                             example: membership
                       notes:
                         type: string
-                        example: Booking for group class
+                        example: User booking
                       created_at:
                         type: string
                         format: date-time
