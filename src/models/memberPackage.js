@@ -45,6 +45,30 @@ module.exports = (sequelize, DataTypes) => {
     end_date: {
       type: DataTypes.DATEONLY,
       allowNull: true
+    },
+    used_group_session: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Jumlah session group yang sudah digunakan'
+    },
+    used_private_session: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Jumlah session private yang sudah digunakan'
+    },
+    remaining_group_session: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Jumlah session group yang tersisa'
+    },
+    remaining_private_session: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Jumlah session private yang tersisa'
     }
   }, {
     sequelize,

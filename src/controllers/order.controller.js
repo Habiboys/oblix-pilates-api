@@ -2,6 +2,7 @@ const { Order, Package, Member, User, MemberPackage, Booking, Payment, PackageMe
 const { Op } = require('sequelize');
 const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');
+const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
 const logger = require('../config/logger');
 // Create new order
 const createOrder = async (req, res) => {
@@ -708,13 +709,21 @@ const paymentNotification = async (req, res) => {
           }
 
           // Create MemberPackage record
-          await MemberPackage.create({
+          const memberPackage = await MemberPackage.create({
             member_id: order.member_id,
             package_id: order.package_id,
             order_id: order.id,
             start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
             end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
           });
+
+          // Update session usage untuk member package baru
+          try {
+            await updateSessionUsage(memberPackage.id, order.member_id, order.package_id);
+            console.log(`Session usage updated for new member package ${memberPackage.id}`);
+          } catch (error) {
+            console.error('Error updating session usage for new member package:', error);
+          }
 
           console.log(`MemberPackage created successfully for order ${order.order_number}`);
         } else {

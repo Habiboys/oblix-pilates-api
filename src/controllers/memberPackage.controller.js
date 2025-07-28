@@ -96,6 +96,32 @@ const getMyPackages = async (req, res) => {
         // Calculate progress percentage
         const progressPercentage = totalSessions > 0 ? (usedSessions / totalSessions) * 100 : 0;
 
+        // Get session breakdown for different package types
+        let groupSessions = 0;
+        let privateSessions = 0;
+        
+        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+          // For membership, all sessions are group sessions
+          groupSessions = memberPackage.Package.PackageMembership.session || 0;
+        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
+          groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
+          privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
+        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
+          groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
+          privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
+        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonu) {
+          groupSessions = memberPackage.Package.PackageBonu.group_session || 0;
+          privateSessions = memberPackage.Package.PackageBonu.private_session || 0;
+        }
+
+        // Debug log untuk paket bonus
+        if (memberPackage.Package?.type === 'bonus') {
+          console.log(`Debug: Bonus package ${memberPackage.Package.name}:`);
+          console.log(`  PackageBonu:`, memberPackage.Package.PackageBonu);
+          console.log(`  Group sessions: ${groupSessions}`);
+          console.log(`  Private sessions: ${privateSessions}`);
+        }
+
         return {
           id: memberPackage.id,
           package_name: memberPackage.Package?.name || (memberPackage.Package?.type === 'bonus' ? 'Paket Bonus' : 'Unknown Package'),
@@ -106,6 +132,8 @@ const getMyPackages = async (req, res) => {
           used_session: usedSessions,
           remaining_session: Math.max(0, totalSessions - usedSessions),
           progress_percentage: Math.round(progressPercentage),
+          group_sessions: groupSessions,
+          private_sessions: privateSessions,
           is_active: (() => {
             const isNotExpired = new Date(memberPackage.end_date) >= currentDate;
             const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
@@ -154,16 +182,18 @@ const getMyPackages = async (req, res) => {
           package_name: currentActivePackage.package_name || (currentActivePackage.package_type === 'bonus' ? 'Paket Bonus' : 'Unknown Package'),
           validity_until: currentActivePackage.end_date,
           session_group_classes: {
-            used: currentActivePackage.used_session,
-            total: currentActivePackage.total_session,
-            remaining: currentActivePackage.remaining_session,
-            progress_percentage: currentActivePackage.progress_percentage
+            used: currentActivePackage.used_group_session || 0,
+            total: currentActivePackage.group_sessions,
+            remaining: currentActivePackage.remaining_group_session || 0,
+            progress_percentage: currentActivePackage.group_sessions > 0 ? 
+              Math.round(((currentActivePackage.used_group_session || 0) / currentActivePackage.group_sessions) * 100) : 0
           },
           session_private_classes: {
-            used: 0,
-            total: 0,
-            remaining: 0,
-            progress_percentage: 0
+            used: currentActivePackage.used_private_session || 0,
+            total: currentActivePackage.private_sessions,
+            remaining: currentActivePackage.remaining_private_session || 0,
+            progress_percentage: currentActivePackage.private_sessions > 0 ? 
+              Math.round(((currentActivePackage.used_private_session || 0) / currentActivePackage.private_sessions) * 100) : 0
           }
         } : null,
         package_history: packageHistory

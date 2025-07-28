@@ -1,5 +1,6 @@
 const { Package, PackageBonus, Member, MemberPackage, sequelize, User} = require('../models');
 const { Op } = require('sequelize');
+const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
 const logger = require('../config/logger');
 
 // Get all bonus packages with pagination and search
@@ -265,7 +266,7 @@ const createBonusPackage = async (req, res) => {
     // Log untuk debugging
     logger.info(`Package duration calculation: start_date=${startDate.toISOString().split('T')[0]}, end_date=${endDate.toISOString().split('T')[0]}, duration_value=${newPackage.duration_value}, duration_unit=${newPackage.duration_unit}`);
 
-    await MemberPackage.create({
+    const memberPackage = await MemberPackage.create({
       member_id: member_id,
       package_id: newPackage.id,
       start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
@@ -273,6 +274,14 @@ const createBonusPackage = async (req, res) => {
     }, { transaction: t });
 
     await t.commit();
+
+    // Update session usage untuk member package baru (di luar transaction)
+    try {
+      await updateSessionUsage(memberPackage.id, member_id, newPackage.id);
+      logger.info(`✅ Session usage updated for new bonus package ${memberPackage.id}`);
+    } catch (error) {
+      logger.error(`❌ Failed to update session usage for bonus package: ${error.message}`);
+    }
 
     res.status(201).json({
       success: true,
