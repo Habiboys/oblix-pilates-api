@@ -53,6 +53,18 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const userId = req.user.id;
+        
+        // Pastikan req.body ada
+        const body = req.body || {};
+        
+        // Debug logging
+        console.log('Update Profile Request:', {
+            userId,
+            body: body,
+            hasFile: !!req.file,
+            contentType: req.headers['content-type']
+        });
+        
         const {
             email,
             full_name,
@@ -60,7 +72,7 @@ const updateProfile = async (req, res) => {
             phone_number,
             dob,
             address
-        } = req.body;
+        } = body;
 
         // Cari user berdasarkan id user
         const user = await User.findOne({

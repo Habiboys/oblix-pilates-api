@@ -2814,8 +2814,19 @@ paths:
         - Authentication
       summary: Refresh access token
       description: Get new access token using refresh token
-      security:
-        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Refresh token from previous login
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
           description: Token refreshed successfully
@@ -9230,8 +9241,19 @@ paths:
     get:
       tags:
         - Check Class
-      summary: Get available classes for a specific date
-      description: Retrieve available classes/schedules for a specific date with package priority and remaining sessions
+      summary: Get available classes for a specific date with package priority
+      description: |
+        Mendapatkan jadwal kelas yang tersedia untuk tanggal tertentu beserta informasi paket member.
+
+        **Logika Prioritas Paket:**
+        - **Bonus Package** (Prioritas Tertinggi): Paket bonus yang diberikan secara gratis
+        - **Promo Package**: Paket dengan harga khusus/promosi
+        - **First Trial Package**: Paket trial untuk member baru
+        - **Membership Package** (Prioritas Terendah): Paket reguler/berlangganan
+
+        **Faktor Tambahan:**
+        - Paket yang akan berakhir dalam 7 hari mendapat prioritas lebih tinggi
+        - Jika tipe paket sama, paket dengan end_date lebih awal diprioritaskan
       security:
         - BearerAuth: []
       parameters:

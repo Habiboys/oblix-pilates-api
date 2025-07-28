@@ -16,7 +16,9 @@ const {
     createPrivateSchedule,
     updatePrivateSchedule,
     deletePrivateSchedule,
-    getScheduleCalendar
+    getScheduleCalendar,
+    getScheduledCancelTasksStatus,
+    refreshCancelScheduling
 } = require('../controllers/schedule.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
@@ -134,5 +136,9 @@ router.delete('/private/:id',
 
 // Calendar endpoint
 router.get('/calendar', validateToken, validate(getScheduleCalendarSchema, 'query'), getScheduleCalendar);
+
+// Dynamic cancel scheduling management (admin only)
+router.get('/cancel-tasks/status', validateToken, checkRole('admin'), getScheduledCancelTasksStatus);
+router.post('/cancel-tasks/refresh', validateToken, checkRole('admin'), refreshCancelScheduling);
 
 module.exports = router; 

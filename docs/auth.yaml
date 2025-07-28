@@ -156,8 +156,19 @@ paths:
         - Authentication
       summary: Refresh access token
       description: Get new access token using refresh token
-      security:
-        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Refresh token from previous login
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       responses:
         '200':
           description: Token refreshed successfully

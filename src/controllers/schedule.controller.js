@@ -8,6 +8,7 @@ const logger = require('../config/logger');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
+const { refreshDynamicCancelScheduling } = require('../cron/bookingCron');
 
 // Fungsi untuk generate dates untuk weekly repeat
 const generateWeeklyDates = (startDate, untilDate, repeatDays = []) => {
@@ -267,6 +268,14 @@ const createGroupSchedule = async (req, res) => {
             ]
         });
 
+        // Refresh dynamic cancel scheduling untuk schedule baru
+        try {
+            await refreshDynamicCancelScheduling();
+            logger.info('✅ Dynamic cancel scheduling refreshed after creating group schedule');
+        } catch (error) {
+            logger.error('❌ Error refreshing dynamic cancel scheduling:', error);
+        }
+
         res.status(201).json({
             message: `Group schedule created successfully${repeat_type === 'weekly' ? ` (${createdSchedules.length} schedules generated)` : ''}`,
             data: {
@@ -390,6 +399,14 @@ const updateGroupSchedule = async (req, res) => {
         }
 
         await schedule.update(updateData);
+
+        // Refresh dynamic cancel scheduling untuk schedule yang diupdate
+        try {
+            await refreshDynamicCancelScheduling();
+            logger.info('✅ Dynamic cancel scheduling refreshed after updating group schedule');
+        } catch (error) {
+            logger.error('❌ Error refreshing dynamic cancel scheduling:', error);
+        }
 
         // Fetch updated schedule with associations
         const updatedSchedule = await Schedule.findByPk(schedule.id, {
@@ -655,6 +672,14 @@ const createSemiPrivateSchedule = async (req, res) => {
             ]
         });
 
+        // Refresh dynamic cancel scheduling untuk schedule baru
+        try {
+            await refreshDynamicCancelScheduling();
+            logger.info('✅ Dynamic cancel scheduling refreshed after creating semi-private schedule');
+        } catch (error) {
+            logger.error('❌ Error refreshing dynamic cancel scheduling:', error);
+        }
+
         res.status(201).json({
             message: `Semi-private schedule created successfully${repeat_type === 'weekly' ? ` (${createdSchedules.length} schedules generated)` : ''}`,
             data: {
@@ -778,6 +803,14 @@ const updateSemiPrivateSchedule = async (req, res) => {
         }
 
         await schedule.update(updateData);
+
+        // Refresh dynamic cancel scheduling untuk schedule yang diupdate
+        try {
+            await refreshDynamicCancelScheduling();
+            logger.info('✅ Dynamic cancel scheduling refreshed after updating semi-private schedule');
+        } catch (error) {
+            logger.error('❌ Error refreshing dynamic cancel scheduling:', error);
+        }
 
         // Fetch updated schedule with associations
         const updatedSchedule = await Schedule.findByPk(schedule.id, {
@@ -1115,6 +1148,14 @@ const createPrivateSchedule = async (req, res) => {
             ]
         });
 
+        // Refresh dynamic cancel scheduling untuk schedule baru
+        try {
+            await refreshDynamicCancelScheduling();
+            logger.info('✅ Dynamic cancel scheduling refreshed after creating private schedule');
+        } catch (error) {
+            logger.error('❌ Error refreshing dynamic cancel scheduling:', error);
+        }
+
         res.status(201).json({
             message: `Private schedule created successfully${repeat_type === 'weekly' ? ` (${createdSchedules.length} schedules generated)` : ''}`,
             data: {
@@ -1255,6 +1296,14 @@ const updatePrivateSchedule = async (req, res) => {
         }
 
         await schedule.update(updateData);
+
+        // Refresh dynamic cancel scheduling untuk schedule yang diupdate
+        try {
+            await refreshDynamicCancelScheduling();
+            logger.info('✅ Dynamic cancel scheduling refreshed after updating private schedule');
+        } catch (error) {
+            logger.error('❌ Error refreshing dynamic cancel scheduling:', error);
+        }
 
         // Update booking jika member berubah
         if (member_id && member_id !== schedule.member_id) {
@@ -1564,6 +1613,46 @@ whereClause.date_start = {
     }
 };
 
+// Get scheduled cancel tasks status
+const getScheduledCancelTasksStatus = async (req, res) => {
+    try {
+        const { getScheduledCancelTasksStatus } = require('../cron/bookingCron');
+        const status = getScheduledCancelTasksStatus();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Scheduled cancel tasks status retrieved successfully',
+            data: status
+        });
+    } catch (error) {
+        logger.error('Error getting scheduled cancel tasks status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Refresh dynamic cancel scheduling manually
+const refreshCancelScheduling = async (req, res) => {
+    try {
+        const { refreshDynamicCancelScheduling } = require('../cron/bookingCron');
+        const result = await refreshDynamicCancelScheduling();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Dynamic cancel scheduling refreshed successfully',
+            data: result
+        });
+    } catch (error) {
+        logger.error('Error refreshing dynamic cancel scheduling:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 module.exports = {
     getAllGroupSchedules,
     getGroupScheduleById,
@@ -1580,5 +1669,7 @@ module.exports = {
     createPrivateSchedule,
     updatePrivateSchedule,
     deletePrivateSchedule,
-    getScheduleCalendar
+    getScheduleCalendar,
+    getScheduledCancelTasksStatus,
+    refreshCancelScheduling
 }; 

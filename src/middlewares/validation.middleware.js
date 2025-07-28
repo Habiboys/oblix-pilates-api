@@ -16,9 +16,14 @@ const validate = (schema, source = 'body') => {
                     // Untuk multipart/form-data, gunakan req.body yang sudah diproses oleh multer
                     dataToValidate = req.body || {};
                 } else {
-                    dataToValidate = req.body;
+                    dataToValidate = req.body || {};
                 }
                 break;
+        }
+        
+        // Pastikan dataToValidate tidak undefined
+        if (!dataToValidate) {
+            dataToValidate = {};
         }
         
         const { error } = schema.validate(dataToValidate, { 
@@ -31,6 +36,12 @@ const validate = (schema, source = 'body') => {
                 message: error.details[0].message
             });
         }
+        
+        // Pastikan req.body ada untuk controller
+        if (source === 'body' && !req.body) {
+            req.body = dataToValidate;
+        }
+        
         next();
     };
 };
