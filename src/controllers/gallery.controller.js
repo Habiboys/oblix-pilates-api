@@ -10,7 +10,7 @@ const getAllGalleries = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const whereClause = search ? {
-            title: { [Op.iLike]: `%${search}%` }
+            title: { [Op.like]: `%${search}%` }
         } : {};
 
         const galleries = await Gallery.findAndCountAll({

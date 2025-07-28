@@ -13,7 +13,7 @@ const getAllTrialPackages = async (req, res) => {
     
     if (search) {
       whereClause.name = {
-        [Op.iLike]: `%${search}%`
+                    [Op.like]: `%${search}%`
       };
     }
 

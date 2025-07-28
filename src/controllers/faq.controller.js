@@ -9,8 +9,8 @@ const getAllFaqs = async (req, res) => {
 
         const whereClause = search ? {
             [Op.or]: [
-                { title: { [Op.iLike]: `%${search}%` } },
-                { content: { [Op.iLike]: `%${search}%` } }
+                            { title: { [Op.like]: `%${search}%` } },
+            { content: { [Op.like]: `%${search}%` } }
             ]
         } : {};
 

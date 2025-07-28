@@ -14,9 +14,9 @@ const getAllStaff = async (req, res) => {
     
     if (search) {
       whereClause[Op.or] = [
-        { full_name: { [Op.iLike]: `%${search}%` } },
-        { username: { [Op.iLike]: `%${search}%` } },
-        { email: { [Op.iLike]: `%${search}%` } }
+                    { full_name: { [Op.like]: `%${search}%` } },
+            { username: { [Op.like]: `%${search}%` } },
+            { email: { [Op.like]: `%${search}%` } }
       ];
     }
 

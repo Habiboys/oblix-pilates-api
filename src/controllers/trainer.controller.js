@@ -11,8 +11,8 @@ const getAllTrainers = async (req, res) => {
 
         const whereClause = search ? {
             [Op.or]: [
-                { title: { [Op.iLike]: `%${search}%` } },
-                { description: { [Op.iLike]: `%${search}%` } }
+                { title: { [Op.like]: `%${search}%` } },
+                { description: { [Op.like]: `%${search}%` } }
             ]
         } : {};
 

@@ -259,7 +259,7 @@ class ScheduleService {
 
         // Add search filter
         if (filters.search) {
-            whereClause['$Class.class_name$'] = { [Op.iLike]: `%${filters.search}%` };
+            whereClause['$Class.class_name$'] = { [Op.like]: `%${filters.search}%` };
         }
 
         // Add date filter

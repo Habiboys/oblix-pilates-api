@@ -11,7 +11,7 @@ const getAllCategories = async (req, res) => {
     
     if (search) {
       whereClause.category_name = {
-        [Op.iLike]: `%${search}%`
+                    [Op.like]: `%${search}%`
       };
     }
 

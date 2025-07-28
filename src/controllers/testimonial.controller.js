@@ -9,8 +9,8 @@ const getAllTestimonials = async (req, res) => {
 
         const whereClause = search ? {
             [Op.or]: [
-                { name: { [Op.iLike]: `%${search}%` } },
-                { content: { [Op.iLike]: `%${search}%` } }
+                            { name: { [Op.like]: `%${search}%` } },
+            { content: { [Op.like]: `%${search}%` } }
             ]
         } : {};
 
