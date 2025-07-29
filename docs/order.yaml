@@ -53,44 +53,136 @@ paths:
     get:
       tags:
         - Order Management
-      summary: Get user orders
-      description: Retrieve paginated list of user's orders
+      summary: Get my orders
+      description: |
+        Retrieve all orders for the authenticated user with detailed information including payment details, member package details, and Midtrans information.
+        
+        **Available Status Filters:**
+        - **Order Status:** `pending`, `processing`, `completed`, `cancelled`
+        - **Payment Status:** `pending`, `paid`, `failed`, `expired`, `cancelled`
+        
+        **Response includes:**
+        - Order details (package info, pricing, session count)
+        - Payment information (method, status, transaction details)
+        - Member package details (remaining sessions, validity period)
+        - Midtrans payment details (VA numbers, PDF URL, etc.)
+        - Timestamps (created, paid, expired, cancelled)
       security:
         - BearerAuth: []
       parameters:
-        - name: page
-          in: query
-          description: Page number
-          required: false
+        - in: query
+          name: page
           schema:
             type: integer
-            minimum: 1
             default: 1
-        - name: limit
-          in: query
-          description: Number of items per page
-          required: false
+            minimum: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
           schema:
             type: integer
+            default: 10
             minimum: 1
             maximum: 100
-            default: 10
-        - name: status
-          in: query
-          description: Filter by payment status
-          required: false
+          description: Number of items per page
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, processing, completed, cancelled]
+          description: Filter by order status
+        - in: query
+          name: payment_status
           schema:
             type: string
             enum: [pending, paid, failed, expired, cancelled]
+          description: Filter by payment status
       responses:
         '200':
           description: Orders retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetUserOrdersResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          orders:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/MyOrderDetail'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /order/my-orders/{id}:
+    get:
+      tags:
+        - Order Management
+      summary: Get my order detail
+      description: |
+        Retrieve detailed information of a specific order for the authenticated user.
+        
+        **Security:** Users can only access their own orders.
+        
+        **Response includes:**
+        - Complete order information
+        - Package details
+        - Payment information with transaction details
+        - Member package details with session usage tracking
+        - Complete Midtrans payment information
+        - All timestamps and status information
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Order ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Order detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MyOrderDetailComplete'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found or access denied
           content:
             application/json:
               schema:
@@ -252,6 +344,426 @@ components:
       required:
         - package_id
 
+    MyOrderDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        order_number:
+          type: string
+          example: "ORD-20250129-001"
+        package_name:
+          type: string
+          example: "Monthly Membership"
+        package_type:
+          type: string
+          enum: [membership, first_trial, promo, bonus]
+          example: "membership"
+        quantity:
+          type: integer
+          example: 1
+        unit_price:
+          type: number
+          format: float
+          example: 500000.00
+        total_amount:
+          type: number
+          format: float
+          example: 500000.00
+        session_count:
+          type: integer
+          nullable: true
+          example: 12
+        duration_value:
+          type: integer
+          nullable: true
+          example: 1
+        duration_unit:
+          type: string
+          nullable: true
+          example: "month"
+        payment_method:
+          type: string
+          nullable: true
+          example: "bank_transfer"
+        payment_status:
+          type: string
+          enum: [pending, paid, failed, expired, cancelled]
+          example: "paid"
+        status:
+          type: string
+          enum: [pending, processing, completed, cancelled]
+          example: "completed"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-29T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-01-29T10:35:00Z"
+        payment:
+          $ref: '#/components/schemas/PaymentDetail'
+        member_package:
+          $ref: '#/components/schemas/MemberPackageDetail'
+        midtrans:
+          $ref: '#/components/schemas/MidtransDetail'
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-29T10:35:00Z"
+        expired_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-29T11:30:00Z"
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_by:
+          type: string
+          format: uuid
+          nullable: true
+        cancel_reason:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
 
+    PaymentDetail:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174001"
+        payment_type:
+          type: string
+          example: "bank_transfer"
+          description: Payment type from Midtrans
+        payment_status:
+          type: string
+          enum: [pending, success, failed]
+          example: "success"
+        transaction_time:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-29T10:35:00Z"
+        settlement_time:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-29T10:35:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-29T10:30:00Z"
 
- 
+    MemberPackageDetail:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174002"
+        start_date:
+          type: string
+          format: date
+          example: "2025-01-29"
+        end_date:
+          type: string
+          format: date
+          example: "2025-02-28"
+        remaining_sessions:
+          type: object
+          properties:
+            group:
+              type: integer
+              example: 8
+            semi_private:
+              type: integer
+              example: 2
+            private:
+              type: integer
+              example: 2
+
+    MidtransDetail:
+      type: object
+      properties:
+        order_id:
+          type: string
+          nullable: true
+          example: "ORD-20250129-001"
+        payment_type:
+          type: string
+          nullable: true
+          example: "bank_transfer"
+        transaction_id:
+          type: string
+          nullable: true
+          example: "TRX-20250129-001"
+        transaction_status:
+          type: string
+          nullable: true
+          example: "settlement"
+        fraud_status:
+          type: string
+          nullable: true
+          example: "accept"
+        va_numbers:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              bank:
+                type: string
+                example: "bca"
+              va_number:
+                type: string
+                example: "12345678901"
+        payment_code:
+          type: string
+          nullable: true
+          example: "PAY-20250129-001"
+        pdf_url:
+          type: string
+          nullable: true
+          example: "https://api.midtrans.com/v2/12345678901/pdf"
+        redirect_url:
+          type: string
+          nullable: true
+          example: "https://app.midtrans.com/snap/v2/vtweb/12345678901"
+
+    PaginationInfo:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          example: 1
+        totalPages:
+          type: integer
+          example: 5
+        totalItems:
+          type: integer
+          example: 50
+        itemsPerPage:
+          type: integer
+          example: 10
+
+    MyOrderDetailComplete:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        order_number:
+          type: string
+          example: "ORD-20250129-001"
+        package_name:
+          type: string
+          example: "Monthly Membership"
+        package_type:
+          type: string
+          enum: [membership, first_trial, promo, bonus]
+          example: "membership"
+        quantity:
+          type: integer
+          example: 1
+        unit_price:
+          type: number
+          format: float
+          example: 500000.00
+        total_amount:
+          type: number
+          format: float
+          example: 500000.00
+        session_count:
+          type: integer
+          nullable: true
+          example: 12
+        duration_value:
+          type: integer
+          nullable: true
+          example: 1
+        duration_unit:
+          type: string
+          nullable: true
+          example: "month"
+        payment_method:
+          type: string
+          nullable: true
+          example: "bank_transfer"
+        payment_status:
+          type: string
+          enum: [pending, paid, failed, expired, cancelled]
+          example: "paid"
+        status:
+          type: string
+          enum: [pending, processing, completed, cancelled]
+          example: "completed"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-29T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-01-29T10:35:00Z"
+        package:
+          $ref: '#/components/schemas/PackageDetail'
+        payment:
+          $ref: '#/components/schemas/PaymentDetail'
+        member_package:
+          $ref: '#/components/schemas/MemberPackageDetailComplete'
+        midtrans:
+          $ref: '#/components/schemas/MidtransDetailComplete'
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-29T10:35:00Z"
+        expired_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-29T11:30:00Z"
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_by:
+          type: string
+          format: uuid
+          nullable: true
+        cancel_reason:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    PackageDetail:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174003"
+        name:
+          type: string
+          example: "Monthly Membership"
+        type:
+          type: string
+          enum: [membership, first_trial, promo, bonus]
+          example: "membership"
+        price:
+          type: number
+          format: float
+          example: 500000.00
+
+    MemberPackageDetailComplete:
+      type: object
+      nullable: true
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174002"
+        start_date:
+          type: string
+          format: date
+          example: "2025-01-29"
+        end_date:
+          type: string
+          format: date
+          example: "2025-02-28"
+        session_usage:
+          type: object
+          properties:
+            used:
+              type: object
+              properties:
+                group:
+                  type: integer
+                  example: 4
+                semi_private:
+                  type: integer
+                  example: 0
+                private:
+                  type: integer
+                  example: 0
+            remaining:
+              type: object
+              properties:
+                group:
+                  type: integer
+                  example: 8
+                semi_private:
+                  type: integer
+                  example: 2
+                private:
+                  type: integer
+                  example: 2
+
+    MidtransDetailComplete:
+      type: object
+      properties:
+        order_id:
+          type: string
+          nullable: true
+          example: "ORD-20250129-001"
+        payment_type:
+          type: string
+          nullable: true
+          example: "bank_transfer"
+        transaction_id:
+          type: string
+          nullable: true
+          example: "TRX-20250129-001"
+        transaction_status:
+          type: string
+          nullable: true
+          example: "settlement"
+        fraud_status:
+          type: string
+          nullable: true
+          example: "accept"
+        va_numbers:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              bank:
+                type: string
+                example: "bca"
+              va_number:
+                type: string
+                example: "12345678901"
+        payment_code:
+          type: string
+          nullable: true
+          example: "PAY-20250129-001"
+        pdf_url:
+          type: string
+          nullable: true
+          example: "https://api.midtrans.com/v2/12345678901/pdf"
+        redirect_url:
+          type: string
+          nullable: true
+          example: "https://app.midtrans.com/snap/v2/vtweb/12345678901"
+        token:
+          type: string
+          nullable: true
+          example: "eyJ0b2tlbiI6ImV4YW1wbGUtdG9rZW4ifQ==" 

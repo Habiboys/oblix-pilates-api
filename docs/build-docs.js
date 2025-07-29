@@ -142,8 +142,21 @@ if (categoryDoc) {
 // Load and merge order management endpoints
 const orderDoc = loadYamlFile(path.join(__dirname, 'order.yaml'));
 if (orderDoc) {
+  console.log('📋 Order doc paths:', Object.keys(orderDoc.paths || {}));
   mergePaths(baseDoc, orderDoc);
   console.log('✅ Merged order management endpoints');
+} else {
+  console.log('❌ Failed to load order.yaml');
+}
+
+// Load and merge dashboard endpoints
+const dashboardDoc = loadYamlFile(path.join(__dirname, 'dashboard.yaml'));
+if (dashboardDoc) {
+  console.log('📋 Dashboard doc paths:', Object.keys(dashboardDoc.paths || {}));
+  mergePaths(baseDoc, dashboardDoc);
+  console.log('✅ Merged dashboard endpoints');
+} else {
+  console.log('❌ Failed to load dashboard.yaml');
 }
 
 // Load and merge payment endpoints
@@ -311,6 +324,10 @@ if (myClassesDoc) {
   {
     name: 'My Classes',
     description: 'Member\'s class history and tracking endpoints'
+  },
+  {
+    name: 'Dashboard',
+    description: 'Admin dashboard with metrics and today\'s classes'
   }
   ];
 

@@ -1,0 +1,260 @@
+paths:
+  /dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard data
+      description: |
+        Retrieve complete dashboard data including metrics and today's classes.
+        
+        **Required Role:** Admin only
+        
+        **Response includes:**
+        - Key metrics (total members, classes, revenue)
+        - Today's classes with booking details
+        - Summary statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardData'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dashboard/metrics:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard metrics only
+      description: |
+        Retrieve only the key metrics for dashboard.
+        
+        **Required Role:** Admin only
+        
+        **Metrics included:**
+        - Total members
+        - Total classes
+        - Total revenue
+        - Pending orders
+        - Active bookings
+        - Today's bookings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardMetrics'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /dashboard/today-classes:
+    get:
+      tags:
+        - Dashboard
+      summary: Get today's classes only
+      description: |
+        Retrieve only today's classes with booking details.
+        
+        **Required Role:** Admin only
+        
+        **Response includes:**
+        - List of today's classes
+        - Booking counts and capacity
+        - Class status (active/minimum not met)
+        - Summary statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Today's classes retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TodayClassesData'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    DashboardData:
+      type: object
+      properties:
+        metrics:
+          $ref: '#/components/schemas/DashboardMetrics'
+        today_classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodayClass'
+        summary:
+          $ref: '#/components/schemas/DashboardSummary'
+
+    DashboardMetrics:
+      type: object
+      properties:
+        total_members:
+          type: integer
+          example: 27
+          description: Total number of registered members
+        total_classes:
+          type: integer
+          example: 31
+          description: Total number of scheduled classes
+        total_revenue:
+          type: number
+          format: float
+          example: 12500000.00
+          description: Total revenue from all paid orders
+        pending_orders:
+          type: integer
+          example: 5
+          description: Number of orders with pending payment
+        active_bookings:
+          type: integer
+          example: 45
+          description: Number of active bookings for future classes
+        today_bookings:
+          type: integer
+          example: 12
+          description: Number of bookings for today's classes
+
+    TodayClass:
+      type: object
+      properties:
+        no:
+          type: integer
+          example: 1
+          description: Sequential number
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        class_date:
+          type: string
+          example: "10 Jul 2025"
+          description: Formatted date of the class
+        time:
+          type: string
+          example: "07:10 - 08:00"
+          description: Class time range
+        course:
+          type: string
+          example: "Chair - Basic"
+          description: Class name
+        coach:
+          type: string
+          example: "Coach Silvia"
+          description: Trainer name
+        pax:
+          type: string
+          example: "9/10"
+          description: Current signups vs maximum capacity
+        schedule_type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "group"
+          description: Type of schedule
+        min_signup:
+          type: integer
+          example: 5
+          description: Minimum signups required for class to run
+        status:
+          type: string
+          enum: [active, minimum_not_met]
+          example: "active"
+          description: Class status based on minimum signup requirement
+
+    DashboardSummary:
+      type: object
+      properties:
+        total_today_classes:
+          type: integer
+          example: 8
+          description: Total number of classes scheduled for today
+        active_today_classes:
+          type: integer
+          example: 6
+          description: Number of classes that meet minimum signup requirement
+        minimum_not_met_classes:
+          type: integer
+          example: 2
+          description: Number of classes that don't meet minimum signup requirement
+
+    TodayClassesData:
+      type: object
+      properties:
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodayClass'
+        summary:
+          $ref: '#/components/schemas/DashboardSummary' 

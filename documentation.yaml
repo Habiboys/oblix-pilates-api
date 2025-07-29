@@ -6160,32 +6160,60 @@ paths:
     get:
       tags:
         - Order Management
-      summary: Get user orders
-      description: Retrieve paginated list of user's orders
+      summary: Get my orders
+      description: >
+        Retrieve all orders for the authenticated user with detailed information including payment details, member
+        package details, and Midtrans information.
+
+
+        **Available Status Filters:**
+
+        - **Order Status:** `pending`, `processing`, `completed`, `cancelled`
+
+        - **Payment Status:** `pending`, `paid`, `failed`, `expired`, `cancelled`
+
+
+        **Response includes:**
+
+        - Order details (package info, pricing, session count)
+
+        - Payment information (method, status, transaction details)
+
+        - Member package details (remaining sessions, validity period)
+
+        - Midtrans payment details (VA numbers, PDF URL, etc.)
+
+        - Timestamps (created, paid, expired, cancelled)
       security:
         - BearerAuth: []
       parameters:
-        - name: page
-          in: query
-          description: Page number
-          required: false
+        - in: query
+          name: page
           schema:
             type: integer
-            minimum: 1
             default: 1
-        - name: limit
-          in: query
-          description: Number of items per page
-          required: false
+            minimum: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
           schema:
             type: integer
+            default: 10
             minimum: 1
             maximum: 100
-            default: 10
-        - name: status
-          in: query
-          description: Filter by payment status
-          required: false
+          description: Number of items per page
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum:
+              - pending
+              - processing
+              - completed
+              - cancelled
+          description: Filter by order status
+        - in: query
+          name: payment_status
           schema:
             type: string
             enum:
@@ -6194,15 +6222,92 @@ paths:
               - failed
               - expired
               - cancelled
+          description: Filter by payment status
       responses:
         '200':
           description: Orders retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetUserOrdersResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          orders:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/MyOrderDetail'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /order/my-orders/{id}:
+    get:
+      tags:
+        - Order Management
+      summary: Get my order detail
+      description: |
+        Retrieve detailed information of a specific order for the authenticated user.
+
+        **Security:** Users can only access their own orders.
+
+        **Response includes:**
+        - Complete order information
+        - Package details
+        - Payment information with transaction details
+        - Member package details with session usage tracking
+        - Complete Midtrans payment information
+        - All timestamps and status information
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Order ID
+          example: 123e4567-e89b-12d3-a456-426614174000
+      responses:
+        '200':
+          description: Order detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MyOrderDetailComplete'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Order not found or access denied
           content:
             application/json:
               schema:
@@ -6338,6 +6443,148 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard data
+      description: |
+        Retrieve complete dashboard data including metrics and today's classes.
+
+        **Required Role:** Admin only
+
+        **Response includes:**
+        - Key metrics (total members, classes, revenue)
+        - Today's classes with booking details
+        - Summary statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardData'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboard/metrics:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard metrics only
+      description: |
+        Retrieve only the key metrics for dashboard.
+
+        **Required Role:** Admin only
+
+        **Metrics included:**
+        - Total members
+        - Total classes
+        - Total revenue
+        - Pending orders
+        - Active bookings
+        - Today's bookings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardMetrics'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /dashboard/today-classes:
+    get:
+      tags:
+        - Dashboard
+      summary: Get today's classes only
+      description: |
+        Retrieve only today's classes with booking details.
+
+        **Required Role:** Admin only
+
+        **Response includes:**
+        - List of today's classes
+        - Booking counts and capacity
+        - Class status (active/minimum not met)
+        - Summary statistics
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Today's classes retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TodayClassesData'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
           content:
             application/json:
               schema:
@@ -8651,3 +8898,5 @@ tags:
     description: Check class endpoints
   - name: My Classes
     description: Member's class history and tracking endpoints
+  - name: Dashboard
+    description: Admin dashboard with metrics and today's classes

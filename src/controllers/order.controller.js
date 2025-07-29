@@ -161,7 +161,14 @@ const createOrder = async (req, res) => {
       });
     }
 
-   
+    // Validate member status
+    if (member.status !== 'active') {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Akun Anda tidak aktif. Silakan hubungi admin untuk aktivasi.'
+      });
+    }
 
     // Validate quantity
     if (quantity <= 0 || quantity > 10) {
@@ -589,6 +596,282 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+// Get my orders (for authenticated user)
+const getMyOrders = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { page = 1, limit = 10, status = '', payment_status = '' } = req.query;
+        const offset = (page - 1) * limit;
+
+        // Get member ID from user ID
+        const member = await Member.findOne({
+            where: { user_id: userId }
+        });
+
+        if (!member) {
+            return res.status(404).json({
+                success: false,
+                message: 'Member not found'
+            });
+        }
+
+        const memberId = member.id;
+
+        // Build where clause
+        const whereClause = { member_id: memberId };
+        
+        if (status) {
+            whereClause.status = status;
+        }
+        
+        if (payment_status) {
+            whereClause.payment_status = payment_status;
+        }
+
+        // Get orders with related data
+        const orders = await Order.findAndCountAll({
+            where: whereClause,
+            include: [
+                { model: Package, attributes: ['id', 'name', 'type', 'price'] },
+                { model: Payment, attributes: ['id', 'payment_type', 'payment_status', 'transaction_time', 'settlement_time', 'createdAt'] },
+                { model: MemberPackage, attributes: ['id', 'start_date', 'end_date', 'remaining_group_session', 'remaining_semi_private_session', 'remaining_private_session'] }
+            ],
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [['createdAt', 'DESC']]
+        });
+
+        const totalPages = Math.ceil(orders.count / limit);
+
+        // Format response data
+        const formattedOrders = orders.rows.map(order => {
+            const orderData = {
+                id: order.id,
+                order_number: order.order_number,
+                package_name: order.package_name,
+                package_type: order.package_type,
+                quantity: order.quantity,
+                unit_price: parseFloat(order.unit_price),
+                total_amount: parseFloat(order.total_amount),
+                session_count: order.session_count,
+                duration_value: order.duration_value,
+                duration_unit: order.duration_unit,
+                payment_method: order.midtrans_payment_type,
+                payment_status: order.payment_status,
+                status: order.status,
+                created_at: order.createdAt,
+                updated_at: order.updatedAt,
+                
+                // Payment details
+                payment: order.Payment ? {
+                    id: order.Payment.id,
+                    payment_type: order.Payment.payment_type,
+                    payment_status: order.Payment.payment_status,
+                    transaction_time: order.Payment.transaction_time,
+                    settlement_time: order.Payment.settlement_time,
+                    created_at: order.Payment.createdAt
+                } : null,
+                
+                // Member package details (if exists)
+                member_package: order.MemberPackage ? {
+                    id: order.MemberPackage.id,
+                    start_date: order.MemberPackage.start_date,
+                    end_date: order.MemberPackage.end_date,
+                    remaining_sessions: {
+                        group: order.MemberPackage.remaining_group_session || 0,
+                        semi_private: order.MemberPackage.remaining_semi_private_session || 0,
+                        private: order.MemberPackage.remaining_private_session || 0
+                    }
+                } : null,
+                
+                // Midtrans details
+                midtrans: {
+                    order_id: order.midtrans_order_id,
+                    payment_type: order.midtrans_payment_type,
+                    transaction_id: order.midtrans_transaction_id,
+                    transaction_status: order.midtrans_transaction_status,
+                    fraud_status: order.midtrans_fraud_status,
+                    va_numbers: order.midtrans_va_numbers,
+                    payment_code: order.midtrans_payment_code,
+                    pdf_url: order.midtrans_pdf_url,
+                    redirect_url: order.midtrans_redirect_url
+                },
+                
+                // Timestamps
+                paid_at: order.paid_at,
+                expired_at: order.expired_at,
+                cancelled_at: order.cancelled_at,
+                cancelled_by: order.cancelled_by,
+                cancel_reason: order.cancel_reason,
+                notes: order.notes
+            };
+
+            return orderData;
+        });
+
+        res.json({
+            success: true,
+            message: 'My orders retrieved successfully',
+            data: {
+                orders: formattedOrders,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages: totalPages,
+                    totalItems: orders.count,
+                    itemsPerPage: parseInt(limit)
+                }
+            }
+        });
+    } catch (error) {
+        logger.error('Error getting my orders:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Get my order detail by ID (for authenticated user)
+const getMyOrderById = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+
+        // Get member ID from user ID
+        const member = await Member.findOne({
+            where: { user_id: userId }
+        });
+
+        if (!member) {
+            return res.status(404).json({
+                success: false,
+                message: 'Member not found'
+            });
+        }
+
+        const memberId = member.id;
+
+        // Get order with related data
+        const order = await Order.findOne({
+            where: { 
+                id: id,
+                member_id: memberId // Ensure user can only access their own orders
+            },
+            include: [
+                {
+                    model: Package,
+                    attributes: ['id', 'name', 'type', 'price']
+                },
+                {
+                    model: Payment,
+                    attributes: ['id', 'payment_type', 'payment_status', 'transaction_time', 'settlement_time', 'createdAt']
+                },
+                {
+                    model: MemberPackage,
+                    attributes: ['id', 'start_date', 'end_date', 'remaining_group_session', 'remaining_semi_private_session', 'remaining_private_session', 'used_group_session', 'used_semi_private_session', 'used_private_session']
+                }
+            ]
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found or you do not have access to this order'
+            });
+        }
+
+        // Format response data
+        const orderData = {
+            id: order.id,
+            order_number: order.order_number,
+            package_name: order.package_name,
+            package_type: order.package_type,
+            quantity: order.quantity,
+            unit_price: parseFloat(order.unit_price),
+            total_amount: parseFloat(order.total_amount),
+            session_count: order.session_count,
+            duration_value: order.duration_value,
+            duration_unit: order.duration_unit,
+            payment_method: order.midtrans_payment_type,
+            payment_status: order.payment_status,
+            status: order.status,
+            created_at: order.createdAt,
+            updated_at: order.updatedAt,
+            
+            // Package details
+            package: order.Package ? {
+                id: order.Package.id,
+                name: order.Package.name,
+                type: order.Package.type,
+                price: parseFloat(order.Package.price)
+            } : null,
+            
+            // Payment details
+            payment: order.Payment ? {
+                id: order.Payment.id,
+                payment_type: order.Payment.payment_type,
+                payment_status: order.Payment.payment_status,
+                transaction_time: order.Payment.transaction_time,
+                settlement_time: order.Payment.settlement_time,
+                created_at: order.Payment.createdAt
+            } : null,
+            
+            // Member package details (if exists)
+            member_package: order.MemberPackage ? {
+                id: order.MemberPackage.id,
+                start_date: order.MemberPackage.start_date,
+                end_date: order.MemberPackage.end_date,
+                session_usage: {
+                    used: {
+                        group: order.MemberPackage.used_group_session || 0,
+                        semi_private: order.MemberPackage.used_semi_private_session || 0,
+                        private: order.MemberPackage.used_private_session || 0
+                    },
+                    remaining: {
+                        group: order.MemberPackage.remaining_group_session || 0,
+                        semi_private: order.MemberPackage.remaining_semi_private_session || 0,
+                        private: order.MemberPackage.remaining_private_session || 0
+                    }
+                }
+            } : null,
+            
+            // Midtrans details
+            midtrans: {
+                order_id: order.midtrans_order_id,
+                payment_type: order.midtrans_payment_type,
+                transaction_id: order.midtrans_transaction_id,
+                transaction_status: order.midtrans_transaction_status,
+                fraud_status: order.midtrans_fraud_status,
+                va_numbers: order.midtrans_va_numbers,
+                payment_code: order.midtrans_payment_code,
+                pdf_url: order.midtrans_pdf_url,
+                redirect_url: order.midtrans_redirect_url,
+                token: order.midtrans_token
+            },
+            
+            // Timestamps
+            paid_at: order.paid_at,
+            expired_at: order.expired_at,
+            cancelled_at: order.cancelled_at,
+            cancelled_by: order.cancelled_by,
+            cancel_reason: order.cancel_reason,
+            notes: order.notes
+        };
+
+        res.json({
+            success: true,
+            message: 'Order detail retrieved successfully',
+            data: orderData
+        });
+    } catch (error) {
+        logger.error('Error getting my order detail:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 // Payment notification handler (webhook)
 const paymentNotification = async (req, res) => {
   try {
@@ -841,5 +1124,7 @@ module.exports = {
   paymentNotification,
   paymentFinish,
   paymentError,
-  paymentPending
+  paymentPending,
+  getMyOrders,
+  getMyOrderById
 }; 

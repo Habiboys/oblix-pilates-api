@@ -46,6 +46,9 @@ $ref: './schedule.yaml'
 # Import booking management endpoints
 $ref: './booking.yaml'
 
+# Import order management endpoints
+$ref: './order.yaml'
+
 # Import member package management endpoints
 $ref: './memberPackage.yaml'
 
@@ -58,11 +61,14 @@ $ref: './checkClass.yaml'
 # Import test endpoints
 $ref: './test.yaml'
 
-# Import class management endpoints
-$ref: './class.yaml'
-
 # Import my classes endpoints
-$ref: './myclasses.yaml'  
+$ref: './myclasses.yaml'
+
+# Import order management endpoints
+$ref: './order.yaml'
+
+# Import dashboard endpoints
+$ref: './dashboard.yaml'
 
 # Add tags for better organization
 tags:
@@ -97,10 +103,8 @@ tags:
   - name: Check Class
     description: Check available classes and package priority
   - name: Test & Development
-    description: Testing endpoints for development and integration 
-  - name: Class Management
-    description: Class type and configuration management
-  - name: Member Management
-    description: Member registration and management by admin
+    description: Testing endpoints for development and integration
   - name: My Classes
     description: Member's class history and tracking
+  - name: Dashboard
+    description: Admin dashboard with metrics and today's classes

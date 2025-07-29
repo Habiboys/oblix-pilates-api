@@ -56,10 +56,16 @@ const getUserOrdersSchema = Joi.object({
       'number.max': 'Limit cannot exceed 100'
     }),
   status: Joi.string()
+    .valid('pending', 'processing', 'completed', 'cancelled')
+    .optional()
+    .messages({
+      'any.only': 'Status must be one of: pending, processing, completed, cancelled'
+    }),
+  payment_status: Joi.string()
     .valid('pending', 'paid', 'failed', 'expired', 'cancelled')
     .optional()
     .messages({
-      'any.only': 'Status must be one of: pending, paid, failed, expired, cancelled'
+      'any.only': 'Payment status must be one of: pending, paid, failed, expired, cancelled'
     })
 });
 

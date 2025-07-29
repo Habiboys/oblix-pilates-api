@@ -15,7 +15,8 @@ const {
 
 // Order management routes (require authentication)
 router.post('/create', validateToken, validate(createOrderSchema), orderController.createOrder);
-router.get('/my-orders', validateToken, validate(getUserOrdersSchema, 'query'), orderController.getUserOrders);
+router.get('/my-orders', validateToken, validate(getUserOrdersSchema, 'query'), orderController.getMyOrders);
+router.get('/my-orders/:id', validateToken, validate(getOrderByIdSchema, 'params'), orderController.getMyOrderById);
 router.get('/:id', validateToken, validate(getOrderByIdSchema, 'params'), orderController.getOrderById);
 router.delete('/:order_id/cancel', validateToken, validate(cancelOrderSchema, 'params'), orderController.cancelOrder);
 
