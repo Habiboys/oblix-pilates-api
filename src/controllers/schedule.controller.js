@@ -96,9 +96,9 @@ const getAllGroupSchedules = async (req, res) => {
         });
 
         // Format schedules dengan informasi detail
-        const formattedSchedules = schedules.rows.map(schedule => 
+        const formattedSchedules = await Promise.all(schedules.rows.map(schedule => 
             ScheduleService.formatScheduleData(schedule, true)
-        );
+        ));
 
         const totalPages = Math.ceil(schedules.count / limit);
 
@@ -148,7 +148,7 @@ const getGroupScheduleById = async (req, res) => {
             });
         }
 
-        const scheduleData = ScheduleService.formatScheduleData(schedule, true);
+        const scheduleData = await ScheduleService.formatScheduleData(schedule, true);
 
         res.status(200).json({
             success: true,
@@ -524,9 +524,9 @@ const getAllSemiPrivateSchedules = async (req, res) => {
         });
 
         // Format schedules dengan informasi detail
-        const formattedSchedules = schedules.rows.map(schedule => 
+        const formattedSchedules = await Promise.all(schedules.rows.map(schedule => 
             ScheduleService.formatScheduleData(schedule, true)
-        );
+        ));
 
         const totalPages = Math.ceil(schedules.count / limit);
 
@@ -576,7 +576,7 @@ const getSemiPrivateScheduleById = async (req, res) => {
             });
         }
 
-        const scheduleData = ScheduleService.formatScheduleData(schedule, true);
+        const scheduleData = await ScheduleService.formatScheduleData(schedule, true);
 
         res.status(200).json({
             success: true,
@@ -952,9 +952,9 @@ const getAllPrivateSchedules = async (req, res) => {
         });
 
         // Format schedules dengan informasi detail
-        const formattedSchedules = schedules.rows.map(schedule => 
+        const formattedSchedules = await Promise.all(schedules.rows.map(schedule => 
             ScheduleService.formatScheduleData(schedule, true)
-        );
+        ));
 
         const totalPages = Math.ceil(schedules.count / limit);
 
@@ -1004,7 +1004,7 @@ const getPrivateScheduleById = async (req, res) => {
             });
         }
 
-        const scheduleData = ScheduleService.formatScheduleData(schedule, true);
+        const scheduleData = await ScheduleService.formatScheduleData(schedule, true);
 
         res.status(200).json({
             success: true,
@@ -1571,7 +1571,7 @@ whereClause.date_start = {
         });
         
         // Format data untuk calendar dengan informasi slot
-        const formattedSchedules = schedules.map(schedule => {
+        const formattedSchedules = await Promise.all(schedules.map(schedule => {
             // Hitung booking berdasarkan status
             const signupBookings = schedule.Bookings.filter(b => b.status === 'signup');
             const waitlistBookings = schedule.Bookings.filter(b => b.status === 'waiting_list');
@@ -1645,7 +1645,7 @@ whereClause.date_start = {
             }
             
             return scheduleData;
-        });
+        }));
         
         // Group schedules by date for easier calendar rendering
         const schedulesByDate = {};

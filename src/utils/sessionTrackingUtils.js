@@ -353,6 +353,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
         package_id: packageId,
         status: 'signup'
       },
+      attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
       include: [
         {
           model: Schedule,

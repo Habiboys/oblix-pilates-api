@@ -158,6 +158,7 @@ const testUserReminder = async (req, res) => {
             where: {
                 member_id: 'test-member-085142247464-uuid'
             },
+            attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
             include: [
                 {
                     model: Member,

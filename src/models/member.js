@@ -64,8 +64,9 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     status: {
-      type: DataTypes.STRING(50),
-      allowNull: false
+      type: DataTypes.ENUM('Registered', 'Active', 'Inactive'),
+      allowNull: false,
+      defaultValue: 'Registered'
     },
     user_id: {
       type: DataTypes.UUID,

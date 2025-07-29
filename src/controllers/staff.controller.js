@@ -169,7 +169,7 @@ const createStaff = async (req, res) => {
       phone_number,
       dob: date_of_birth,
       date_of_join: new Date(),
-      status: 'active'
+      status: 'Registered'
     });
 
     // Fetch the created user with Member association

@@ -40,14 +40,10 @@ const createStaffSchema = Joi.object({
       'any.required': 'Date of birth is required'
     }),
   phone_number: Joi.string()
-    .pattern(/^[0-9+\-\s()]+$/)
-    .min(10)
-    .max(50)
+    .pattern(/^\+62[0-9]{9,12}$/)
     .required()
     .messages({
-      'string.pattern.base': 'Phone number can only contain numbers, spaces, hyphens, parentheses, and plus signs',
-      'string.min': 'Phone number must be at least 10 characters long',
-      'string.max': 'Phone number cannot exceed 50 characters',
+      'string.pattern.base': 'Phone number must be in format +62xxxxxxxxx (e.g., +6281234567890)',
       'any.required': 'Phone number is required'
     }),
   password: Joi.string()
@@ -97,14 +93,10 @@ const updateStaffSchema = Joi.object({
       'date.max': 'Date of birth cannot be in the future'
     }),
   phone_number: Joi.string()
-    .pattern(/^[0-9+\-\s()]+$/)
-    .min(10)
-    .max(50)
+    .pattern(/^\+62[0-9]{9,12}$/)
     .optional()
     .messages({
-      'string.pattern.base': 'Phone number can only contain numbers, spaces, hyphens, parentheses, and plus signs',
-      'string.min': 'Phone number must be at least 10 characters long',
-      'string.max': 'Phone number cannot exceed 50 characters'
+      'string.pattern.base': 'Phone number must be in format +62xxxxxxxxx (e.g., +6281234567890)'
     }),
   password: Joi.string()
     .min(6)

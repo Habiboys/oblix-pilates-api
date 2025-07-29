@@ -691,6 +691,16 @@ const paymentNotification = async (req, res) => {
           settlement_time: status.settlement_time ? new Date(status.settlement_time) : null,
           midtrans_response: status
         });
+
+        // Update member status to 'Active' if this is a membership package
+        if (order.package_type === 'membership') {
+          const member = await Member.findByPk(order.member_id);
+          if (member && member.status === 'Registered') {
+            await member.update({ status: 'Active' });
+            console.log(`Member status updated to Active for member ${member.id}`);
+          }
+        }
+
         // Check if MemberPackage already exists for this order
         const existingMemberPackage = await MemberPackage.findOne({
           where: { order_id: order.id }
@@ -781,7 +791,7 @@ const paymentFinish = async (req, res) => {
     
     // Redirect to frontend with success status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/payment/success?order_id=${order_id}`;
+    const redirectUrl = `${frontendUrl}/my-package`;
     console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {

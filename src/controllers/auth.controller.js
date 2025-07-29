@@ -56,7 +56,7 @@ const register = async (req, res) => {
             dob: dob,
             address: '',
             date_of_join: new Date(),
-            status: 'active'
+            status: 'Registered'
         });
 
         // Kirim welcome email

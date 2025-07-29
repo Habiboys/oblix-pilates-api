@@ -61,6 +61,9 @@ $ref: './test.yaml'
 # Import class management endpoints
 $ref: './class.yaml'
 
+# Import my classes endpoints
+$ref: './myclasses.yaml'  
+
 # Add tags for better organization
 tags:
   - name: Authentication
@@ -99,3 +102,5 @@ tags:
     description: Class type and configuration management
   - name: Member Management
     description: Member registration and management by admin
+  - name: My Classes
+    description: Member's class history and tracking

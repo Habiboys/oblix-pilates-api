@@ -30,7 +30,7 @@ paths:
           name: status
           schema:
             type: string
-            enum: [active, inactive]
+            enum: [Registered, Active, Inactive]
           description: Filter by member status
       responses:
         '200':
@@ -120,44 +120,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /member/stats:
-    get:
-      tags:
-        - Member Management
-      summary: Get member statistics
-      description: Get member statistics including total, active, inactive, and new members this month (Admin only)
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Member statistics retrieved successfully
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MemberStats'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden - Admin role required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /member/{id}:
     get:
@@ -187,6 +149,377 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /member/{id}/profile:
+    get:
+      tags:
+        - Member Management
+      summary: Get member profile data
+      description: Retrieve member profile information only (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Member ID
+      responses:
+        '200':
+          description: Member profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          full_name:
+                            type: string
+                            example: "Jannetha Janet"
+                          username:
+                            type: string
+                            example: "janneth"
+                          email:
+                            type: string
+                            example: "janneth@gmail.com"
+                          date_of_birth:
+                            type: string
+                            example: "07-07-2000"
+                          phone_number:
+                            type: string
+                            example: "+62812345678"
+                          join_date:
+                            type: string
+                            example: "07-07-2000"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /member/{id}/packages:
+    get:
+      tags:
+        - Member Management
+      summary: Get member packages data
+      description: Retrieve member packages information only (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Member ID
+      responses:
+        '200':
+          description: Member packages retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            no:
+                              type: integer
+                              example: 1
+                            payment_date:
+                              type: string
+                              example: "2 Apr 2025"
+                            expired_date:
+                              type: string
+                              example: "1 Jun 2025"
+                            package:
+                              type: string
+                              example: "Monthly Package"
+                            initial_session:
+                              type: object
+                              properties:
+                                total:
+                                  type: integer
+                                  example: 8
+                                group:
+                                  type: integer
+                                  example: 8
+                                semi_private:
+                                  type: integer
+                                  example: 0
+                                private:
+                                  type: integer
+                                  example: 0
+                            session_left:
+                              type: object
+                              properties:
+                                total:
+                                  type: integer
+                                  example: 2
+                                group:
+                                  type: integer
+                                  example: 2
+                                semi_private:
+                                  type: integer
+                                  example: 0
+                                private:
+                                  type: integer
+                                  example: 0
+                            price:
+                              type: string
+                              example: "Rp500.000"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /member/{id}/bookings:
+    get:
+      tags:
+        - Member Management
+      summary: Get member bookings data
+      description: Retrieve member bookings information only (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Member ID
+      responses:
+        '200':
+          description: Member bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            no:
+                              type: integer
+                              example: 1
+                            booked_date:
+                              type: string
+                              example: "9 Jul 2025"
+                            class_date:
+                              type: string
+                              example: "10 Jul 2025"
+                            time:
+                              type: string
+                              example: "07:30 AM - 12:10 AM"
+                            course:
+                              type: string
+                              example: "Chair - Basic"
+                            coach:
+                              type: string
+                              example: "Coach Silvia"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /member/{id}/detail:
+    get:
+      tags:
+        - Member Management
+      summary: Get member detail with 3 tabs
+      description: Retrieve member detail information including profile, packages, and bookings (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Member ID
+      responses:
+        '200':
+          description: Member detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          profile:
+                            type: object
+                            properties:
+                              full_name:
+                                type: string
+                                example: "Jannetha Janet"
+                              username:
+                                type: string
+                                example: "janneth"
+                              email:
+                                type: string
+                                example: "janneth@gmail.com"
+                              date_of_birth:
+                                type: string
+                                example: "07-07-2000"
+                              phone_number:
+                                type: string
+                                example: "+62812345678"
+                              join_date:
+                                type: string
+                                example: "07-07-2000"
+                          packages:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                no:
+                                  type: integer
+                                  example: 1
+                                payment_date:
+                                  type: string
+                                  example: "2 Apr 2025"
+                                expired_date:
+                                  type: string
+                                  example: "1 Jun 2025"
+                                package:
+                                  type: string
+                                  example: "Monthly Package"
+                                initial_session:
+                                  type: integer
+                                  example: 8
+                                session_left:
+                                  type: integer
+                                  example: 2
+                                price:
+                                  type: string
+                                  example: "Rp500.000"
+                          bookings:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                no:
+                                  type: integer
+                                  example: 1
+                                booked_date:
+                                  type: string
+                                  example: "9 Jul 2025"
+                                class_date:
+                                  type: string
+                                  example: "10 Jul 2025"
+                                time:
+                                  type: string
+                                  example: "07:30 AM - 12:10 AM"
+                                course:
+                                  type: string
+                                  example: "Chair - Basic"
+                                coach:
+                                  type: string
+                                  example: "Coach Silvia"
         '401':
           description: Unauthorized
           content:
@@ -323,112 +656,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /member/my-classes:
-    get:
-      tags:
-        - Member Management
-      summary: Get member's classes by type
-      description: Get member's classes filtered by type (upcoming, waitlist, post, cancelled)
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: type
-          in: query
-          description: Type of classes to retrieve
-          required: false
-          schema:
-            type: string
-            enum: [upcoming, waitlist, post, cancelled]
-            default: upcoming
-      responses:
-        '200':
-          description: My classes retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "My upcoming classes retrieved successfully"
-                  data:
-                    type: object
-                    properties:
-                      type:
-                        type: string
-                        example: "upcoming"
-                      total_classes:
-                        type: integer
-                        example: 3
-                      classes:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            no:
-                              type: integer
-                              example: 1
-                            booking_id:
-                              type: string
-                              format: uuid
-                              example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
-                            class_date:
-                              type: string
-                              format: date
-                              example: "2025-07-29"
-                            time:
-                              type: string
-                              example: "07:30:00 - 08:30:00"
-                            course:
-                              type: string
-                              example: "Beginner Pilates"
-                            coach:
-                              type: string
-                              example: "Coach Lauren"
-                            spot:
-                              type: string
-                              example: "9/10"
-                            status:
-                              type: string
-                              enum: [signup, waiting_list, cancelled]
-                              example: "signup"
-                            schedule_id:
-                              type: string
-                              format: uuid
-                            class_id:
-                              type: string
-                              format: uuid
-                            trainer_id:
-                              type: string
-                              format: uuid
-                            notes:
-                              type: string
-                              nullable: true
-                            created_at:
-                              type: string
-                              format: date-time
-                            updated_at:
-                              type: string
-                              format: date-time
-                      additional_info:
-                        type: object
-                        nullable: true
-                        properties:
-                          message:
-                            type: string
-                            example: "If you're waitlisted, you'll be automatically added up to 120 mins before class if there's space—we'll notify you either way."
-        '400':
-          $ref: './base.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './base.yaml#/components/responses/Unauthorized'
-        '404':
-          $ref: './base.yaml#/components/responses/NotFound'
-        '500':
-          $ref: './base.yaml#/components/responses/InternalServerError'
-
 
 components:
   schemas:
@@ -469,8 +696,8 @@ components:
           description: URL to member's profile picture
         status:
           type: string
-          enum: [active, inactive]
-          description: Member status
+          enum: [Registered, Active, Inactive]
+          description: Member status (Registered = new user, Active = has bought packages, Inactive = disabled)
         user_id:
           type: string
           format: uuid
@@ -572,7 +799,7 @@ components:
           description: URL to profile picture
         status:
           type: string
-          enum: [active, inactive]
+          enum: [Registered, Active, Inactive]
           description: Member status
 
     MemberStats:

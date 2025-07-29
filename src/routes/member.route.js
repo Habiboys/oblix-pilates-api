@@ -8,16 +8,9 @@ const {
   updateMemberSchema,
   getMembersQuerySchema,
   memberIdSchema,
-  getMyClassesSchema,
 
 } = require('../validations/member.validation');
 
-// My Classes endpoints (user only - no admin role required) - HARUS DI ATAS ROUTE DENGAN PARAMETER
-router.get('/my-classes', 
-  validateToken, 
-  validate(getMyClassesSchema, 'query'), 
-  memberController.getMyClasses
-);
 
 
 // Admin routes (require admin role)
@@ -28,17 +21,45 @@ router.get('/',
   memberController.getAllMembers
 );
 
-router.get('/stats', 
-  validateToken,
-  checkRole('admin'),
-  memberController.getMemberStats
-);
+
 
 router.get('/:id',
   validateToken,
   checkRole('admin'),
   validate(memberIdSchema, 'params'),
   memberController.getMemberById
+);
+
+// Get member profile data only
+router.get('/:id/profile',
+  validateToken,
+  checkRole('admin'),
+  validate(memberIdSchema, 'params'),
+  memberController.getMemberProfile
+);
+
+// Get member packages data only
+router.get('/:id/packages',
+  validateToken,
+  checkRole('admin'),
+  validate(memberIdSchema, 'params'),
+  memberController.getMemberPackages
+);
+
+// Get member bookings data only
+router.get('/:id/bookings',
+  validateToken,
+  checkRole('admin'),
+  validate(memberIdSchema, 'params'),
+  memberController.getMemberBookings
+);
+
+// Get member detail with 3 tabs (Profile, Package, Bookings)
+router.get('/:id/detail',
+  validateToken,
+  checkRole('admin'),
+  validate(memberIdSchema, 'params'),
+  memberController.getMemberDetailById
 );
 
 router.post('/',

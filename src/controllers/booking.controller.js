@@ -344,7 +344,8 @@ const updateBookingStatus = async (req, res) => {
         // Update booking
         await booking.update({
             status: status || booking.status,
-            notes: notes || booking.notes
+            notes: notes || booking.notes,
+            cancelled_by: status === 'cancelled' ? req.user.id : null
         });
 
         // Update session usage jika status berubah dari waiting_list ke signup
@@ -448,7 +449,8 @@ const cancelBooking = async (req, res) => {
         // Cancel booking
         await booking.update({
             status: 'cancelled',
-            notes: cancelReason
+            notes: cancelReason,
+            cancelled_by: req.user.id // User yang melakukan cancel
         });
 
         // Send WhatsApp cancellation notification (async)
@@ -522,6 +524,145 @@ const cancelBooking = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error cancelling user booking:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+// Admin cancel booking
+const adminCancelBooking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body || {};
+        const cancelReason = reason || 'Booking dibatalkan oleh admin';
+
+        const booking = await Booking.findOne({
+            where: {
+                id: id,
+            },
+            include: [
+                {
+                    model: Schedule,
+                    include: [
+                        {
+                            model: require('../models').Class
+                        }
+                    ]
+                },
+                {
+                    model: Member,
+                    include: [
+                        {
+                            model: require('../models').User
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: 'Booking not found'
+            });
+        }
+
+        // Cek apakah booking sudah di-cancel
+        if (booking.status === 'cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: 'Booking sudah di-cancel sebelumnya'
+            });
+        }
+
+        // Cancel booking
+        await booking.update({
+            status: 'cancelled',
+            notes: cancelReason,
+            cancelled_by: req.user.id // Admin yang melakukan cancel
+        });
+
+        // Send WhatsApp cancellation notification (async)
+        try {
+            twilioService.sendAdminCancellation(
+                booking.Member.phone_number,
+                booking.Member.full_name,
+                booking.Schedule.Class.class_name,
+                booking.Schedule.date_start,
+                booking.Schedule.time_start,
+                cancelReason
+            ).then(result => {
+                if (result.success) {
+                    logger.info(`✅ Admin cancellation WhatsApp sent to ${booking.Member.full_name}`);
+                } else {
+                    logger.error(`❌ Failed to send admin cancellation WhatsApp to ${booking.Member.full_name}: ${result.error}`);
+                }
+            }).catch(error => {
+                logger.error(`❌ Error sending admin cancellation WhatsApp to ${booking.Member.full_name}:`, error);
+            });
+        } catch (error) {
+            logger.error('Error initiating admin cancellation WhatsApp:', error);
+        }
+
+        // Update session usage setelah cancel booking
+        try {
+            const memberPackage = await require('../models').MemberPackage.findOne({
+                where: {
+                    member_id: booking.member_id,
+                    package_id: booking.package_id
+                }
+            });
+            
+            if (memberPackage) {
+                await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
+                logger.info(`✅ Session usage updated after admin canceling booking for member ${booking.member_id}`);
+            }
+        } catch (error) {
+            logger.error(`❌ Failed to update session usage after admin cancel: ${error.message}`);
+        }
+
+        // Process waitlist promotion jika booking yang di-cancel adalah signup
+        let promotionResult = null;
+        if (booking.status === 'signup') {
+            try {
+                promotionResult = await processWaitlistPromotion(booking.schedule_id);
+                if (promotionResult) {
+                    logger.info(`✅ Waitlist promotion successful for schedule ${booking.schedule_id}. Promoted: ${promotionResult.Member?.full_name}`);
+                } else {
+                    logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id}`);
+                }
+            } catch (error) {
+                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: 'Booking berhasil dibatalkan oleh admin',
+            data: {
+                booking_id: booking.id,
+                schedule_id: booking.schedule_id,
+                member_name: booking.Member.full_name,
+                member_email: booking.Member.User?.email || '',
+                class_name: booking.Schedule.Class.class_name,
+                schedule_date: booking.Schedule.date_start,
+                schedule_time: booking.Schedule.time_start,
+                status: booking.status,
+                cancelled_at: booking.updatedAt,
+                cancelled_by: req.user.id,
+                cancel_reason: cancelReason,
+                promoted_from_waitlist: promotionResult ? {
+                    member_name: promotionResult.Member?.full_name,
+                    member_phone: promotionResult.Member?.phone_number,
+                    booking_id: promotionResult.id,
+                    promoted_at: promotionResult.updatedAt
+                } : null
+            }
+        });
+    } catch (error) {
+        logger.error('Error admin cancelling booking:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -631,6 +772,7 @@ const updateScheduleAttendance = async (req, res) => {
                 schedule_id,
                 status: 'signup'
             },
+            attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
             include: [
                 {
                     model: Member,
@@ -721,6 +863,6 @@ module.exports = {
     updateAttendance,
     updateScheduleAttendance,
     createUserBooking,
-    cancelBooking
-
+    cancelBooking,
+    adminCancelBooking
 }; 

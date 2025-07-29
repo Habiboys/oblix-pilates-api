@@ -1,198 +1,12 @@
-const { Booking, Schedule, Class, Trainer, Member, User } = require('../models');
+const { Booking, Schedule, Class, Trainer, Member, User, MemberPackage, Package, Order, PackageMembership, Category, PackageFirstTrial, PackagePromo, PackageBonus } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
+const { calculateAvailableSessions } = require('../utils/sessionTrackingUtils');
 
 /**
  * Get member's classes based on type (upcoming, waitlist, post, cancelled)
  */
-const getMyClasses = async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { type = 'upcoming' } = req.query;
 
-        logger.info(`Getting my classes for user ${userId}, type: ${type}`);
-
-        // Get member ID from user ID
-        const member = await Member.findOne({
-            where: { user_id: userId }
-        });
-
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: 'Member not found'
-            });
-        }
-
-        const memberId = member.id;
-        const currentDate = new Date();
-
-        // Build where clause based on type
-        let whereClause = {
-            member_id: memberId
-        };
-
-        let orderClause = [['createdAt', 'DESC']];
-
-        switch (type) {
-            case 'upcoming':
-                whereClause.status = {
-                    [Op.in]: ['signup', 'waiting_list']
-                };
-                orderClause = [['createdAt', 'ASC']];
-                break;
-
-            case 'waitlist':
-                whereClause.status = 'waiting_list';
-                orderClause = [['createdAt', 'ASC']];
-                break;
-
-            case 'post':
-                whereClause.status = {
-                    [Op.in]: ['signup', 'waiting_list']
-                };
-                orderClause = [['createdAt', 'DESC']];
-                break;
-
-            case 'cancelled':
-                whereClause.status = 'cancelled';
-                orderClause = [['updatedAt', 'DESC']];
-                break;
-
-            default:
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid type parameter. Use: upcoming, waitlist, post, or cancelled'
-                });
-        }
-
-        logger.info(`Where clause: ${JSON.stringify(whereClause)}`);
-
-        // Get bookings with schedule, class, and trainer information
-        const bookings = await Booking.findAll({
-            where: whereClause,
-            include: [
-                {
-                    model: Schedule,
-                    required: true, // Use INNER JOIN to ensure schedule exists
-                    include: [
-                        {
-                            model: Class,
-                            attributes: ['id', 'class_name', 'color_sign']
-                        },
-                        {
-                            model: Trainer,
-                            attributes: ['id', 'title', 'picture']
-                        }
-                    ]
-                }
-            ],
-            order: orderClause
-        });
-
-        // Filter by date after getting the data
-        const filteredBookings = bookings.filter(booking => {
-            if (!booking.Schedule) return false;
-            
-            const scheduleDate = booking.Schedule.date_start;
-            if (!scheduleDate) return false;
-
-            switch (type) {
-                case 'upcoming':
-                case 'waitlist':
-                    return scheduleDate >= currentDate.toISOString().split('T')[0];
-                case 'post':
-                    return scheduleDate < currentDate.toISOString().split('T')[0];
-                case 'cancelled':
-                    return true; // Show all cancelled regardless of date
-                default:
-                    return true;
-            }
-        });
-
-        logger.info(`Found ${filteredBookings.length} bookings after filtering`);
-
-        // Format response data
-        const formattedBookings = filteredBookings.map((booking, index) => {
-            try {
-                const schedule = booking.Schedule;
-                const classData = schedule?.Class;
-                const trainerData = schedule?.Trainer;
-
-                // Calculate spot information with default fallback
-                const scheduleType = schedule?.type || 'group';
-                const totalSpots = scheduleType === 'semi_private' ? 4 : 
-                                  scheduleType === 'private' ? 1 : 20;
-                
-                // Get booked count for this schedule
-                const bookedCount = booking.status === 'signup' ? 1 : 0; // Simplified for now
-
-                return {
-                    no: index + 1,
-                    booking_id: booking.id,
-                    class_date: schedule?.date_start || 'Unknown',
-                    time: schedule ? `${schedule.time_start} - ${schedule.time_end}` : 'Unknown',
-                    course: classData?.class_name || 'Unknown Class',
-                    coach: trainerData?.title || 'Unknown Coach',
-                    spot: `${bookedCount}/${totalSpots}`,
-                    status: booking.status,
-                    schedule_id: schedule?.id,
-                    class_id: classData?.id,
-                    trainer_id: trainerData?.id,
-                    notes: booking.notes,
-                    created_at: booking.createdAt,
-                    updated_at: booking.updatedAt
-                };
-            } catch (error) {
-                logger.error(`Error formatting booking ${booking.id}:`, error);
-                return {
-                    no: index + 1,
-                    booking_id: booking.id,
-                    class_date: 'Error',
-                    time: 'Error',
-                    course: 'Error',
-                    coach: 'Error',
-                    spot: '0/0',
-                    status: booking.status,
-                    schedule_id: null,
-                    class_id: null,
-                    trainer_id: null,
-                    notes: booking.notes,
-                    created_at: booking.createdAt,
-                    updated_at: booking.updatedAt
-                };
-            }
-        });
-
-        // Get additional info based on type
-        let additionalInfo = null;
-        
-        if (type === 'waitlist') {
-            additionalInfo = {
-                message: "If you're waitlisted, you'll be automatically added up to 120 mins before class if there's space—we'll notify you either way."
-            };
-        }
-
-        res.json({
-            success: true,
-            message: `My ${type} classes retrieved successfully`,
-            data: {
-                type: type,
-                total_classes: formattedBookings.length,
-                classes: formattedBookings,
-                additional_info: additionalInfo
-            }
-        });
-
-    } catch (error) {
-        logger.error('Error getting my classes:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error',
-            error: error.message
-        });
-    }
-};
 
 /**
  * Cancel a booking
@@ -288,6 +102,448 @@ const getMemberById = async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting member:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get member detail by ID (for admin view with 3 tabs)
+const getMemberDetailById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get member basic info
+    const member = await Member.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'email', 'role']
+        }
+      ]
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    // Get member packages with order details
+    const memberPackages = await MemberPackage.findAll({
+      where: { member_id: id },
+      include: [
+        {
+          model: Package,
+          attributes: ['id', 'name', 'price', 'type']
+        },
+        {
+          model: Order,
+          attributes: ['id', 'paid_at', 'total_amount', 'status', 'createdAt']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Get member bookings with schedule and class details
+    const bookings = await Booking.findAll({
+      where: { member_id: id },
+      attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Schedule,
+          include: [
+            {
+              model: Class,
+              attributes: ['id', 'class_name']
+            },
+            {
+              model: Trainer,
+              attributes: ['id', 'title']
+            }
+          ]
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Format packages data
+    const formattedPackages = memberPackages.map((mp, index) => {
+      // Calculate initial sessions based on package type
+      let initialGroupSessions = 0;
+      let initialSemiPrivateSessions = 0;
+      let initialPrivateSessions = 0;
+      let totalInitialSessions = 0;
+
+      if (mp.Package?.type === 'membership' && mp.Package?.PackageMembership) {
+        const sessionCount = mp.Package.PackageMembership.session || 0;
+        const categoryName = mp.Package.PackageMembership.Category?.category_name;
+        
+        if (categoryName === 'Semi-Private Class') {
+          initialSemiPrivateSessions = sessionCount;
+        } else if (categoryName === 'Private Class') {
+          initialPrivateSessions = sessionCount;
+        } else {
+          // Default ke group (termasuk 'Group Class' atau category lain)
+          initialGroupSessions = sessionCount;
+        }
+        totalInitialSessions = sessionCount;
+      } else if (mp.Package?.type === 'first_trial' && mp.Package?.PackageFirstTrial) {
+        initialGroupSessions = mp.Package.PackageFirstTrial.group_session || 0;
+        initialPrivateSessions = mp.Package.PackageFirstTrial.private_session || 0;
+        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
+      } else if (mp.Package?.type === 'promo' && mp.Package?.PackagePromo) {
+        initialGroupSessions = mp.Package.PackagePromo.group_session || 0;
+        initialPrivateSessions = mp.Package.PackagePromo.private_session || 0;
+        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
+      } else if (mp.Package?.type === 'bonus' && mp.Package?.PackageBonus) {
+        initialGroupSessions = mp.Package.PackageBonus.group_session || 0;
+        initialPrivateSessions = mp.Package.PackageBonus.private_session || 0;
+        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
+      }
+
+      // Get remaining sessions from member package
+      const remainingGroupSessions = mp.remaining_group_session || 0;
+      const remainingSemiPrivateSessions = mp.remaining_semi_private_session || 0;
+      const remainingPrivateSessions = mp.remaining_private_session || 0;
+      const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
+
+      return {
+        no: index + 1,
+        payment_date: mp.Order?.paid_at ? new Date(mp.Order.paid_at).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : (mp.Order?.createdAt ? new Date(mp.Order.createdAt).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : '-'),
+        expired_date: mp.end_date ? new Date(mp.end_date).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : '-',
+        package: mp.Package?.name || '-',
+        initial_session: {
+          total: totalInitialSessions,
+          group: initialGroupSessions,
+          semi_private: initialSemiPrivateSessions,
+          private: initialPrivateSessions
+        },
+        session_left: {
+          total: totalRemainingSessions,
+          group: remainingGroupSessions,
+          semi_private: remainingSemiPrivateSessions,
+          private: remainingPrivateSessions
+        },
+        price: mp.Order?.total_amount ? `Rp${mp.Order.total_amount.toLocaleString()}` : '-'
+      };
+    });
+
+    // Format bookings data
+    const formattedBookings = bookings.map((booking, index) => ({
+      no: index + 1,
+      booked_date: new Date(booking.createdAt).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }),
+      class_date: new Date(booking.Schedule.date_start).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }),
+      time: `${booking.Schedule.time_start} - ${booking.Schedule.time_end}`,
+      course: booking.Schedule.Class?.class_name || '-',
+      coach: booking.Schedule.Trainer?.title || '-'
+    }));
+
+    // Format member profile data
+    const profileData = {
+      full_name: member.full_name,
+      username: member.username,
+      email: member.User.email,
+      date_of_birth: member.dob ? new Date(member.dob).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }) : '-',
+      phone_number: member.phone_number,
+      join_date: member.date_of_join ? new Date(member.date_of_join).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }) : '-'
+    };
+
+    res.json({
+      success: true,
+      message: 'Member detail retrieved successfully',
+      data: {
+        profile: profileData,
+        packages: formattedPackages,
+        bookings: formattedBookings
+      }
+    });
+  } catch (error) {
+    console.error('Error getting member detail:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get member profile data only
+const getMemberProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const member = await Member.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: ['id', 'email', 'role']
+        }
+      ]
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    // Format member profile data
+    const profileData = {
+      full_name: member.full_name,
+      username: member.username,
+      email: member.User.email,
+      date_of_birth: member.dob ? new Date(member.dob).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }) : '-',
+      phone_number: member.phone_number,
+      join_date: member.date_of_join ? new Date(member.date_of_join).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }) : '-'
+    };
+
+    res.json({
+      success: true,
+      message: 'Member profile retrieved successfully',
+      data: profileData
+    });
+  } catch (error) {
+    console.error('Error getting member profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get member packages data only
+const getMemberPackages = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const member = await Member.findByPk(id);
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    // Get member packages with order details and package details
+    const memberPackages = await MemberPackage.findAll({
+      where: { member_id: id },
+      include: [
+        {
+          model: Package,
+          include: [
+            {
+              model: PackageMembership,
+              include: [{ model: Category }]
+            },
+            {
+              model: PackageFirstTrial
+            },
+            {
+              model: PackagePromo
+            },
+            {
+              model: PackageBonus
+            }
+          ]
+        },
+        {
+          model: Order,
+          attributes: ['id', 'paid_at', 'total_amount', 'status', 'createdAt']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Get total available sessions using utils
+    const sessionInfo = await calculateAvailableSessions(id);
+
+    // Format packages data
+    const formattedPackages = memberPackages.map((mp, index) => {
+      // Calculate initial sessions based on package type
+      let initialGroupSessions = 0;
+      let initialSemiPrivateSessions = 0;
+      let initialPrivateSessions = 0;
+      let totalInitialSessions = 0;
+
+      if (mp.Package?.type === 'membership' && mp.Package?.PackageMembership) {
+        const sessionCount = mp.Package.PackageMembership.session || 0;
+        const categoryName = mp.Package.PackageMembership.Category?.category_name;
+        
+        if (categoryName === 'Semi-Private Class') {
+          initialSemiPrivateSessions = sessionCount;
+        } else if (categoryName === 'Private Class') {
+          initialPrivateSessions = sessionCount;
+        } else {
+          // Default ke group (termasuk 'Group Class' atau category lain)
+          initialGroupSessions = sessionCount;
+        }
+        totalInitialSessions = sessionCount;
+      } else if (mp.Package?.type === 'first_trial' && mp.Package?.PackageFirstTrial) {
+        initialGroupSessions = mp.Package.PackageFirstTrial.group_session || 0;
+        initialPrivateSessions = mp.Package.PackageFirstTrial.private_session || 0;
+        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
+      } else if (mp.Package?.type === 'promo' && mp.Package?.PackagePromo) {
+        initialGroupSessions = mp.Package.PackagePromo.group_session || 0;
+        initialPrivateSessions = mp.Package.PackagePromo.private_session || 0;
+        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
+      } else if (mp.Package?.type === 'bonus' && mp.Package?.PackageBonus) {
+        initialGroupSessions = mp.Package.PackageBonus.group_session || 0;
+        initialPrivateSessions = mp.Package.PackageBonus.private_session || 0;
+        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
+      }
+
+      // Get remaining sessions from member package
+      const remainingGroupSessions = mp.remaining_group_session || 0;
+      const remainingSemiPrivateSessions = mp.remaining_semi_private_session || 0;
+      const remainingPrivateSessions = mp.remaining_private_session || 0;
+      const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
+
+      return {
+        no: index + 1,
+        payment_date: mp.Order?.paid_at ? new Date(mp.Order.paid_at).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : (mp.Order?.createdAt ? new Date(mp.Order.createdAt).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : '-'),
+        expired_date: mp.end_date ? new Date(mp.end_date).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : '-',
+        package: mp.Package?.name || '-',
+        initial_session: {
+          total: totalInitialSessions,
+          group: initialGroupSessions,
+          semi_private: initialSemiPrivateSessions,
+          private: initialPrivateSessions
+        },
+        session_left: {
+          total: totalRemainingSessions,
+          group: remainingGroupSessions,
+          semi_private: remainingSemiPrivateSessions,
+          private: remainingPrivateSessions
+        },
+        price: mp.Order?.total_amount ? `Rp${mp.Order.total_amount.toLocaleString()}` : '-'
+      };
+    });
+
+    res.json({
+      success: true,
+      message: 'Member packages retrieved successfully',
+      data: formattedPackages
+    });
+  } catch (error) {
+    console.error('Error getting member packages:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Get member bookings data only
+const getMemberBookings = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const member = await Member.findByPk(id);
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    // Get member bookings with schedule and class details
+    const bookings = await Booking.findAll({
+      where: { member_id: id },
+      attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
+      include: [
+        {
+          model: Schedule,
+          include: [
+            {
+              model: Class,
+              attributes: ['id', 'class_name']
+            },
+            {
+              model: Trainer,
+              attributes: ['id', 'title']
+            }
+          ]
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Format bookings data
+    const formattedBookings = bookings.map((booking, index) => ({
+      no: index + 1,
+      booked_date: new Date(booking.createdAt).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }),
+      class_date: new Date(booking.Schedule.date_start).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }),
+      time: `${booking.Schedule.time_start} - ${booking.Schedule.time_end}`,
+      course: booking.Schedule.Class?.class_name || '-',
+      coach: booking.Schedule.Trainer?.title || '-'
+    }));
+
+    res.json({
+      success: true,
+      message: 'Member bookings retrieved successfully',
+      data: formattedBookings
+    });
+  } catch (error) {
+    console.error('Error getting member bookings:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -535,56 +791,18 @@ const deleteMember = async (req, res) => {
   }
 };
 
-// Get member statistics
-const getMemberStats = async (req, res) => {
-  try {
-    const totalMembers = await Member.count();
-    const activeMembers = await Member.count({
-      where: { status: 'active' }
-    });
-    const inactiveMembers = await Member.count({
-      where: { status: 'inactive' }
-    });
-
-    // Get members joined this month
-    const currentDate = new Date();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-    const newMembersThisMonth = await Member.count({
-      where: {
-        date_of_join: {
-          [Op.between]: [firstDayOfMonth, lastDayOfMonth]
-        }
-        }
-    });
-
-    res.json({
-      success: true,
-      message: 'Member statistics retrieved successfully',
-      data: {
-        totalMembers,
-        activeMembers,
-        inactiveMembers,
-        newMembersThisMonth
-      }
-    });
-  } catch (error) {
-    console.error('Error getting member stats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-};
 
 module.exports = {
-    getMyClasses,
+
 
   getAllMembers,
   getMemberById,
+  getMemberDetailById,
   createMember,
   updateMember,
   deleteMember,
-  getMemberStats
+  getMemberProfile,
+  getMemberPackages,
+  getMemberBookings,
+ 
 }; 

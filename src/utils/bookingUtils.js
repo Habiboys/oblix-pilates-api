@@ -58,6 +58,7 @@ const autoCancelExpiredBookings = async () => {
                                 [Op.in]: ['signup', 'waiting_list']
                             }
                         },
+                        attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
                         include: [
                             {
                                 model: Member
@@ -70,7 +71,8 @@ const autoCancelExpiredBookings = async () => {
                         try {
                             await booking.update({
                                 status: 'cancelled',
-                                notes: `Auto-cancelled: Kelas dibatalkan karena tidak memenuhi minimum peserta (${signupCount}/${minSignup}) dalam ${cancelBufferMinutes} menit sebelum kelas`
+                                notes: `Auto-cancelled: Kelas dibatalkan karena tidak memenuhi minimum peserta (${signupCount}/${minSignup}) dalam ${cancelBufferMinutes} menit sebelum kelas`,
+                                cancelled_by: null // System auto-cancel
                             });
 
                             cancelledCount++;
@@ -223,6 +225,7 @@ const sendH1Reminders = async () => {
                     [Op.in]: ['signup', 'waiting_list']
                 }
             },
+            attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
             include: [
                 {
                     model: Schedule,
@@ -321,15 +324,15 @@ const getBookingStatistics = async () => {
                     [Op.gte]: today
                 }
             },
+            attributes: [
+                'id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt',
+                [require('sequelize').fn('COUNT', require('sequelize').col('Booking.id')), 'count']
+            ],
             include: [
                 {
                     model: Schedule,
                     attributes: ['id', 'date_start', 'time_start', 'type', 'min_signup']
                 }
-            ],
-            attributes: [
-                'status',
-                [require('sequelize').fn('COUNT', require('sequelize').col('Booking.id')), 'count']
             ],
             group: ['Booking.status', 'Schedule.id', 'Schedule.date_start', 'Schedule.time_start', 'Schedule.type', 'Schedule.min_signup']
         });

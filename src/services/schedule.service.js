@@ -1,6 +1,7 @@
-const { Schedule, Class, Trainer, Member, Booking } = require('../models');
+const { Schedule, Class, Trainer, Member, Booking, Package, User } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
+const { getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
 
 /**
  * Shared service untuk schedule operations
@@ -88,9 +89,40 @@ class ScheduleService {
     }
 
     /**
+     * Get session left info untuk member
+     */
+    static async getMemberSessionInfo(memberId, packageId) {
+        try {
+            const { MemberPackage } = require('../models');
+            const memberPackage = await MemberPackage.findOne({
+                where: {
+                    member_id: memberId,
+                    package_id: packageId
+                }
+            });
+
+            if (!memberPackage) {
+                return null;
+            }
+
+            return {
+                private_sessions_left: memberPackage.private_sessions_left || 0,
+                semi_private_sessions_left: memberPackage.semi_private_sessions_left || 0,
+                group_sessions_left: memberPackage.group_sessions_left || 0,
+                total_sessions_left: (memberPackage.private_sessions_left || 0) + 
+                                   (memberPackage.semi_private_sessions_left || 0) + 
+                                   (memberPackage.group_sessions_left || 0)
+            };
+        } catch (error) {
+            logger.error('Error getting member session info:', error);
+            return null;
+        }
+    }
+
+    /**
      * Format schedule data dengan informasi lengkap
      */
-    static formatScheduleData(schedule, includeBookings = false) {
+    static async formatScheduleData(schedule, includeBookings = false) {
         // Hitung booking berdasarkan status
         const signupBookings = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'signup') : [];
         const waitlistBookings = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'waiting_list') : [];
@@ -156,39 +188,89 @@ class ScheduleService {
         
         // Tambahkan detail booking jika diminta
         if (includeBookings && schedule.Bookings) {
-                    scheduleData.signup_bookings = signupBookings.map(b => ({
-            id: b.id,
-            member_id: b.Member.id,
-            member_name: b.Member.full_name,
-            member_phone: b.Member.phone_number,
-            member_email: b.Member.User?.email || '',
-            status: b.status,
-            attendance: b.attendance,
-            notes: b.notes,
-            created_at: b.createdAt
-        }));
-                    scheduleData.waitlist_bookings = waitlistBookings.map(b => ({
-            id: b.id,
-            member_id: b.Member.id,
-            member_name: b.Member.full_name,
-            member_phone: b.Member.phone_number,
-            member_email: b.Member.User?.email || '',
-            status: b.status,
-            attendance: b.attendance,
-            notes: b.notes,
-            created_at: b.createdAt
-        }));
-                    scheduleData.cancelled_bookings = cancelledBookings.map(b => ({
-            id: b.id,
-            member_id: b.Member.id,
-            member_name: b.Member.full_name,
-            member_phone: b.Member.phone_number,
-            member_email: b.Member.User?.email || '',
-            status: b.status,
-            attendance: b.attendance,
-            notes: b.notes,
-            created_at: b.createdAt
-        }));
+            // Get session summary for each member
+            const bookingPromises = schedule.Bookings.map(async (b) => {
+                let sessionSummary = null;
+                try {
+                    sessionSummary = await getMemberSessionSummary(b.member_id);
+                } catch (error) {
+                    logger.error(`Error getting session summary for member ${b.member_id}:`, error);
+                }
+                return { booking: b, sessionSummary };
+            });
+
+            const bookingsWithSessions = await Promise.all(bookingPromises);
+
+            scheduleData.signup_bookings = bookingsWithSessions
+                .filter(item => item.booking.status === 'signup')
+                .map(item => ({
+                    id: item.booking.id,
+                    member_id: item.booking.Member.id,
+                    member_name: item.booking.Member.full_name,
+                    member_phone: item.booking.Member.phone_number,
+                    member_email: item.booking.Member.User?.email || '',
+                    status: item.booking.status,
+                    attendance: item.booking.attendance,
+                    notes: item.booking.notes,
+                    created_at: item.booking.createdAt,
+                    // Tambahkan session left info
+                    session_left: item.sessionSummary ? {
+                        total_available_sessions: item.sessionSummary.total_available_sessions,
+                        packages: item.sessionSummary.packages
+                    } : null,
+                    package_info: item.booking.Package ? {
+                        package_name: item.booking.Package.name,
+                        package_type: item.booking.Package.type
+                    } : null
+                }));
+            
+            scheduleData.waitlist_bookings = bookingsWithSessions
+                .filter(item => item.booking.status === 'waiting_list')
+                .map(item => ({
+                    id: item.booking.id,
+                    member_id: item.booking.Member.id,
+                    member_name: item.booking.Member.full_name,
+                    member_phone: item.booking.Member.phone_number,
+                    member_email: item.booking.Member.User?.email || '',
+                    status: item.booking.status,
+                    attendance: item.booking.attendance,
+                    notes: item.booking.notes,
+                    created_at: item.booking.createdAt,
+                    // Tambahkan session left info
+                    session_left: item.sessionSummary ? {
+                        total_available_sessions: item.sessionSummary.total_available_sessions,
+                        packages: item.sessionSummary.packages
+                    } : null,
+                    package_info: item.booking.Package ? {
+                        package_name: item.booking.Package.name,
+                        package_type: item.booking.Package.type
+                    } : null
+                }));
+            
+            scheduleData.cancelled_bookings = bookingsWithSessions
+                .filter(item => item.booking.status === 'cancelled')
+                .map(item => ({
+                    id: item.booking.id,
+                    member_id: item.booking.Member.id,
+                    member_name: item.booking.Member.full_name,
+                    member_phone: item.booking.Member.phone_number,
+                    member_email: item.booking.Member.User?.email || '',
+                    status: item.booking.status,
+                    attendance: item.booking.attendance,
+                    notes: item.booking.notes,
+                    created_at: item.booking.createdAt,
+                    cancelled_at: item.booking.updatedAt,
+                    cancelled_by: item.booking.cancelled_by,
+                    // Tambahkan session left info
+                    session_left: item.sessionSummary ? {
+                        total_available_sessions: item.sessionSummary.total_available_sessions,
+                        packages: item.sessionSummary.packages
+                    } : null,
+                    package_info: item.booking.Package ? {
+                        package_name: item.booking.Package.name,
+                        package_type: item.booking.Package.type
+                    } : null
+                }));
         }
         
         return scheduleData;
@@ -209,7 +291,7 @@ class ScheduleService {
             }
         ];
 
-        // Tambahkan assigned member untuk private schedule
+        // Add assigned member for private schedules
         if (type === 'private') {
             includes.push({
                 model: Member,
@@ -217,36 +299,36 @@ class ScheduleService {
                 attributes: ['id', 'full_name', 'phone_number'],
                 include: [
                     {
-                        model: require('../models').User,
+                        model: User,
                         attributes: ['email']
                     }
                 ]
             });
         }
 
-        // Tambahkan booking associations
-        const bookingStatuses = type === 'private' ? ['signup', 'cancelled'] : ['signup', 'waiting_list', 'cancelled'];
-        includes.push({
-            model: Booking,
-            where: {
-                status: {
-                    [Op.in]: bookingStatuses
-                }
-            },
-            required: false,
-            include: includeBookings ? [
-                {
-                    model: Member,
-                    attributes: ['id', 'full_name', 'phone_number'],
-                    include: [
-                        {
-                            model: require('../models').User,
-                            attributes: ['email']
-                        }
-                    ]
-                }
-            ] : []
-        });
+        // Add bookings if requested
+        if (includeBookings) {
+            includes.push({
+                model: Booking,
+                attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt', 'cancelled_by'],
+                include: [
+                    {
+                        model: Member,
+                        attributes: ['id', 'full_name', 'phone_number'],
+                        include: [
+                            {
+                                model: User,
+                                attributes: ['email']
+                            }
+                        ]
+                    },
+                    {
+                        model: Package,
+                        attributes: ['id', 'name', 'type']
+                    }
+                ]
+            });
+        }
 
         return includes;
     }

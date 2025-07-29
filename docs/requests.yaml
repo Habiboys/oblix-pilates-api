@@ -27,8 +27,9 @@ components:
           format: date
         phone_number:
           type: string
-          minLength: 10
-          maxLength: 15
+          pattern: '^\+62[0-9]{9,12}$'
+          description: Phone number in format +62xxxxxxxxx (e.g., +6281234567890)
+          example: "+6281234567890"
         password:
           type: string
           minLength: 6
@@ -201,8 +202,9 @@ components:
           maxLength: 150
         phone_number:
           type: string
-          minLength: 10
-          maxLength: 15
+          pattern: '^\+62[0-9]{9,12}$'
+          description: Phone number in format +62xxxxxxxxx (e.g., +6281234567890)
+          example: "+6281234567890"
         address:
           type: string
         picture:
@@ -1044,11 +1046,9 @@ components:
           example: "1990-01-15"
         phone_number:
           type: string
-          pattern: '^[0-9+\\-\\s()]+$'
-          minLength: 10
-          maxLength: 20
-          description: Phone number
-          example: "+62 812-3456-7890"
+          pattern: '^\+62[0-9]{9,12}$'
+          description: Phone number in format +62xxxxxxxxx (e.g., +6281234567890)
+          example: "+6281234567890"
         password:
           type: string
           minLength: 6
@@ -1085,11 +1085,9 @@ components:
           example: "1990-01-15"
         phone_number:
           type: string
-          pattern: '^[0-9+\\-\\s()]+$'
-          minLength: 10
-          maxLength: 20
-          description: Phone number
-          example: "+62 812-3456-7890"
+          pattern: '^\+62[0-9]{9,12}$'
+          description: Phone number in format +62xxxxxxxxx (e.g., +6281234567890)
+          example: "+6281234567890"
         password:
           type: string
           minLength: 6

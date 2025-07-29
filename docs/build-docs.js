@@ -223,7 +223,15 @@ if (checkClassDoc) {
   console.log('❌ Failed to load checkClass.yaml');
 }
 
-
+// Load and merge my classes endpoints
+const myClassesDoc = loadYamlFile(path.join(__dirname, 'myclasses.yaml'));
+if (myClassesDoc) {
+  console.log('📋 My Classes doc paths:', Object.keys(myClassesDoc.paths || {}));
+  mergePaths(baseDoc, myClassesDoc);
+  console.log('✅ Merged my classes endpoints');
+} else {
+  console.log('❌ Failed to load myclasses.yaml');
+}
 
 
     // Add tags
@@ -299,6 +307,10 @@ if (checkClassDoc) {
   {
     name: 'Check Class',
     description: 'Check class endpoints'
+  },
+  {
+    name: 'My Classes',
+    description: 'Member\'s class history and tracking endpoints'
   }
   ];
 

@@ -13,10 +13,13 @@ const updateProfileSchema = Joi.object({
         'string.min': 'Username must be at least 3 characters long',
         'string.max': 'Username cannot exceed 50 characters'
     }),
-    phone_number: Joi.string().min(10).max(15).allow('', null).optional().messages({
-        'string.min': 'Phone number must be at least 10 characters long',
-        'string.max': 'Phone number cannot exceed 15 characters'
-    }),
+    phone_number: Joi.string()
+        .pattern(/^\+62[0-9]{9,12}$/)
+        .allow('', null)
+        .optional()
+        .messages({
+            'string.pattern.base': 'Phone number must be in format +62xxxxxxxxx (e.g., +6281234567890)'
+        }),
     dob: Joi.date().allow('', null).optional().messages({
         'date.base': 'Date of birth must be a valid date'
     }),

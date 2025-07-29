@@ -1401,6 +1401,44 @@ components:
               created_at:
                 type: string
                 format: date-time
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
         waitlist_bookings:
           type: array
           description: "List of waitlist bookings with member details"
@@ -1432,6 +1470,44 @@ components:
               created_at:
                 type: string
                 format: date-time
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
         cancelled_bookings:
           type: array
           description: "List of cancelled bookings with member details"
@@ -1463,6 +1539,53 @@ components:
               created_at:
                 type: string
                 format: date-time
+              cancelled_at:
+                type: string
+                format: date-time
+                description: "When the booking was cancelled"
+              cancelled_by:
+                type: string
+                format: uuid
+                nullable: true
+                description: "User ID who cancelled the booking (null for system auto-cancel)"
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
 
     SemiPrivateSchedule:
       type: object
@@ -1710,6 +1833,44 @@ components:
               created_at:
                 type: string
                 format: date-time
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
         waitlist_bookings:
           type: array
           description: "List of waitlist bookings with member details"
@@ -1741,6 +1902,44 @@ components:
               created_at:
                 type: string
                 format: date-time
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
         cancelled_bookings:
           type: array
           description: "List of cancelled bookings with member details"
@@ -1772,6 +1971,53 @@ components:
               created_at:
                 type: string
                 format: date-time
+              cancelled_at:
+                type: string
+                format: date-time
+                description: "When the booking was cancelled"
+              cancelled_by:
+                type: string
+                format: uuid
+                nullable: true
+                description: "User ID who cancelled the booking (null for system auto-cancel)"
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
 
     PrivateSchedule:
       type: object
@@ -2029,6 +2275,44 @@ components:
               created_at:
                 type: string
                 format: date-time
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
         cancelled_bookings:
           type: array
           description: "List of cancelled bookings with member details"
@@ -2060,6 +2344,53 @@ components:
               created_at:
                 type: string
                 format: date-time
+              cancelled_at:
+                type: string
+                format: date-time
+                description: "When the booking was cancelled"
+              cancelled_by:
+                type: string
+                format: uuid
+                nullable: true
+                description: "User ID who cancelled the booking (null for system auto-cancel)"
+              session_left:
+                type: object
+                nullable: true
+                description: "Member's remaining session information"
+                properties:
+                  total_available_sessions:
+                    type: integer
+                    description: "Total available sessions across all packages"
+                  packages:
+                    type: array
+                    description: "List of packages with remaining sessions"
+                    items:
+                      type: object
+                      properties:
+                        package_id:
+                          type: string
+                          format: uuid
+                        package_name:
+                          type: string
+                        package_type:
+                          type: string
+                          enum: [membership, first_trial, promo, bonus]
+                        available_sessions:
+                          type: integer
+                        total_sessions:
+                          type: integer
+                        used_sessions:
+                          type: integer
+              package_info:
+                type: object
+                nullable: true
+                description: "Package information used for this booking"
+                properties:
+                  package_name:
+                    type: string
+                  package_type:
+                    type: string
+                    enum: [membership, first_trial, promo, bonus]
 
     CreateGroupScheduleRequest:
       type: object

@@ -6,10 +6,20 @@ const { validate } = require('../middlewares/validation.middleware');
 const { 
 
     createUserBookingSchema,
-    cancelBookingSchema
+    cancelBookingSchema,
+    updateBookingStatusSchema,
+    adminCancelBookingSchema
 } = require('../validations/booking.validation');
 
 
+
+// Admin routes (admin role required)
+router.put('/:id/status', 
+    validateToken,
+    checkRole('admin'),
+    validate(updateBookingStatusSchema, 'body'),
+    bookingController.updateBookingStatus
+);
 
 router.put('/:id/attendance', 
     validateToken,
@@ -21,6 +31,13 @@ router.put('/schedule/:schedule_id/attendance',
     validateToken,
     checkRole('admin'),
     bookingController.updateScheduleAttendance
+);
+
+router.put('/:id/admin-cancel', 
+    validateToken,
+    checkRole('admin'),
+    validate(adminCancelBookingSchema, 'body'),
+    bookingController.adminCancelBooking
 );
 
 

@@ -44,11 +44,11 @@ paths:
       description: |
         Callback URL untuk redirect user setelah pembayaran berhasil.
         Endpoint ini dipanggil oleh Midtrans Snap ketika user mengklik tombol "Kembali ke Merchant"
-        atau setelah pembayaran selesai. User akan di-redirect ke frontend success page.
+        atau setelah pembayaran selesai. User akan di-redirect ke halaman my-package.
         
-        **URL Redirect:** `{FRONTEND_URL}/payment/success?order_id={order_id}`
+        **URL Redirect:** `{FRONTEND_URL}/my-package`
         
-        **Contoh:** `https://oblix-pilates.vercel.app/payment/success?order_id=ORD-123456789`
+        **Contoh:** `https://oblix-pilates.vercel.app/my-package`
       parameters:
         - name: order_id
           in: query
@@ -81,13 +81,13 @@ paths:
             example: "200"
       responses:
         '302':
-          description: Redirect to frontend success page
+          description: Redirect to frontend my-package page
           headers:
             Location:
-              description: Redirect URL to frontend success page
+              description: Redirect URL to frontend my-package page
               schema:
                 type: string
-                example: "https://oblix-pilates.vercel.app/payment/success?order_id=ORD-1753523164857-424"
+                example: "https://oblix-pilates.vercel.app/my-package"
   
   /order/payment/error:
     get:

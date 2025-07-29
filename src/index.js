@@ -27,6 +27,7 @@ const memberRoutes = require('./routes/member.route');
 const checkClassRoutes = require('./routes/checkClass.route');
 const testRoutes = require('./routes/test.route');
 const reminderRoutes = require('./routes/reminder.route');
+const myClassesRoutes = require('./routes/myclasses.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
@@ -84,7 +85,7 @@ app.use('/api/member', memberRoutes);
 app.use('/api/check-class', checkClassRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/reminder', reminderRoutes);
-
+app.use('/api/my-classes', myClassesRoutes);
 app.get('/', (req, res) => {
   res.send('Hello World');
 });

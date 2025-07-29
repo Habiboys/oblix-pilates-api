@@ -1,0 +1,159 @@
+paths:
+  /my-classes:
+    get:
+      tags:
+        - My Classes
+      summary: Get member's classes by type
+      description: Get member's classes filtered by type (upcoming, waitlist, post, cancelled)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Type of classes to retrieve
+          required: false
+          schema:
+            type: string
+            enum: [upcoming, waitlist, post, cancelled]
+            default: upcoming
+      responses:
+        '200':
+          description: My classes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "My upcoming classes retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: "upcoming"
+                      total_classes:
+                        type: integer
+                        example: 3
+                      classes:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            no:
+                              type: integer
+                              example: 1
+                            booking_id:
+                              type: string
+                              format: uuid
+                              example: "6b8f4d2e-1a3c-4e8b-9d7f-2c5a8e1b4f9d"
+                            class_date:
+                              type: string
+                              format: date
+                              example: "2025-07-29"
+                            time:
+                              type: string
+                              example: "07:30:00 - 08:30:00"
+                            course:
+                              type: string
+                              example: "Beginner Pilates"
+                            coach:
+                              type: string
+                              example: "Coach Lauren"
+                            spot:
+                              type: string
+                              example: "9/10"
+                            status:
+                              type: string
+                              enum: [signup, waiting_list, cancelled]
+                              example: "signup"
+                            schedule_id:
+                              type: string
+                              format: uuid
+                            class_id:
+                              type: string
+                              format: uuid
+                            trainer_id:
+                              type: string
+                              format: uuid
+                            notes:
+                              type: string
+                              nullable: true
+                            created_at:
+                              type: string
+                              format: date-time
+                            updated_at:
+                              type: string
+                              format: date-time
+                      additional_info:
+                        type: object
+                        nullable: true
+                        properties:
+                          message:
+                            type: string
+                            example: "If you're waitlisted, you'll be automatically added up to 120 mins before class if there's space—we'll notify you either way."
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Bad request"
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Internal server error"

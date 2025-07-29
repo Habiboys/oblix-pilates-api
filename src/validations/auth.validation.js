@@ -20,11 +20,13 @@ const registerSchema = Joi.object({
         'date.base': 'Date of birth must be a valid date',
         'any.required': 'Date of birth is required'
     }),
-    phone_number: Joi.string().min(10).max(15).required().messages({
-        'string.min': 'Phone number must be at least 10 characters long',
-        'string.max': 'Phone number cannot exceed 15 characters',
-        'any.required': 'Phone number is required'
-    }),
+    phone_number: Joi.string()
+        .pattern(/^\+62[0-9]{9,12}$/)
+        .required()
+        .messages({
+            'string.pattern.base': 'Phone number must be in format +62xxxxxxxxx (e.g., +6281234567890)',
+            'any.required': 'Phone number is required'
+        }),
     password: Joi.string().min(6).required().messages({
         'string.min': 'Password must be at least 6 characters long',
         'any.required': 'Password is required'

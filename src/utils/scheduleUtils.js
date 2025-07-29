@@ -85,6 +85,7 @@ const validateMemberScheduleConflict = async (memberId, dateStart, timeStart, ti
 
         const memberBookings = await Booking.findAll({
             where: whereClause,
+            attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
             include: [
                 {
                     model: Schedule,

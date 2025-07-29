@@ -436,6 +436,118 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /booking/{id}/admin-cancel:
+    put:
+      tags:
+        - Booking Management
+      summary: Admin cancel booking
+      description: Allow admin to cancel any booking
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID of the booking to cancel
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174001"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Optional reason for cancellation
+                  example: "Class cancelled due to trainer unavailability"
+      responses:
+        '200':
+          description: Booking cancelled successfully by admin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Booking berhasil dibatalkan oleh admin
+                  data:
+                    type: object
+                    properties:
+                      booking_id:
+                        type: string
+                        format: uuid
+                        example: "123e4567-e89b-12d3-a456-426614174001"
+                      schedule_id:
+                        type: string
+                        format: uuid
+                        example: "123e4567-e89b-12d3-a456-426614174002"
+                      member_name:
+                        type: string
+                        example: "John Doe"
+                      member_email:
+                        type: string
+                        example: "john@example.com"
+                      class_name:
+                        type: string
+                        example: "Pilates Mat"
+                      schedule_date:
+                        type: string
+                        format: date
+                        example: "2025-01-20"
+                      schedule_time:
+                        type: string
+                        format: time
+                        example: "09:00"
+                      status:
+                        type: string
+                        enum: [cancelled]
+                        example: "cancelled"
+                      cancelled_at:
+                        type: string
+                        format: date-time
+                        example: "2025-01-15T10:30:00Z"
+                      cancelled_by:
+                        type: string
+                        format: uuid
+                        example: "123e4567-e89b-12d3-a456-426614174003"
+                      cancel_reason:
+                        type: string
+                        example: "Class cancelled due to trainer unavailability"
+                      promoted_from_waitlist:
+                        type: object
+                        nullable: true
+                        description: Information about booking promoted from waitlist
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Booking sudah di-cancel sebelumnya
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   schemas:
     BookingResponse:
