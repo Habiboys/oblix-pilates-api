@@ -69,7 +69,7 @@ const getTrainerById = async (req, res) => {
 // Create new trainer
 const createTrainer = async (req, res) => {
     try {
-        const { title, description, instagram, tiktok } = req.body;
+        const { title, description, rate_per_class, instagram, tiktok } = req.body;
 
         // Check if trainer with same title already exists
         const existingTrainer = await Trainer.findOne({ where: { title } });
@@ -89,6 +89,7 @@ const createTrainer = async (req, res) => {
         const trainerData = {
             title,
             description,
+            rate_per_class: rate_per_class ? parseInt(rate_per_class) : null,
             instagram: instagram || null,
             tiktok: tiktok || null,
             picture: req.file ? req.file.filename : null
@@ -117,7 +118,7 @@ const createTrainer = async (req, res) => {
 const updateTrainer = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, instagram, tiktok } = req.body;
+        const { title, description, rate_per_class, instagram, tiktok } = req.body;
 
         const trainer = await Trainer.findByPk(id);
 
@@ -159,6 +160,7 @@ const updateTrainer = async (req, res) => {
         const updateData = {};
         if (title !== undefined) updateData.title = title;
         if (description !== undefined) updateData.description = description;
+        if (rate_per_class !== undefined) updateData.rate_per_class = rate_per_class ? parseInt(rate_per_class) : null;
         if (instagram !== undefined) updateData.instagram = instagram || null;
         if (tiktok !== undefined) updateData.tiktok = tiktok || null;
 

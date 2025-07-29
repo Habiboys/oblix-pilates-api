@@ -401,6 +401,10 @@ components:
           nullable: true
         description:
           type: string
+        rate_per_class:
+          type: integer
+          nullable: true
+          description: Rate per class in currency units
         instagram:
           type: string
           nullable: true

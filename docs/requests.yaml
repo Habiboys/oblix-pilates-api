@@ -269,6 +269,10 @@ components:
           type: string
           minLength: 10
           maxLength: 1000
+        rate_per_class:
+          type: integer
+          minimum: 0
+          description: Rate per class in currency units
         instagram:
           type: string
           format: uri
@@ -291,6 +295,10 @@ components:
           type: string
           minLength: 10
           maxLength: 1000
+        rate_per_class:
+          type: integer
+          minimum: 0
+          description: Rate per class in currency units
         instagram:
           type: string
           format: uri

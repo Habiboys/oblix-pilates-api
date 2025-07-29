@@ -13,6 +13,11 @@ const createTrainerSchema = Joi.object({
         'string.max': 'Description cannot exceed 1000 characters',
         'any.required': 'Description is required'
     }),
+    rate_per_class: Joi.number().integer().min(0).allow('', null).optional().messages({
+        'number.base': 'Rate per class must be a number',
+        'number.integer': 'Rate per class must be a whole number',
+        'number.min': 'Rate per class cannot be negative'
+    }),
     instagram: Joi.string().uri().allow('', null).optional().messages({
         'string.uri': 'Instagram must be a valid URL'
     }),
@@ -29,6 +34,11 @@ const updateTrainerSchema = Joi.object({
     description: Joi.string().min(10).max(1000).optional().messages({
         'string.min': 'Description must be at least 10 characters long',
         'string.max': 'Description cannot exceed 1000 characters'
+    }),
+    rate_per_class: Joi.number().integer().min(0).allow('', null).optional().messages({
+        'number.base': 'Rate per class must be a number',
+        'number.integer': 'Rate per class must be a whole number',
+        'number.min': 'Rate per class cannot be negative'
     }),
     instagram: Joi.string().uri().allow('', null).optional().messages({
         'string.uri': 'Instagram must be a valid URL'

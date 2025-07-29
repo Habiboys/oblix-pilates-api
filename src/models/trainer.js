@@ -26,6 +26,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(255),
       allowNull: false
     },
+    rate_per_class: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     picture: {
       type: DataTypes.STRING(255),
       allowNull: true
