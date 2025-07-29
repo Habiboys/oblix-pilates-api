@@ -70,6 +70,9 @@ $ref: './order.yaml'
 # Import dashboard endpoints
 $ref: './dashboard.yaml'
 
+# Import report endpoints
+$ref: './report.yaml'
+
 # Add tags for better organization
 tags:
   - name: Authentication
@@ -108,3 +111,5 @@ tags:
     description: Member's class history and tracking
   - name: Dashboard
     description: Admin dashboard with metrics and today's classes
+  - name: Report
+    description: Revenue and payroll reporting system

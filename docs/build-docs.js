@@ -159,6 +159,16 @@ if (dashboardDoc) {
   console.log('❌ Failed to load dashboard.yaml');
 }
 
+// Load and merge report endpoints
+const reportDoc = loadYamlFile(path.join(__dirname, 'report.yaml'));
+if (reportDoc) {
+  console.log('📋 Report doc paths:', Object.keys(reportDoc.paths || {}));
+  mergePaths(baseDoc, reportDoc);
+  console.log('✅ Merged report endpoints');
+} else {
+  console.log('❌ Failed to load report.yaml');
+}
+
 // Load and merge payment endpoints
 const paymentEndpointsDoc = loadYamlFile(path.join(__dirname, 'payment-endpoints.yaml'));
 if (paymentEndpointsDoc) {
@@ -328,6 +338,10 @@ if (myClassesDoc) {
   {
     name: 'Dashboard',
     description: 'Admin dashboard with metrics and today\'s classes'
+  },
+  {
+    name: 'Report',
+    description: 'Revenue and payroll reporting system'
   }
   ];
 

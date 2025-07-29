@@ -1,0 +1,432 @@
+paths:
+  /report/revenue:
+    get:
+      tags:
+        - Report
+      summary: Get revenue report
+      description: |
+        Retrieve revenue report with payment details and metrics.
+        
+        **Required Role:** Admin only
+        
+        **Features:**
+        - Filter by date range (default: current month)
+        - Total members, payments, and revenue metrics
+        - Detailed payment list with member and package information
+        
+        **Date Format:** YYYY-MM-DD
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+          description: Start date for report (YYYY-MM-DD)
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+          description: End date for report (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Revenue report retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RevenueReportData'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /report/payroll:
+    get:
+      tags:
+        - Report
+      summary: Get payroll report
+      description: |
+        Retrieve payroll report with instructor details and metrics.
+        
+        **Required Role:** Admin only
+        
+        **Features:**
+        - Filter by date range (default: current month)
+        - Total instructors, classes, and pay metrics
+        - Detailed payroll list by instructor
+        - **Only counts classes that actually happened (have signup bookings)**
+        
+        **Date Format:** YYYY-MM-DD
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+          description: Start date for report (YYYY-MM-DD)
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+          description: End date for report (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Payroll report retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PayrollReportData'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /report/payroll/{instructor_id}:
+    get:
+      tags:
+        - Report
+      summary: Get payroll detail by instructor
+      description: |
+        Retrieve detailed payroll information for a specific instructor.
+        
+        **Required Role:** Admin only
+        
+        **Features:**
+        - Filter by date range (default: current month)
+        - Instructor summary and class details
+        - Individual class breakdown with attendance
+        - **Only shows classes that actually happened (have signup bookings)**
+        
+        **Date Format:** YYYY-MM-DD
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: instructor_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Instructor ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+          description: Start date for report (YYYY-MM-DD)
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+          description: End date for report (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Payroll detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PayrollDetailData'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Instructor not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RevenueReportData:
+      type: object
+      properties:
+        metrics:
+          $ref: '#/components/schemas/RevenueMetrics'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentDetail'
+        date_range:
+          $ref: '#/components/schemas/DateRange'
+
+    RevenueMetrics:
+      type: object
+      properties:
+        total_members:
+          type: integer
+          example: 27
+          description: Total number of registered members
+        total_payments:
+          type: integer
+          example: 3
+          description: Total number of successful payments in date range
+        total_revenue:
+          type: number
+          format: float
+          example: 12500000.00
+          description: Total revenue from successful payments in date range
+
+    PaymentDetail:
+      type: object
+      properties:
+        no:
+          type: integer
+          example: 1
+          description: Sequential number
+        payment_date:
+          type: string
+          example: "10 Jul 2025"
+          description: Formatted payment date
+        payment_time:
+          type: string
+          example: "07:10 AM"
+          description: Formatted payment time
+        package_name:
+          type: string
+          example: "Monthly Basic"
+          description: Name of the purchased package
+        member_name:
+          type: string
+          example: "Sutejo"
+          description: Name of the member who made the payment
+        payment_method:
+          type: string
+          example: "GRIS"
+          description: Payment method used
+        price:
+          type: number
+          format: float
+          example: 500000.00
+          description: Payment amount
+
+    PayrollReportData:
+      type: object
+      properties:
+        metrics:
+          $ref: '#/components/schemas/PayrollMetrics'
+        payroll:
+          type: array
+          items:
+            $ref: '#/components/schemas/PayrollItem'
+        date_range:
+          $ref: '#/components/schemas/DateRange'
+
+    PayrollMetrics:
+      type: object
+      properties:
+        total_instructors:
+          type: integer
+          example: 3
+          description: Total number of instructors
+        total_classes:
+          type: integer
+          example: 3
+          description: Total number of classes in date range
+        total_pay:
+          type: number
+          format: float
+          example: 12500000.00
+          description: Total payroll amount
+
+    PayrollItem:
+      type: object
+      properties:
+        no:
+          type: integer
+          example: 1
+          description: Sequential number
+        instructor_id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        instructor_name:
+          type: string
+          example: "Lauren"
+          description: Name of the instructor
+        total_class:
+          type: integer
+          example: 3
+          description: Total number of classes taught
+        total_member:
+          type: integer
+          example: 30
+          description: Total number of members across all classes
+        rate_per_class:
+          type: integer
+          example: 500000
+          description: Rate per class for this instructor
+        payroll_date:
+          type: string
+          example: "1 Jul 2025"
+          description: Formatted payroll date
+        total_salary:
+          type: number
+          format: float
+          example: 500000.00
+          description: Total salary for the instructor
+
+    PayrollDetailData:
+      type: object
+      properties:
+        instructor:
+          $ref: '#/components/schemas/InstructorInfo'
+        summary:
+          $ref: '#/components/schemas/PayrollSummary'
+        class_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassDetail'
+        date_range:
+          $ref: '#/components/schemas/DateRange'
+
+    InstructorInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        name:
+          type: string
+          example: "Lauren"
+          description: Name of the instructor
+
+    PayrollSummary:
+      type: object
+      properties:
+        total_class:
+          type: integer
+          example: 3
+          description: Total number of classes taught
+        total_member:
+          type: integer
+          example: 30
+          description: Total number of members across all classes
+        rate_per_class:
+          type: integer
+          example: 500000
+          description: Rate per class for this instructor
+        payroll_date:
+          type: string
+          example: "1 Jul 2025"
+          description: Formatted payroll date
+        total_salary:
+          type: number
+          format: float
+          example: 500000.00
+          description: Total salary for the instructor
+
+    ClassDetail:
+      type: object
+      properties:
+        no:
+          type: integer
+          example: 1
+          description: Sequential number
+        class_date:
+          type: string
+          example: "10 Jul 2025"
+          description: Formatted class date
+        time:
+          type: string
+          example: "07:10 AM - 12:10 AM"
+          description: Class time range
+        course:
+          type: string
+          example: "Chair - Basic"
+          description: Name of the class
+        spot:
+          type: string
+          example: "9/10"
+          description: Current signups vs maximum capacity
+        schedule_type:
+          type: string
+          enum: [group, semi_private, private]
+          example: "group"
+          description: Type of schedule
+
+    DateRange:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date
+          example: "2025-01-01"
+          description: Start date of the report period
+        end_date:
+          type: string
+          format: date
+          example: "2025-01-31"
+          description: End date of the report period 
