@@ -161,14 +161,7 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Validate member status
-    if (member.status !== 'active') {
-      await transaction.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'Akun Anda tidak aktif. Silakan hubungi admin untuk aktivasi.'
-      });
-    }
+   
 
     // Validate quantity
     if (quantity <= 0 || quantity > 10) {
