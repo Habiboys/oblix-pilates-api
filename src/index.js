@@ -33,9 +33,9 @@ const reportRoutes = require('./routes/report.route');
 // const swaggerUi = require('swagger-ui-express');
 // const YAML = require('yamljs');
 // const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
-const { logger, errorLogger } = require('./middlewares/logger.middleware');
-const { startAllCronJobs } = require('./cron/bookingCron');
-const { startReminderCronJobs } = require('./cron/reminderCron');
+// const { logger, errorLogger } = require('./middlewares/logger.middleware');
+// const { startAllCronJobs } = require('./cron/bookingCron');
+// const { startReminderCronJobs } = require('./cron/reminderCron');
 
 // Middleware untuk logging semua request
 app.use(logger);
@@ -113,6 +113,6 @@ app.listen(PORT, () => {
   console.log(`Logs will be saved to: logs/api-${new Date().toISOString().split('T')[0]}.log`);
   
   // Start cron jobs
-  startAllCronJobs();
-  startReminderCronJobs();
+  // startAllCronJobs();
+  // startReminderCronJobs();
 });
