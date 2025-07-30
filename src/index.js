@@ -30,9 +30,9 @@ const reminderRoutes = require('./routes/reminder.route');
 const myClassesRoutes = require('./routes/myclasses.route');
 const dashboardRoutes = require('./routes/dashboard.route');
 const reportRoutes = require('./routes/report.route');
-const swaggerUi = require('swagger-ui-express');
-const YAML = require('yamljs');
-const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
+// const swaggerUi = require('swagger-ui-express');
+// const YAML = require('yamljs');
+// const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
 const { logger, errorLogger } = require('./middlewares/logger.middleware');
 const { startAllCronJobs } = require('./cron/bookingCron');
 const { startReminderCronJobs } = require('./cron/reminderCron');
@@ -40,12 +40,12 @@ const { startReminderCronJobs } = require('./cron/reminderCron');
 // Middleware untuk logging semua request
 app.use(logger);
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  swaggerOptions: {
-    cacheControl: false,
-    persistAuthorization: false
-  }
-}));
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+//   swaggerOptions: {
+//     cacheControl: false,
+//     persistAuthorization: false
+//   }
+// }));
 
 app.use(express.json());
 // app.use(cors({
