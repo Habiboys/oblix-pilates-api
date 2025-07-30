@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
+    "start:prod": "node --max-old-space-size=3072 src/index.js",
     "dev": "nodemon src/index.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
