@@ -57,7 +57,8 @@ app.use(express.json());
 app.use(cors({
   origin: [
     'https://oblix-pilates.vercel.app',
-    'http://localhost:5173' // untuk development
+    'http://localhost:5173', // untuk development
+    'https://oblixpilates.id'
   ],
   credentials: true
 }));
