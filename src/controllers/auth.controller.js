@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const emailService = require('../services/email.service');
-require('dotenv').config('../../.env');
+require('dotenv').config();
 
 const register = async (req, res) => {
     try {
