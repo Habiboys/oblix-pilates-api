@@ -33,7 +33,7 @@ const reportRoutes = require('./routes/report.route');
 // const swaggerUi = require('swagger-ui-express');
 // const YAML = require('yamljs');
 // const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
-// const { logger, errorLogger } = require('./middlewares/logger.middleware');
+const { logger, errorLogger } = require('./middlewares/logger.middleware');
 // const { startAllCronJobs } = require('./cron/bookingCron');
 // const { startReminderCronJobs } = require('./cron/reminderCron');
 
