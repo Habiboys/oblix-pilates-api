@@ -5,7 +5,6 @@
   "scripts": {
     "start": "node src/index.js",
     "start:prod": "node --max-old-space-size=4096 src/index.js",
-    "start:shared": "node --max-old-space-size=512 src/index.js",
     "dev": "nodemon src/index.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
