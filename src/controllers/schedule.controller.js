@@ -1214,7 +1214,13 @@ const createPrivateSchedule = async (req, res) => {
                 {
                     model: Member,
                     as: 'assignedMember',
-                    attributes: ['id', 'full_name', 'email', 'phone_number']
+                    attributes: ['id', 'full_name', 'phone_number'],
+                    include: [
+                        {
+                            model: User,
+                            attributes: ['id', 'email']
+                        }
+                    ]
                 }
             ]
         });
@@ -1237,7 +1243,7 @@ const createPrivateSchedule = async (req, res) => {
                 assignedMember: {
                     id: member.id,
                     full_name: member.full_name,
-                    email: member.email
+                    email: member.User?.email || null
                 }
             }
         });
@@ -1406,7 +1412,13 @@ const updatePrivateSchedule = async (req, res) => {
                 {
                     model: Member,
                     as: 'assignedMember',
-                    attributes: ['id', 'full_name', 'email', 'phone_number']
+                    attributes: ['id', 'full_name', 'phone_number'],
+                    include: [
+                        {
+                            model: User,
+                            attributes: ['id', 'email']
+                        }
+                    ]
                 }
             ]
         });
