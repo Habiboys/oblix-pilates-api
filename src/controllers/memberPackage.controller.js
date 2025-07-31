@@ -144,6 +144,7 @@ const getMyPackages = async (req, res) => {
         remaining_semi_private_session: remainingSemiPrivateSessions,
         remaining_private_session: remainingPrivateSessions,
         is_active: (() => {
+          const currentDate = new Date();
           const isNotExpired = new Date(memberPackage.end_date) >= currentDate;
           const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
           const isBonusPackage = memberPackage.Package?.type === 'bonus';
