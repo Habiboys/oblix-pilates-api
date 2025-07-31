@@ -16,60 +16,75 @@ const getRevenueReport = async (req, res) => {
         // Get total members
         const totalMembers = await Member.count();
 
-        // Get total payments
+        // Get total payments from Payment table
         const totalPayments = await Payment.count({
             where: {
                 payment_status: 'success',
-                createdAt: {
-                    [Op.between]: [startDate, endDate + ' 23:59:59']
+                transaction_time: {
+                    [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
                 }
             }
         });
 
-        // Get total revenue
-        const totalRevenue = await Order.sum('total_amount', {
+        // Get total revenue from Payment table
+        const paymentsForRevenue = await Payment.findAll({
             where: {
-                payment_status: 'paid',
-                paid_at: {
-                    [Op.between]: [startDate, endDate + ' 23:59:59']
-                }
-            }
-        });
-
-        // Get payment details
-        const payments = await Order.findAll({
-            where: {
-                payment_status: 'paid',
-                paid_at: {
-                    [Op.between]: [startDate, endDate + ' 23:59:59']
+                payment_status: 'success',
+                transaction_time: {
+                    [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
                 }
             },
             include: [
                 {
-                    model: Member,
-                    attributes: ['id', 'full_name']
+                    model: Order,
+                    attributes: ['total_amount']
+                }
+            ]
+        });
+
+        const totalRevenue = paymentsForRevenue.reduce((sum, payment) => {
+            return sum + (parseFloat(payment.Order?.total_amount) || 0);
+        }, 0);
+
+        // Get payment details with Order and Member information
+        const payments = await Payment.findAll({
+            where: {
+                payment_status: 'success',
+                transaction_time: {
+                    [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
+                }
+            },
+            include: [
+                {
+                    model: Order,
+                    include: [
+                        {
+                            model: Member,
+                            attributes: ['id', 'full_name']
+                        }
+                    ]
                 }
             ],
-            order: [['paid_at', 'DESC']]
+            order: [['transaction_time', 'DESC']]
         });
 
         // Format payment data
-        const formattedPayments = payments.map((order, index) => ({
+        const formattedPayments = payments.map((payment, index) => ({
             no: index + 1,
-            payment_date: new Date(order.paid_at).toLocaleDateString('en-GB', {
+            payment_date: new Date(payment.transaction_time).toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'
             }),
-            payment_time: new Date(order.paid_at).toLocaleTimeString('en-US', {
+            payment_time: new Date(payment.transaction_time).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
             }),
-            package_name: order.package_name,
-            member_name: order.Member?.full_name || 'Unknown Member',
-            payment_method: order.midtrans_payment_type || 'Unknown',
-            price: parseFloat(order.total_amount)
+            package_name: payment.Order?.package_name || 'Unknown Package',
+            member_name: payment.Order?.Member?.full_name || 'Unknown Member',
+            payment_method: payment.payment_type || 'Unknown',
+            price: parseFloat(payment.Order?.total_amount) || 0
         }));
 
         res.json({
