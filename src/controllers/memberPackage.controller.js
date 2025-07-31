@@ -180,13 +180,29 @@ const getMyPackages = async (req, res) => {
       })
       .map((pkg, index) => ({
         no: index + 1,
-        invoice_number: pkg.order.invoice_number || 'BONUS-PACKAGE',
-        payment_date: pkg.order.payment_date || pkg.start_date,
-        expired_date: pkg.end_date,
         package_name: pkg.package_name,
-        session_count: pkg.total_session,
-        price: pkg.order.total_amount || '0.00',
-        order_id: pkg.order.id || null
+        package_type: pkg.package_type,
+        start_date: pkg.start_date,
+        expired_date: pkg.end_date,
+        total_session: pkg.total_session,
+        used_session: pkg.used_session,
+        remaining_session: pkg.remaining_session,
+        progress_percentage: pkg.progress_percentage,
+        group_sessions: {
+          total: pkg.group_sessions,
+          used: pkg.used_group_session,
+          remaining: pkg.remaining_group_session
+        },
+        semi_private_sessions: {
+          total: pkg.semi_private_sessions,
+          used: pkg.used_semi_private_session,
+          remaining: pkg.remaining_semi_private_session
+        },
+        private_sessions: {
+          total: pkg.private_sessions,
+          used: pkg.used_private_session,
+          remaining: pkg.remaining_private_session
+        }
       }));
 
     // Format response
@@ -195,8 +211,14 @@ const getMyPackages = async (req, res) => {
       message: 'My packages retrieved successfully',
       data: {
         current_active_package: currentActivePackage ? {
-          package_name: currentActivePackage.package_name || (currentActivePackage.package_type === 'bonus' ? 'Paket Bonus' : 'Unknown Package'),
+          package_name: currentActivePackage.package_name,
+          package_type: currentActivePackage.package_type,
+          start_date: currentActivePackage.start_date,
           validity_until: currentActivePackage.end_date,
+          total_session: currentActivePackage.total_session,
+          used_session: currentActivePackage.used_session,
+          remaining_session: currentActivePackage.remaining_session,
+          progress_percentage: currentActivePackage.progress_percentage,
           session_group_classes: {
             used: currentActivePackage.used_group_session || 0,
             total: currentActivePackage.group_sessions,
