@@ -2790,6 +2790,7 @@ components:
         - waitlist_lock_minutes
         - min_signup
         - cancel_buffer_minutes
+      description: "Private schedule always has pax=1 and requires member assignment with auto booking"
       properties:
         class_id:
           type: string
@@ -2803,7 +2804,7 @@ components:
           type: string
           format: uuid
           example: "member-uuid-789"
-          description: "Member assigned to this private schedule"
+          description: "Member assigned to this private schedule (required for private schedules, will be auto-booked)"
         date_start:
           type: string
           format: date
@@ -2850,7 +2851,9 @@ components:
         min_signup:
           type: integer
           minimum: 1
+          maximum: 1
           example: 1
+          description: "For private schedules, always set to 1 (one member only)"
         cancel_buffer_minutes:
           type: integer
           minimum: 0
