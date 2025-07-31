@@ -1,5 +1,5 @@
 const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category, Order, Booking } = require('../models');
-const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getCurrentActivePackage } = require('../utils/sessionTrackingUtils');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getTotalAvailableSessions, getAllMemberPackagesByPriority } = require('../utils/sessionTrackingUtils');
 
 const getMyPackages = async (req, res) => {
   try {
@@ -56,8 +56,11 @@ const getMyPackages = async (req, res) => {
       order: [['end_date', 'DESC']]
     });
 
-    // Get current active package using priority system
-    const priorityActivePackage = await getCurrentActivePackage(member_id);
+    // Get total available sessions from all packages
+    const totalAvailableSessions = await getTotalAvailableSessions(member_id);
+    
+    // Get all member packages sorted by priority for history
+    const allMemberPackages = await getAllMemberPackagesByPriority(member_id);
 
     // Process packages with updated session data
     const packagesWithUsage = memberPackages.map((memberPackage) => {
@@ -162,74 +165,111 @@ const getMyPackages = async (req, res) => {
       };
     });
 
-    // Separate active package and history
-    const currentActivePackage = packagesWithUsage.find(pkg => pkg.is_active);
-    const packageHistory = packagesWithUsage
-      .filter(pkg => {
+    // Remove old package history logic since we're using new approach
+
+    // Process packages for history (sorted by priority)
+    const packageHistory = allMemberPackages
+      .filter(memberPackage => {
         // Include paket yang memiliki order paid ATAU paket bonus
-        const hasValidOrder = pkg.order.payment_status === 'paid';
-        const isBonusPackage = pkg.package_type === 'bonus';
+        const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
+        const isBonusPackage = memberPackage.Package?.type === 'bonus';
         return hasValidOrder || isBonusPackage;
       })
-      .map((pkg, index) => ({
-        no: index + 1,
-        package_name: pkg.package_name,
-        package_type: pkg.package_type,
-        start_date: pkg.start_date,
-        expired_date: pkg.end_date,
-        total_session: pkg.total_session,
-        used_session: pkg.used_session,
-        remaining_session: pkg.remaining_session,
-        progress_percentage: pkg.progress_percentage,
-        group_sessions: {
-          total: pkg.group_sessions,
-          used: pkg.used_group_session,
-          remaining: pkg.remaining_group_session
-        },
-        semi_private_sessions: {
-          total: pkg.semi_private_sessions,
-          used: pkg.used_semi_private_session,
-          remaining: pkg.remaining_semi_private_session
-        },
-        private_sessions: {
-          total: pkg.private_sessions,
-          used: pkg.used_private_session,
-          remaining: pkg.remaining_private_session
+      .map((memberPackage, index) => {
+        // Calculate session details for this package
+        let totalSessions = 0;
+        let groupSessions = 0;
+        let semiPrivateSessions = 0;
+        let privateSessions = 0;
+        
+        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+          const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+          const sessionCount = memberPackage.Package.PackageMembership.session || 0;
+          
+          if (categoryName === 'Semi-Private Class') {
+            semiPrivateSessions = sessionCount;
+            totalSessions = sessionCount;
+          } else if (categoryName === 'Private Class') {
+            privateSessions = sessionCount;
+            totalSessions = sessionCount;
+          } else {
+            groupSessions = sessionCount;
+            totalSessions = sessionCount;
+          }
+        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
+          groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
+          privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
+          totalSessions = groupSessions + privateSessions;
+        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
+          groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
+          privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
+          totalSessions = groupSessions + privateSessions;
+        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
+          groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
+          privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
+          totalSessions = groupSessions + privateSessions;
         }
-      }));
 
-    // Format response using priority-based active package
+        const usedGroupSessions = groupSessions - (memberPackage.remaining_group_session || 0);
+        const usedSemiPrivateSessions = semiPrivateSessions - (memberPackage.remaining_semi_private_session || 0);
+        const usedPrivateSessions = privateSessions - (memberPackage.remaining_private_session || 0);
+        const usedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
+        const remainingSessions = totalSessions - usedSessions;
+        const progressPercentage = totalSessions > 0 ? Math.round((usedSessions / totalSessions) * 100) : 0;
+
+        return {
+          no: index + 1,
+          package_name: memberPackage.Package?.name || 'Unknown Package',
+          package_type: memberPackage.Package?.type || 'unknown',
+          start_date: memberPackage.start_date,
+          expired_date: memberPackage.end_date,
+          total_session: totalSessions,
+          used_session: usedSessions,
+          remaining_session: remainingSessions,
+          progress_percentage: progressPercentage,
+          group_sessions: {
+            total: groupSessions,
+            used: usedGroupSessions,
+            remaining: memberPackage.remaining_group_session || 0
+          },
+          semi_private_sessions: {
+            total: semiPrivateSessions,
+            used: usedSemiPrivateSessions,
+            remaining: memberPackage.remaining_semi_private_session || 0
+          },
+          private_sessions: {
+            total: privateSessions,
+            used: usedPrivateSessions,
+            remaining: memberPackage.remaining_private_session || 0
+          }
+        };
+      });
+
+    // Format response with total sessions and package history
     const response = {
       success: true,
       message: 'My packages retrieved successfully',
       data: {
-        current_active_package: priorityActivePackage ? {
-          package_name: priorityActivePackage.package_name,
-          package_type: priorityActivePackage.package_type,
-          validity_until: priorityActivePackage.end_date,
-          total_session: priorityActivePackage.total_available,
-          session_group_classes: {
-            total: priorityActivePackage.group_sessions.total,
-            used: priorityActivePackage.group_sessions.used,
-            remaining: priorityActivePackage.group_sessions.remaining,
-            progress_percentage: priorityActivePackage.group_sessions.total > 0 ? 
-              Math.round((priorityActivePackage.group_sessions.used / priorityActivePackage.group_sessions.total) * 100) : 0
-          },
-          session_semi_private_classes: {
-            total: priorityActivePackage.semi_private_sessions.total,
-            used: priorityActivePackage.semi_private_sessions.used,
-            remaining: priorityActivePackage.semi_private_sessions.remaining,
-            progress_percentage: priorityActivePackage.semi_private_sessions.total > 0 ? 
-              Math.round((priorityActivePackage.semi_private_sessions.used / priorityActivePackage.semi_private_sessions.total) * 100) : 0
-          },
-          session_private_classes: {
-            total: priorityActivePackage.private_sessions.total,
-            used: priorityActivePackage.private_sessions.used,
-            remaining: priorityActivePackage.private_sessions.remaining,
-            progress_percentage: priorityActivePackage.private_sessions.total > 0 ? 
-              Math.round((priorityActivePackage.private_sessions.used / priorityActivePackage.private_sessions.total) * 100) : 0
-          }
-        } : null,
+        total_sessions: {
+          total: totalAvailableSessions.total_all_sessions,
+          used: totalAvailableSessions.used_all_sessions,
+          remaining: totalAvailableSessions.remaining_all_sessions
+        },
+        group_sessions: {
+          total: totalAvailableSessions.total_group_sessions,
+          used: totalAvailableSessions.used_group_sessions,
+          remaining: totalAvailableSessions.remaining_group_sessions
+        },
+        semi_private_sessions: {
+          total: totalAvailableSessions.total_semi_private_sessions,
+          used: totalAvailableSessions.used_semi_private_sessions,
+          remaining: totalAvailableSessions.remaining_semi_private_sessions
+        },
+        private_sessions: {
+          total: totalAvailableSessions.total_private_sessions,
+          used: totalAvailableSessions.used_private_sessions,
+          remaining: totalAvailableSessions.remaining_private_sessions
+        },
         package_history: packageHistory
       }
     };

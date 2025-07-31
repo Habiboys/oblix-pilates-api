@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { Schedule, Class, Trainer, Booking, Member, Package, MemberPackage, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category } = require('../models');
-const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getCurrentActivePackage } = require('../utils/sessionTrackingUtils');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getTotalAvailableSessions } = require('../utils/sessionTrackingUtils');
 const logger = require('../config/logger');
 
 // Get available classes for a specific date
@@ -69,26 +69,14 @@ const getAvailableClasses = async (req, res) => {
       ]
     });
 
-    // Get current active package using priority system
-    const currentActivePackage = await getCurrentActivePackage(memberId);
+    // Get total sessions from all packages
+    const totalSessions = await getTotalAvailableSessions(memberId);
     
-    let priorityPackage = null;
     let remainingSessions = {
-      group: 0,
-      semi_private: 0,
-      private: 0
+      group: totalSessions.remaining_group_sessions,
+      semi_private: totalSessions.remaining_semi_private_sessions,
+      private: totalSessions.remaining_private_sessions
     };
-
-    if (currentActivePackage) {
-      // Cari member package yang sesuai
-      priorityPackage = memberPackages.find(mp => mp.package_id === currentActivePackage.package_id);
-      
-      if (priorityPackage) {
-        remainingSessions.group = currentActivePackage.group_sessions.remaining;
-        remainingSessions.semi_private = currentActivePackage.semi_private_sessions.remaining;
-        remainingSessions.private = currentActivePackage.private_sessions.remaining;
-      }
-    }
 
     // Get schedules for the selected date (exclude private schedules)
     const schedules = await Schedule.findAll({
@@ -191,60 +179,36 @@ const getAvailableClasses = async (req, res) => {
       })
     );
 
-    // Get package info for display
-    let packageInfo = null;
-    if (priorityPackage) {
-      const package = priorityPackage.Package;
-      let packageName = 'Unknown Package';
-      let packageType = package.type;
-      let packageDetails = '';
-
-      if (package.PackageMembership && package.PackageMembership.Category) {
-        packageName = package.PackageMembership.Category.category_name;
-        packageDetails = `${package.PackageMembership.session} sessions`;
-      } else if (package.PackageFirstTrial) {
-        packageName = 'First Trial Package';
-        const groupSessions = package.PackageFirstTrial.group_session || 0;
-        const privateSessions = package.PackageFirstTrial.private_session || 0;
-        packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
-      } else if (package.PackagePromo) {
-        packageName = package.name || 'Promo Package';
-        const groupSessions = package.PackagePromo.group_session || 0;
-        const privateSessions = package.PackagePromo.private_session || 0;
-        packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
-      } else if (package.PackageBonus) {
-        packageName = package.name || 'Bonus Package';
-        const groupSessions = package.PackageBonus.group_session || 0;
-        const privateSessions = package.PackageBonus.private_session || 0;
-        packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
+    // Get session info for display
+    const sessionInfo = {
+      total_sessions: {
+        total: totalSessions.total_all_sessions,
+        used: totalSessions.used_all_sessions,
+        remaining: totalSessions.remaining_all_sessions
+      },
+      group_sessions: {
+        total: totalSessions.total_group_sessions,
+        used: totalSessions.used_group_sessions,
+        remaining: totalSessions.remaining_group_sessions
+      },
+      semi_private_sessions: {
+        total: totalSessions.total_semi_private_sessions,
+        used: totalSessions.used_semi_private_sessions,
+        remaining: totalSessions.remaining_semi_private_sessions
+      },
+      private_sessions: {
+        total: totalSessions.total_private_sessions,
+        used: totalSessions.used_private_sessions,
+        remaining: totalSessions.remaining_private_sessions
       }
-
-      // Calculate days remaining
-      const today = new Date();
-      const endDate = new Date(priorityPackage.end_date);
-      const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-
-      packageInfo = {
-        package_id: priorityPackage.package_id,
-        package_name: packageName,
-        package_type: packageType,
-        package_details: packageDetails,
-        remaining_sessions: remainingSessions,
-        end_date: priorityPackage.end_date,
-        days_remaining: daysRemaining,
-        total_sessions: {
-          group: (priorityPackage.remaining_group_session || 0) + (priorityPackage.used_group_session || 0),
-          private: (priorityPackage.remaining_private_session || 0) + (priorityPackage.used_private_session || 0)
-        }
-      };
-    }
+    };
 
     res.json({
       success: true,
       message: 'Available classes retrieved successfully',
       data: {
         date: selectedDate.toISOString().split('T')[0],
-        package_info: packageInfo,
+        session_info: sessionInfo,
         schedules: schedulesWithAvailability
       }
     });

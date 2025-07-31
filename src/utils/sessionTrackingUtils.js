@@ -716,6 +716,147 @@ const getCurrentActivePackage = async (memberId) => {
   }
 };
 
+/**
+ * Get total sessions from all packages with priority consideration
+ * @param {string} memberId - ID member
+ * @returns {Promise<Object>} Total sessions (total, used, remaining) from all packages
+ */
+const getTotalAvailableSessions = async (memberId) => {
+  try {
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    const memberPackages = await MemberPackage.findAll({
+      where: { 
+        member_id: memberId,
+        end_date: {
+          [Op.gte]: currentDate
+        }
+      },
+      include: [
+        {
+          model: Package,
+          include: [
+            { model: PackageMembership, include: [{ model: Category }] },
+            { model: PackageFirstTrial },
+            { model: PackagePromo },
+            { model: PackageBonus }
+          ]
+        }
+      ]
+    });
+
+    // Sort packages by priority
+    const sortedPackages = sortPackagesByPriority(memberPackages);
+    
+    let totalGroupSessions = 0;
+    let usedGroupSessions = 0;
+    let remainingGroupSessions = 0;
+    
+    let totalSemiPrivateSessions = 0;
+    let usedSemiPrivateSessions = 0;
+    let remainingSemiPrivateSessions = 0;
+    
+    let totalPrivateSessions = 0;
+    let usedPrivateSessions = 0;
+    let remainingPrivateSessions = 0;
+    
+    // Calculate total, used, and remaining sessions from all packages
+    for (const memberPackage of sortedPackages) {
+      // Group sessions
+      const groupTotal = memberPackage.group_sessions || 0;
+      const groupUsed = memberPackage.used_group_session || 0;
+      const groupRemaining = memberPackage.remaining_group_session || 0;
+      
+      totalGroupSessions += groupTotal;
+      usedGroupSessions += groupUsed;
+      remainingGroupSessions += groupRemaining;
+      
+      // Semi-private sessions
+      const semiPrivateTotal = memberPackage.semi_private_sessions || 0;
+      const semiPrivateUsed = memberPackage.used_semi_private_session || 0;
+      const semiPrivateRemaining = memberPackage.remaining_semi_private_session || 0;
+      
+      totalSemiPrivateSessions += semiPrivateTotal;
+      usedSemiPrivateSessions += semiPrivateUsed;
+      remainingSemiPrivateSessions += semiPrivateRemaining;
+      
+      // Private sessions
+      const privateTotal = memberPackage.private_sessions || 0;
+      const privateUsed = memberPackage.used_private_session || 0;
+      const privateRemaining = memberPackage.remaining_private_session || 0;
+      
+      totalPrivateSessions += privateTotal;
+      usedPrivateSessions += privateUsed;
+      remainingPrivateSessions += privateRemaining;
+    }
+
+    const totalAllSessions = totalGroupSessions + totalSemiPrivateSessions + totalPrivateSessions;
+    const usedAllSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
+    const remainingAllSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
+
+    return {
+      total_all_sessions: totalAllSessions,
+      used_all_sessions: usedAllSessions,
+      remaining_all_sessions: remainingAllSessions,
+      total_group_sessions: totalGroupSessions,
+      used_group_sessions: usedGroupSessions,
+      remaining_group_sessions: remainingGroupSessions,
+      total_semi_private_sessions: totalSemiPrivateSessions,
+      used_semi_private_sessions: usedSemiPrivateSessions,
+      remaining_semi_private_sessions: remainingSemiPrivateSessions,
+      total_private_sessions: totalPrivateSessions,
+      used_private_sessions: usedPrivateSessions,
+      remaining_private_sessions: remainingPrivateSessions
+    };
+
+  } catch (error) {
+    console.error('Error getting total available sessions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all member packages sorted by priority for history
+ * @param {string} memberId - ID member
+ * @returns {Promise<Array>} All member packages sorted by priority
+ */
+const getAllMemberPackagesByPriority = async (memberId) => {
+  try {
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    const memberPackages = await MemberPackage.findAll({
+      where: { 
+        member_id: memberId,
+        end_date: {
+          [Op.gte]: currentDate
+        }
+      },
+      include: [
+        {
+          model: Package,
+          include: [
+            { model: PackageMembership, include: [{ model: Category }] },
+            { model: PackageFirstTrial },
+            { model: PackagePromo },
+            { model: PackageBonus }
+          ]
+        },
+        {
+          model: Order,
+          attributes: ['id', 'order_number', 'paid_at', 'total_amount', 'payment_status']
+        }
+      ]
+    });
+
+    // Sort by priority and return
+    return sortPackagesByPriority(memberPackages);
+
+  } catch (error) {
+    console.error('Error getting member packages by priority:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   updateSessionUsage,
   updateAllMemberPackagesSessionUsage,
@@ -729,5 +870,7 @@ module.exports = {
   sortPackagesByPriority,
   checkAvailableSessionsWithFallback,
   getBestPackageForBooking,
-  getCurrentActivePackage
+  getCurrentActivePackage,
+  getTotalAvailableSessions,
+  getAllMemberPackagesByPriority
 }; 
