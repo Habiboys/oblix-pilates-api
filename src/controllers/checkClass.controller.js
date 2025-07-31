@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { Schedule, Class, Trainer, Booking, Member, Package, MemberPackage, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category } = require('../models');
-const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage } = require('../utils/sessionTrackingUtils');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getCurrentActivePackage } = require('../utils/sessionTrackingUtils');
 const logger = require('../config/logger');
 
 // Get available classes for a specific date
@@ -69,7 +69,9 @@ const getAvailableClasses = async (req, res) => {
       ]
     });
 
-    // Determine priority package and remaining sessions
+    // Get current active package using priority system
+    const currentActivePackage = await getCurrentActivePackage(memberId);
+    
     let priorityPackage = null;
     let remainingSessions = {
       group: 0,
@@ -77,22 +79,14 @@ const getAvailableClasses = async (req, res) => {
       private: 0
     };
 
-    if (memberPackages.length > 0) {
-      // Gunakan calculateAvailableSessions untuk mendapatkan paket yang konsisten
-      const sessionInfo = await calculateAvailableSessions(memberId);
+    if (currentActivePackage) {
+      // Cari member package yang sesuai
+      priorityPackage = memberPackages.find(mp => mp.package_id === currentActivePackage.package_id);
       
-      if (sessionInfo.packageDetails.length > 0) {
-        // Ambil paket dengan prioritas tertinggi (bonus > promo > first_trial > membership)
-        const priorityPackageDetail = sessionInfo.packageDetails[0];
-        
-        // Cari member package yang sesuai
-        priorityPackage = memberPackages.find(mp => mp.package_id === priorityPackageDetail.package_id);
-        
-        if (priorityPackage) {
-          remainingSessions.group = priorityPackage.remaining_group_session || 0;
-          remainingSessions.semi_private = priorityPackage.remaining_semi_private_session || 0;
-          remainingSessions.private = priorityPackage.remaining_private_session || 0;
-        }
+      if (priorityPackage) {
+        remainingSessions.group = currentActivePackage.group_sessions.remaining;
+        remainingSessions.semi_private = currentActivePackage.semi_private_sessions.remaining;
+        remainingSessions.private = currentActivePackage.private_sessions.remaining;
       }
     }
 

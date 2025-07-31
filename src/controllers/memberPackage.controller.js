@@ -1,5 +1,5 @@
 const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category, Order, Booking } = require('../models');
-const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage } = require('../utils/sessionTrackingUtils');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getCurrentActivePackage } = require('../utils/sessionTrackingUtils');
 
 const getMyPackages = async (req, res) => {
   try {
@@ -56,16 +56,8 @@ const getMyPackages = async (req, res) => {
       order: [['end_date', 'DESC']]
     });
 
-    // Get current active package (end_date >= today)
-    const currentDate = new Date();
-    const activePackage = memberPackages.find(mp => {
-      const isNotExpired = new Date(mp.end_date) >= currentDate;
-      const hasValidOrder = mp.Order?.payment_status === 'paid';
-      const isBonusPackage = mp.Package?.type === 'bonus';
-      
-      // Paket aktif jika: tidak expired DAN (memiliki order yang paid ATAU adalah paket bonus)
-      return isNotExpired && (hasValidOrder || isBonusPackage);
-    });
+    // Get current active package using priority system
+    const priorityActivePackage = await getCurrentActivePackage(member_id);
 
     // Process packages with updated session data
     const packagesWithUsage = memberPackages.map((memberPackage) => {
@@ -205,40 +197,36 @@ const getMyPackages = async (req, res) => {
         }
       }));
 
-    // Format response
+    // Format response using priority-based active package
     const response = {
       success: true,
       message: 'My packages retrieved successfully',
       data: {
-        current_active_package: currentActivePackage ? {
-          package_name: currentActivePackage.package_name,
-          package_type: currentActivePackage.package_type,
-          start_date: currentActivePackage.start_date,
-          validity_until: currentActivePackage.end_date,
-          total_session: currentActivePackage.total_session,
-          used_session: currentActivePackage.used_session,
-          remaining_session: currentActivePackage.remaining_session,
-          progress_percentage: currentActivePackage.progress_percentage,
+        current_active_package: priorityActivePackage ? {
+          package_name: priorityActivePackage.package_name,
+          package_type: priorityActivePackage.package_type,
+          validity_until: priorityActivePackage.end_date,
+          total_session: priorityActivePackage.total_available,
           session_group_classes: {
-            used: currentActivePackage.used_group_session || 0,
-            total: currentActivePackage.group_sessions,
-            remaining: currentActivePackage.remaining_group_session || 0,
-            progress_percentage: currentActivePackage.group_sessions > 0 ? 
-              Math.round(((currentActivePackage.used_group_session || 0) / currentActivePackage.group_sessions) * 100) : 0
+            total: priorityActivePackage.group_sessions.total,
+            used: priorityActivePackage.group_sessions.used,
+            remaining: priorityActivePackage.group_sessions.remaining,
+            progress_percentage: priorityActivePackage.group_sessions.total > 0 ? 
+              Math.round((priorityActivePackage.group_sessions.used / priorityActivePackage.group_sessions.total) * 100) : 0
           },
           session_semi_private_classes: {
-            used: currentActivePackage.used_semi_private_session || 0,
-            total: currentActivePackage.semi_private_sessions,
-            remaining: currentActivePackage.remaining_semi_private_session || 0,
-            progress_percentage: currentActivePackage.semi_private_sessions > 0 ? 
-              Math.round(((currentActivePackage.used_semi_private_session || 0) / currentActivePackage.semi_private_sessions) * 100) : 0
+            total: priorityActivePackage.semi_private_sessions.total,
+            used: priorityActivePackage.semi_private_sessions.used,
+            remaining: priorityActivePackage.semi_private_sessions.remaining,
+            progress_percentage: priorityActivePackage.semi_private_sessions.total > 0 ? 
+              Math.round((priorityActivePackage.semi_private_sessions.used / priorityActivePackage.semi_private_sessions.total) * 100) : 0
           },
           session_private_classes: {
-            used: currentActivePackage.used_private_session || 0,
-            total: currentActivePackage.private_sessions,
-            remaining: currentActivePackage.remaining_private_session || 0,
-            progress_percentage: currentActivePackage.private_sessions > 0 ? 
-              Math.round(((currentActivePackage.used_private_session || 0) / currentActivePackage.private_sessions) * 100) : 0
+            total: priorityActivePackage.private_sessions.total,
+            used: priorityActivePackage.private_sessions.used,
+            remaining: priorityActivePackage.private_sessions.remaining,
+            progress_percentage: priorityActivePackage.private_sessions.total > 0 ? 
+              Math.round((priorityActivePackage.private_sessions.used / priorityActivePackage.private_sessions.total) * 100) : 0
           }
         } : null,
         package_history: packageHistory

@@ -1,5 +1,5 @@
 const { Booking, Schedule, Member, Package, MemberPackage } = require('../models');
-const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
+const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary, getBestPackageForBooking } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion } = require('../utils/bookingUtils');
 const { validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
@@ -121,7 +121,7 @@ const createUserBooking = async (req, res) => {
             });
         }
 
-        // Cek ketersediaan sesi berdasarkan tipe schedule
+        // Cek ketersediaan sesi berdasarkan tipe schedule dengan sistem prioritas
         let scheduleType = 'group';
         if (schedule.type === 'private') {
             scheduleType = 'private';
@@ -129,70 +129,33 @@ const createUserBooking = async (req, res) => {
             scheduleType = 'semi_private';
         }
 
-        // Cek apakah member memiliki session yang sesuai
-        const memberPackages = await MemberPackage.findAll({
-            where: {
-                member_id: member_id,
-                end_date: {
-                    [require('sequelize').Op.gte]: new Date().toISOString().split('T')[0]
-                }
-            }
-        });
-
-        let hasValidSession = false;
-        let availableSessions = 0;
-
-        for (const memberPackage of memberPackages) {
-            if (scheduleType === 'group' && memberPackage.remaining_group_session > 0) {
-                hasValidSession = true;
-                availableSessions = memberPackage.remaining_group_session;
-                break;
-            } else if (scheduleType === 'semi_private' && memberPackage.remaining_semi_private_session > 0) {
-                hasValidSession = true;
-                availableSessions = memberPackage.remaining_semi_private_session;
-                break;
-            } else if (scheduleType === 'private' && memberPackage.remaining_private_session > 0) {
-                hasValidSession = true;
-                availableSessions = memberPackage.remaining_private_session;
-                break;
-            }
-        }
-
-        if (!hasValidSession) {
+        // Cek apakah member memiliki session yang sesuai menggunakan sistem prioritas
+        let bestPackage = null;
+        try {
+            bestPackage = await getBestPackageForBooking(member_id, scheduleType);
+        } catch (error) {
             return res.status(400).json({
                 success: false,
-                message: `Anda tidak memiliki jatah sesi ${scheduleType} yang cukup`,
+                message: error.message,
                 data: {
                     schedule_type: scheduleType,
-                    available_sessions: availableSessions,
                     required_sessions: 1
                 }
             });
         }
 
-        // Buat alokasi untuk 1 sesi berdasarkan schedule type
-        let selectedPackageId = null;
-        
-        // Cari package yang memiliki session sesuai dengan schedule type
-        for (const memberPackage of memberPackages) {
-            if (scheduleType === 'group' && memberPackage.remaining_group_session > 0) {
-                selectedPackageId = memberPackage.package_id;
-                break;
-            } else if (scheduleType === 'semi_private' && memberPackage.remaining_semi_private_session > 0) {
-                selectedPackageId = memberPackage.package_id;
-                break;
-            } else if (scheduleType === 'private' && memberPackage.remaining_private_session > 0) {
-                selectedPackageId = memberPackage.package_id;
-                break;
-            }
-        }
-
-        if (!selectedPackageId) {
+        if (!bestPackage) {
             return res.status(400).json({
                 success: false,
-                message: `Tidak dapat menemukan package yang sesuai untuk sesi ${scheduleType}`
+                message: `Tidak ada paket yang tersedia untuk booking ${scheduleType} class`,
+                data: {
+                    schedule_type: scheduleType,
+                    required_sessions: 1
+                }
             });
         }
+
+        const selectedPackageId = bestPackage.package_id;
 
         // Buat booking
         const booking = await Booking.create({

@@ -530,6 +530,192 @@ const checkAvailableSessions = async (memberId, scheduleType, packageId = null) 
   }
 };
 
+/**
+ * Check available sessions for specific schedule type with smart fallback
+ * @param {string} memberId - ID member
+ * @param {string} scheduleType - 'group', 'private', atau 'semi_private'
+ * @returns {Promise<Object>} Object berisi hasil pengecekan dengan fallback
+ */
+const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
+  try {
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // Get all active member packages
+    const memberPackages = await MemberPackage.findAll({
+      where: { 
+        member_id: memberId,
+        end_date: {
+          [Op.gte]: currentDate
+        }
+      },
+      include: [
+        {
+          model: Package,
+          include: [
+            { model: PackageMembership, include: [{ model: Category }] },
+            { model: PackageFirstTrial },
+            { model: PackagePromo },
+            { model: PackageBonus }
+          ]
+        }
+      ]
+    });
+
+    // Sort packages by priority
+    const sortedPackages = sortPackagesByPriority(memberPackages);
+    
+    let bestPackage = null;
+    let bestAvailable = 0;
+    let fallbackPackages = [];
+
+    for (const memberPackage of sortedPackages) {
+      let available = 0;
+      let canHandleScheduleType = false;
+      
+      // Check if this package can handle the schedule type
+      if (scheduleType === 'group') {
+        available = memberPackage.remaining_group_session || 0;
+        canHandleScheduleType = available > 0;
+      } else if (scheduleType === 'private') {
+        available = memberPackage.remaining_private_session || 0;
+        canHandleScheduleType = available > 0;
+      } else if (scheduleType === 'semi_private') {
+        // Semi-private can use either group or private sessions
+        const groupAvailable = memberPackage.remaining_group_session || 0;
+        const privateAvailable = memberPackage.remaining_private_session || 0;
+        available = Math.max(groupAvailable, privateAvailable);
+        canHandleScheduleType = available > 0;
+      }
+
+      if (canHandleScheduleType) {
+        if (!bestPackage || available > bestAvailable) {
+          // If this is the first package or has more sessions, make it the best
+          if (bestPackage) {
+            fallbackPackages.push(bestPackage);
+          }
+          bestPackage = {
+            member_package_id: memberPackage.id,
+            package_id: memberPackage.package_id,
+            package_name: memberPackage.Package?.name || 'Unknown Package',
+            package_type: memberPackage.Package?.type || 'unknown',
+            available_sessions: available,
+            priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
+          };
+          bestAvailable = available;
+        } else {
+          fallbackPackages.push({
+            member_package_id: memberPackage.id,
+            package_id: memberPackage.package_id,
+            package_name: memberPackage.Package?.name || 'Unknown Package',
+            package_type: memberPackage.Package?.type || 'unknown',
+            available_sessions: available,
+            priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
+          });
+        }
+      }
+    }
+
+    return {
+      has_available: bestPackage !== null,
+      best_package: bestPackage,
+      fallback_packages: fallbackPackages.sort((a, b) => b.priority_score - a.priority_score),
+      total_available: bestAvailable
+    };
+
+  } catch (error) {
+    console.error('Error checking available sessions with fallback:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get best package for booking specific schedule type
+ * @param {string} memberId - ID member
+ * @param {string} scheduleType - 'group', 'private', atau 'semi_private'
+ * @returns {Promise<Object>} Best package for booking
+ */
+const getBestPackageForBooking = async (memberId, scheduleType) => {
+  const result = await checkAvailableSessionsWithFallback(memberId, scheduleType);
+  
+  if (!result.has_available) {
+    throw new Error(`Tidak ada paket yang tersedia untuk booking ${scheduleType} class`);
+  }
+
+  return result.best_package;
+};
+
+/**
+ * Get current active package (highest priority with available sessions)
+ * @param {string} memberId - ID member
+ * @returns {Promise<Object>} Current active package
+ */
+const getCurrentActivePackage = async (memberId) => {
+  try {
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    const memberPackages = await MemberPackage.findAll({
+      where: { 
+        member_id: memberId,
+        end_date: {
+          [Op.gte]: currentDate
+        }
+      },
+      include: [
+        {
+          model: Package,
+          include: [
+            { model: PackageMembership, include: [{ model: Category }] },
+            { model: PackageFirstTrial },
+            { model: PackagePromo },
+            { model: PackageBonus }
+          ]
+        }
+      ]
+    });
+
+    // Sort by priority and filter packages with available sessions
+    const sortedPackages = sortPackagesByPriority(memberPackages);
+    
+    for (const memberPackage of sortedPackages) {
+      const totalAvailable = (memberPackage.remaining_group_session || 0) + 
+                           (memberPackage.remaining_private_session || 0) + 
+                           (memberPackage.remaining_semi_private_session || 0);
+      
+      if (totalAvailable > 0) {
+        return {
+          member_package_id: memberPackage.id,
+          package_id: memberPackage.package_id,
+          package_name: memberPackage.Package?.name || 'Unknown Package',
+          package_type: memberPackage.Package?.type || 'unknown',
+          end_date: memberPackage.end_date,
+          total_available: totalAvailable,
+          group_sessions: {
+            total: memberPackage.group_sessions || 0,
+            used: memberPackage.used_group_session || 0,
+            remaining: memberPackage.remaining_group_session || 0
+          },
+          private_sessions: {
+            total: memberPackage.private_sessions || 0,
+            used: memberPackage.used_private_session || 0,
+            remaining: memberPackage.remaining_private_session || 0
+          },
+          semi_private_sessions: {
+            total: memberPackage.semi_private_sessions || 0,
+            used: memberPackage.used_semi_private_session || 0,
+            remaining: memberPackage.remaining_semi_private_session || 0
+          }
+        };
+      }
+    }
+
+    return null; // No active package with available sessions
+
+  } catch (error) {
+    console.error('Error getting current active package:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   updateSessionUsage,
   updateAllMemberPackagesSessionUsage,
@@ -540,5 +726,8 @@ module.exports = {
   createSessionAllocation,
   getMemberSessionSummary,
   getPackagePriorityScore,
-  sortPackagesByPriority
+  sortPackagesByPriority,
+  checkAvailableSessionsWithFallback,
+  getBestPackageForBooking,
+  getCurrentActivePackage
 }; 
