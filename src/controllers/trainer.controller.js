@@ -23,12 +23,18 @@ const getAllTrainers = async (req, res) => {
             order: [['createdAt', 'DESC']]
         });
 
+        // Add rate information to each trainer
+        const trainersWithRates = trainers.rows.map(trainer => ({
+            ...trainer.toJSON(),
+            rates: trainer.getAllRates()
+        }));
+
         const totalPages = Math.ceil(trainers.count / limit);
 
         res.status(200).json({
             message: 'Trainers retrieved successfully',
             data: {
-                trainers: trainers.rows,
+                trainers: trainersWithRates,
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: totalPages,
@@ -56,9 +62,15 @@ const getTrainerById = async (req, res) => {
             });
         }
 
+        // Add rate information to trainer
+        const trainerWithRates = {
+            ...trainer.toJSON(),
+            rates: trainer.getAllRates()
+        };
+
         res.status(200).json({
             message: 'Trainer retrieved successfully',
-            data: trainer
+            data: trainerWithRates
         });
     } catch (error) {
         console.error('Get trainer by ID error:', error);
@@ -69,7 +81,16 @@ const getTrainerById = async (req, res) => {
 // Create new trainer
 const createTrainer = async (req, res) => {
     try {
-        const { title, description, rate_per_class, instagram, tiktok } = req.body;
+        const { 
+            title, 
+            description, 
+            rate_per_class, 
+            rate_group_class,
+            rate_semi_private_class,
+            rate_private_class,
+            instagram, 
+            tiktok 
+        } = req.body;
 
         // Check if trainer with same title already exists
         const existingTrainer = await Trainer.findOne({ where: { title } });
@@ -90,6 +111,9 @@ const createTrainer = async (req, res) => {
             title,
             description,
             rate_per_class: rate_per_class ? parseInt(rate_per_class) : null,
+            rate_group_class: rate_group_class ? parseInt(rate_group_class) : null,
+            rate_semi_private_class: rate_semi_private_class ? parseInt(rate_semi_private_class) : null,
+            rate_private_class: rate_private_class ? parseInt(rate_private_class) : null,
             instagram: instagram || null,
             tiktok: tiktok || null,
             picture: req.file ? req.file.filename : null
@@ -97,9 +121,15 @@ const createTrainer = async (req, res) => {
 
         const trainer = await Trainer.create(trainerData);
 
+        // Add rate information to response
+        const trainerWithRates = {
+            ...trainer.toJSON(),
+            rates: trainer.getAllRates()
+        };
+
         res.status(201).json({
             message: 'Trainer created successfully',
-            data: trainer
+            data: trainerWithRates
         });
     } catch (error) {
         // Delete uploaded file if error occurs
@@ -118,7 +148,16 @@ const createTrainer = async (req, res) => {
 const updateTrainer = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, rate_per_class, instagram, tiktok } = req.body;
+        const { 
+            title, 
+            description, 
+            rate_per_class, 
+            rate_group_class,
+            rate_semi_private_class,
+            rate_private_class,
+            instagram, 
+            tiktok 
+        } = req.body;
 
         const trainer = await Trainer.findByPk(id);
 
@@ -161,6 +200,9 @@ const updateTrainer = async (req, res) => {
         if (title !== undefined) updateData.title = title;
         if (description !== undefined) updateData.description = description;
         if (rate_per_class !== undefined) updateData.rate_per_class = rate_per_class ? parseInt(rate_per_class) : null;
+        if (rate_group_class !== undefined) updateData.rate_group_class = rate_group_class ? parseInt(rate_group_class) : null;
+        if (rate_semi_private_class !== undefined) updateData.rate_semi_private_class = rate_semi_private_class ? parseInt(rate_semi_private_class) : null;
+        if (rate_private_class !== undefined) updateData.rate_private_class = rate_private_class ? parseInt(rate_private_class) : null;
         if (instagram !== undefined) updateData.instagram = instagram || null;
         if (tiktok !== undefined) updateData.tiktok = tiktok || null;
 
@@ -178,9 +220,18 @@ const updateTrainer = async (req, res) => {
 
         await trainer.update(updateData);
 
+        // Refresh trainer data to get updated values
+        await trainer.reload();
+
+        // Add rate information to response
+        const trainerWithRates = {
+            ...trainer.toJSON(),
+            rates: trainer.getAllRates()
+        };
+
         res.status(200).json({
             message: 'Trainer updated successfully',
-            data: trainer
+            data: trainerWithRates
         });
     } catch (error) {
         // Delete uploaded file if error occurs

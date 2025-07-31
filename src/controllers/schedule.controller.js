@@ -2,6 +2,7 @@ const { Schedule, Class, Trainer, Member, Booking } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
 const { validateTrainerScheduleConflict, validateMemberScheduleConflict } = require('../utils/scheduleUtils');
+
 const ScheduleService = require('../services/schedule.service');
 const twilioService = require('../services/twilio.service');
 const logger = require('../config/logger');

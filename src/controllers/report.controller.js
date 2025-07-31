@@ -1,6 +1,7 @@
 const { Member, Order, Payment, Schedule, Booking, Trainer, Class } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
+const { getTrainerRateByClassType } = require('../utils/trainerUtils');
 
 // Get revenue report
 const getRevenueReport = async (req, res) => {
@@ -127,9 +128,9 @@ const getPayrollReport = async (req, res) => {
             ]
         });
 
-        // Get total pay by calculating from each trainer's rate
+        // Get total pay by calculating from each trainer's rate per class type
         const trainers = await Trainer.findAll({
-            attributes: ['id', 'title', 'rate_per_class'],
+            attributes: ['id', 'title', 'rate_per_class', 'rate_group_class', 'rate_semi_private_class', 'rate_private_class'],
             include: [
                 {
                     model: Schedule,
@@ -152,18 +153,37 @@ const getPayrollReport = async (req, res) => {
             ]
         });
 
-        // Calculate total pay from all trainers
+        // Calculate total pay from all trainers with rate per class type
         let totalPay = 0;
-        const formattedPayroll = trainers.map((trainer, index) => {
+        const formattedPayroll = await Promise.all(trainers.map(async (trainer, index) => {
             const classes = trainer.Schedules || [];
             const totalClassCount = classes.length;
             const totalMemberCount = classes.reduce((sum, schedule) => {
                 return sum + (schedule.Bookings ? schedule.Bookings.length : 0);
             }, 0);
             
-            // Use trainer's rate_per_class, default to 500000 if not set
-            const ratePerClass = trainer.rate_per_class || 500000;
-            const totalSalary = totalClassCount * ratePerClass;
+            // Calculate salary based on class type
+            let totalSalary = 0;
+            const classBreakdown = {
+                group: 0,
+                semi_private: 0,
+                private: 0
+            };
+            
+            for (const schedule of classes) {
+                const classType = schedule.type;
+                const rate = await getTrainerRateByClassType(trainer.id, classType);
+                totalSalary += rate;
+                
+                // Count classes by type
+                if (classType === 'group') {
+                    classBreakdown.group++;
+                } else if (classType === 'semi_private') {
+                    classBreakdown.semi_private++;
+                } else if (classType === 'private') {
+                    classBreakdown.private++;
+                }
+            }
             
             // Add to total pay
             totalPay += totalSalary;
@@ -174,7 +194,12 @@ const getPayrollReport = async (req, res) => {
                 instructor_name: trainer.title,
                 total_class: totalClassCount,
                 total_member: totalMemberCount,
-                rate_per_class: ratePerClass,
+                class_breakdown: classBreakdown,
+                rates: {
+                    group_class: trainer.rate_group_class || trainer.rate_per_class || 250000,
+                    semi_private_class: trainer.rate_semi_private_class || trainer.rate_per_class || 250000,
+                    private_class: trainer.rate_private_class || trainer.rate_per_class || 275000
+                },
                 payroll_date: new Date(startDate).toLocaleDateString('en-GB', {
                     day: '2-digit',
                     month: 'short',
@@ -182,7 +207,10 @@ const getPayrollReport = async (req, res) => {
                 }),
                 total_salary: totalSalary
             };
-        }).filter(payroll => payroll.total_class > 0); // Only show trainers with actual classes
+        }));
+        
+        // Filter out trainers with no classes
+        const filteredPayroll = formattedPayroll.filter(payroll => payroll.total_class > 0);
 
         res.json({
             success: true,
@@ -193,7 +221,7 @@ const getPayrollReport = async (req, res) => {
                     total_classes: totalClasses,
                     total_pay: totalPay
                 },
-                payroll: formattedPayroll,
+                payroll: filteredPayroll,
                 date_range: {
                     start_date: startDate,
                     end_date: endDate
@@ -253,21 +281,42 @@ const getPayrollDetail = async (req, res) => {
             order: [['date_start', 'ASC'], ['time_start', 'ASC']]
         });
 
-        // Calculate totals
+        // Calculate totals with rate per class type
         const totalClassCount = schedules.length;
         const totalMemberCount = schedules.reduce((sum, schedule) => {
             return sum + (schedule.Bookings ? schedule.Bookings.length : 0);
         }, 0);
         
-        // Use trainer's rate_per_class, default to 500000 if not set
-        const ratePerClass = trainer.rate_per_class || 500000;
-        const totalSalary = totalClassCount * ratePerClass;
+        // Calculate salary based on class type
+        let totalSalary = 0;
+        const classBreakdown = {
+            group: 0,
+            semi_private: 0,
+            private: 0
+        };
+        
+        for (const schedule of schedules) {
+            const classType = schedule.type;
+            const rate = await getTrainerRateByClassType(trainer.id, classType);
+            totalSalary += rate;
+            
+            // Count classes by type
+            if (classType === 'group') {
+                classBreakdown.group++;
+            } else if (classType === 'semi_private') {
+                classBreakdown.semi_private++;
+            } else if (classType === 'private') {
+                classBreakdown.private++;
+            }
+        }
 
-        // Format class details
-        const classDetails = schedules.map((schedule, index) => {
+        // Format class details with rate per class
+        const classDetails = await Promise.all(schedules.map(async (schedule, index) => {
             const signupCount = schedule.Bookings ? schedule.Bookings.length : 0;
             const maxCapacity = schedule.type === 'semi_private' ? 4 : 
                                schedule.type === 'private' ? 1 : 20;
+            const classType = schedule.type;
+            const rate = await getTrainerRateByClassType(trainer.id, classType);
 
             return {
                 no: index + 1,
@@ -279,9 +328,10 @@ const getPayrollDetail = async (req, res) => {
                 time: `${schedule.time_start} - ${schedule.time_end}`,
                 course: schedule.Class?.class_name || 'Unknown Class',
                 spot: `${signupCount}/${maxCapacity}`,
-                schedule_type: schedule.type
+                schedule_type: classType,
+                rate_per_class: rate
             };
-        });
+        }));
 
         res.json({
             success: true,
@@ -294,12 +344,12 @@ const getPayrollDetail = async (req, res) => {
                 summary: {
                     total_class: totalClassCount,
                     total_member: totalMemberCount,
-                    rate_per_class: ratePerClass,
-                    payroll_date: new Date(startDate).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                    }),
+                    class_breakdown: classBreakdown,
+                    rates: {
+                        group_class: trainer.rate_group_class || trainer.rate_per_class || 250000,
+                        semi_private_class: trainer.rate_semi_private_class || trainer.rate_per_class || 250000,
+                        private_class: trainer.rate_private_class || trainer.rate_per_class || 275000
+                    },
                     total_salary: totalSalary
                 },
                 class_details: classDetails,

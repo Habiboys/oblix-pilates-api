@@ -323,10 +323,38 @@ components:
           type: integer
           example: 30
           description: Total number of members across all classes
-        rate_per_class:
-          type: integer
-          example: 500000
-          description: Rate per class for this instructor
+        class_breakdown:
+          type: object
+          description: Breakdown of classes by type
+          properties:
+            group:
+              type: integer
+              example: 2
+              description: Number of group classes
+            semi_private:
+              type: integer
+              example: 1
+              description: Number of semi-private classes
+            private:
+              type: integer
+              example: 0
+              description: Number of private classes
+        rates:
+          type: object
+          description: Rate per class type for this instructor
+          properties:
+            group_class:
+              type: integer
+              example: 250000
+              description: Rate for group class
+            semi_private_class:
+              type: integer
+              example: 250000
+              description: Rate for semi-private class
+            private_class:
+              type: integer
+              example: 275000
+              description: Rate for private class
         payroll_date:
           type: string
           example: "1 Jul 2025"
@@ -334,7 +362,7 @@ components:
         total_salary:
           type: number
           format: float
-          example: 500000.00
+          example: 750000.00
           description: Total salary for the instructor
 
     PayrollDetailData:
@@ -374,18 +402,42 @@ components:
           type: integer
           example: 30
           description: Total number of members across all classes
-        rate_per_class:
-          type: integer
-          example: 500000
-          description: Rate per class for this instructor
-        payroll_date:
-          type: string
-          example: "1 Jul 2025"
-          description: Formatted payroll date
+        class_breakdown:
+          type: object
+          description: Breakdown of classes by type
+          properties:
+            group:
+              type: integer
+              example: 2
+              description: Number of group classes
+            semi_private:
+              type: integer
+              example: 1
+              description: Number of semi-private classes
+            private:
+              type: integer
+              example: 0
+              description: Number of private classes
+        rates:
+          type: object
+          description: Rate per class type for this instructor
+          properties:
+            group_class:
+              type: integer
+              example: 250000
+              description: Rate for group class
+            semi_private_class:
+              type: integer
+              example: 250000
+              description: Rate for semi-private class
+            private_class:
+              type: integer
+              example: 275000
+              description: Rate for private class
         total_salary:
           type: number
           format: float
-          example: 500000.00
+          example: 750000.00
           description: Total salary for the instructor
 
     ClassDetail:
@@ -416,6 +468,10 @@ components:
           enum: [group, semi_private, private]
           example: "group"
           description: Type of schedule
+        rate_per_class:
+          type: integer
+          example: 250000
+          description: Rate for this specific class
 
     DateRange:
       type: object
