@@ -1,7 +1,7 @@
 const { Booking, Schedule, Class, Trainer, Member, User, MemberPackage, Package, Order, PackageMembership, Category, PackageFirstTrial, PackagePromo, PackageBonus } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
-const { calculateAvailableSessions } = require('../utils/sessionTrackingUtils');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage } = require('../utils/sessionTrackingUtils');
 
 /**
  * Get member's classes based on type (upcoming, waitlist, post, cancelled)
@@ -50,13 +50,140 @@ const getAllMembers = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
+    // Update session usage untuk semua member yang ditemukan
+    const memberIds = members.map(member => member.id);
+    for (const memberId of memberIds) {
+      await updateAllMemberPackagesSessionUsage(memberId);
+    }
+
+    // Get member packages untuk menghitung detail sesi
+    const membersWithSessions = await Promise.all(members.map(async (member) => {
+      const memberPackages = await MemberPackage.findAll({
+        where: { member_id: member.id },
+        include: [
+          {
+            model: Package,
+            attributes: ['id', 'name', 'type'],
+            include: [
+              {
+                model: PackageMembership,
+                attributes: ['session'],
+                include: [
+                  {
+                    model: Category,
+                    attributes: ['category_name']
+                  }
+                ]
+              },
+              {
+                model: PackageFirstTrial,
+                attributes: ['group_session', 'private_session']
+              },
+              {
+                model: PackagePromo,
+                attributes: ['group_session', 'private_session']
+              },
+              {
+                model: PackageBonus,
+                attributes: ['group_session', 'private_session']
+              }
+            ]
+          }
+        ]
+      });
+
+      // Calculate total sessions for each type
+      let totalGroupSessions = 0;
+      let totalSemiPrivateSessions = 0;
+      let totalPrivateSessions = 0;
+      let usedGroupSessions = 0;
+      let usedSemiPrivateSessions = 0;
+      let usedPrivateSessions = 0;
+      let remainingGroupSessions = 0;
+      let remainingSemiPrivateSessions = 0;
+      let remainingPrivateSessions = 0;
+
+      memberPackages.forEach(memberPackage => {
+        // Get total sessions based on package type
+        let groupSessions = 0;
+        let semiPrivateSessions = 0;
+        let privateSessions = 0;
+        
+        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+          const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+          const sessionCount = memberPackage.Package.PackageMembership.session || 0;
+          
+          if (categoryName === 'Semi-Private Class') {
+            semiPrivateSessions = sessionCount;
+          } else if (categoryName === 'Private Class') {
+            privateSessions = sessionCount;
+          } else {
+            groupSessions = sessionCount;
+          }
+        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
+          groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
+          privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
+        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
+          groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
+          privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
+        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
+          groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
+          privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
+        }
+
+        totalGroupSessions += groupSessions;
+        totalSemiPrivateSessions += semiPrivateSessions;
+        totalPrivateSessions += privateSessions;
+
+        // Add used and remaining sessions
+        usedGroupSessions += memberPackage.used_group_session || 0;
+        usedSemiPrivateSessions += memberPackage.used_semi_private_session || 0;
+        usedPrivateSessions += memberPackage.used_private_session || 0;
+        remainingGroupSessions += memberPackage.remaining_group_session || 0;
+        remainingSemiPrivateSessions += memberPackage.remaining_semi_private_session || 0;
+        remainingPrivateSessions += memberPackage.remaining_private_session || 0;
+      });
+
+      // Calculate total sessions
+      const totalSessions = totalGroupSessions + totalSemiPrivateSessions + totalPrivateSessions;
+      const totalUsedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
+      const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
+
+      return {
+        ...member.toJSON(),
+        session_details: {
+          total_sessions: totalSessions,
+          used_sessions: totalUsedSessions,
+          remaining_sessions: totalRemainingSessions,
+          group_sessions: {
+            total: totalGroupSessions,
+            used: usedGroupSessions,
+            remaining: remainingGroupSessions,
+            progress_percentage: totalGroupSessions > 0 ? Math.round((usedGroupSessions / totalGroupSessions) * 100) : 0
+          },
+          semi_private_sessions: {
+            total: totalSemiPrivateSessions,
+            used: usedSemiPrivateSessions,
+            remaining: remainingSemiPrivateSessions,
+            progress_percentage: totalSemiPrivateSessions > 0 ? Math.round((usedSemiPrivateSessions / totalSemiPrivateSessions) * 100) : 0
+          },
+          private_sessions: {
+            total: totalPrivateSessions,
+            used: usedPrivateSessions,
+            remaining: remainingPrivateSessions,
+            progress_percentage: totalPrivateSessions > 0 ? Math.round((usedPrivateSessions / totalPrivateSessions) * 100) : 0
+          }
+        }
+      };
+    }));
+
     const totalPages = Math.ceil(count / limit);
 
     res.json({
       success: true,
       message: 'Members retrieved successfully',
       data: {
-        members,
+        members: membersWithSessions,
         pagination: {
           currentPage: parseInt(page),
           totalPages,
@@ -95,10 +222,132 @@ const getMemberById = async (req, res) => {
       });
     }
 
+    // Update session usage untuk member ini
+    await updateAllMemberPackagesSessionUsage(id);
+
+    // Get member packages untuk menghitung detail sesi
+    const memberPackages = await MemberPackage.findAll({
+      where: { member_id: id },
+      include: [
+        {
+          model: Package,
+          attributes: ['id', 'name', 'type'],
+          include: [
+            {
+              model: PackageMembership,
+              attributes: ['session'],
+              include: [
+                {
+                  model: Category,
+                  attributes: ['category_name']
+                }
+              ]
+            },
+            {
+              model: PackageFirstTrial,
+              attributes: ['group_session', 'private_session']
+            },
+            {
+              model: PackagePromo,
+              attributes: ['group_session', 'private_session']
+            },
+            {
+              model: PackageBonus,
+              attributes: ['group_session', 'private_session']
+            }
+          ]
+        }
+      ]
+    });
+
+    // Calculate total sessions for each type
+    let totalGroupSessions = 0;
+    let totalSemiPrivateSessions = 0;
+    let totalPrivateSessions = 0;
+    let usedGroupSessions = 0;
+    let usedSemiPrivateSessions = 0;
+    let usedPrivateSessions = 0;
+    let remainingGroupSessions = 0;
+    let remainingSemiPrivateSessions = 0;
+    let remainingPrivateSessions = 0;
+
+    memberPackages.forEach(memberPackage => {
+      // Get total sessions based on package type
+      let groupSessions = 0;
+      let semiPrivateSessions = 0;
+      let privateSessions = 0;
+      
+      if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+        const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+        const sessionCount = memberPackage.Package.PackageMembership.session || 0;
+        
+        if (categoryName === 'Semi-Private Class') {
+          semiPrivateSessions = sessionCount;
+        } else if (categoryName === 'Private Class') {
+          privateSessions = sessionCount;
+        } else {
+          groupSessions = sessionCount;
+        }
+      } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
+        groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
+        privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
+      } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
+        groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
+        privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
+      } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
+        groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
+        privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
+      }
+
+      totalGroupSessions += groupSessions;
+      totalSemiPrivateSessions += semiPrivateSessions;
+      totalPrivateSessions += privateSessions;
+
+      // Add used and remaining sessions
+      usedGroupSessions += memberPackage.used_group_session || 0;
+      usedSemiPrivateSessions += memberPackage.used_semi_private_session || 0;
+      usedPrivateSessions += memberPackage.used_private_session || 0;
+      remainingGroupSessions += memberPackage.remaining_group_session || 0;
+      remainingSemiPrivateSessions += memberPackage.remaining_semi_private_session || 0;
+      remainingPrivateSessions += memberPackage.remaining_private_session || 0;
+    });
+
+    // Calculate total sessions
+    const totalSessions = totalGroupSessions + totalSemiPrivateSessions + totalPrivateSessions;
+    const totalUsedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
+    const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
+
+    const memberWithSessions = {
+      ...member.toJSON(),
+      session_details: {
+        total_sessions: totalSessions,
+        used_sessions: totalUsedSessions,
+        remaining_sessions: totalRemainingSessions,
+        group_sessions: {
+          total: totalGroupSessions,
+          used: usedGroupSessions,
+          remaining: remainingGroupSessions,
+          progress_percentage: totalGroupSessions > 0 ? Math.round((usedGroupSessions / totalGroupSessions) * 100) : 0
+        },
+        semi_private_sessions: {
+          total: totalSemiPrivateSessions,
+          used: usedSemiPrivateSessions,
+          remaining: remainingSemiPrivateSessions,
+          progress_percentage: totalSemiPrivateSessions > 0 ? Math.round((usedSemiPrivateSessions / totalSemiPrivateSessions) * 100) : 0
+        },
+        private_sessions: {
+          total: totalPrivateSessions,
+          used: usedPrivateSessions,
+          remaining: remainingPrivateSessions,
+          progress_percentage: totalPrivateSessions > 0 ? Math.round((usedPrivateSessions / totalPrivateSessions) * 100) : 0
+        }
+      }
+    };
+
     res.json({
       success: true,
       message: 'Member retrieved successfully',
-      data: member
+      data: memberWithSessions
     });
   } catch (error) {
     console.error('Error getting member:', error);
