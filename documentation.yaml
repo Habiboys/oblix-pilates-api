@@ -374,7 +374,35 @@ components:
         rate_per_class:
           type: integer
           nullable: true
-          description: Rate per class in currency units
+          description: Default rate per class (legacy field)
+        rate_group_class:
+          type: integer
+          nullable: true
+          description: Rate untuk Group Class (dalam rupiah)
+        rate_semi_private_class:
+          type: integer
+          nullable: true
+          description: Rate untuk Semi-Private Class (dalam rupiah)
+        rate_private_class:
+          type: integer
+          nullable: true
+          description: Rate untuk Private Class (dalam rupiah)
+        rates:
+          type: object
+          description: Object berisi semua rate per jenis kelas
+          properties:
+            group_class:
+              type: integer
+              description: Rate untuk Group Class
+            semi_private_class:
+              type: integer
+              description: Rate untuk Semi-Private Class
+            private_class:
+              type: integer
+              description: Rate untuk Private Class
+            default:
+              type: integer
+              description: Rate default
         instagram:
           type: string
           nullable: true
@@ -1388,7 +1416,19 @@ components:
         rate_per_class:
           type: integer
           minimum: 0
-          description: Rate per class in currency units
+          description: Default rate per class (legacy field)
+        rate_group_class:
+          type: integer
+          minimum: 0
+          description: Rate untuk Group Class (dalam rupiah)
+        rate_semi_private_class:
+          type: integer
+          minimum: 0
+          description: Rate untuk Semi-Private Class (dalam rupiah)
+        rate_private_class:
+          type: integer
+          minimum: 0
+          description: Rate untuk Private Class (dalam rupiah)
         instagram:
           type: string
           format: uri
@@ -1413,7 +1453,19 @@ components:
         rate_per_class:
           type: integer
           minimum: 0
-          description: Rate per class in currency units
+          description: Default rate per class (legacy field)
+        rate_group_class:
+          type: integer
+          minimum: 0
+          description: Rate untuk Group Class (dalam rupiah)
+        rate_semi_private_class:
+          type: integer
+          minimum: 0
+          description: Rate untuk Semi-Private Class (dalam rupiah)
+        rate_private_class:
+          type: integer
+          minimum: 0
+          description: Rate untuk Private Class (dalam rupiah)
         instagram:
           type: string
           format: uri
