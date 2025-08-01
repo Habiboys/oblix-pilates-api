@@ -62,11 +62,35 @@ const getMyPackages = async (req, res) => {
     // Get all member packages sorted by priority for history
     const allMemberPackages = await getAllMemberPackagesByPriority(member_id);
     
-    // Calculate total sessions owned by member (not just remaining)
+    // Calculate total sessions owned by member from package definitions
     const totalSessionsOwned = allMemberPackages.reduce((total, memberPackage) => {
-      const groupTotal = memberPackage.group_sessions || 0;
-      const semiPrivateTotal = memberPackage.semi_private_sessions || 0;
-      const privateTotal = memberPackage.private_sessions || 0;
+      let groupTotal = 0;
+      let semiPrivateTotal = 0;
+      let privateTotal = 0;
+      
+      // Get session counts from package definition
+      if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+        const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+        const sessionCount = memberPackage.Package.PackageMembership.session || 0;
+        
+        if (categoryName === 'Semi-Private Class') {
+          semiPrivateTotal = sessionCount;
+        } else if (categoryName === 'Private Class') {
+          privateTotal = sessionCount;
+        } else {
+          groupTotal = sessionCount;
+        }
+      } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
+        groupTotal = memberPackage.Package.PackageFirstTrial.group_session || 0;
+        privateTotal = memberPackage.Package.PackageFirstTrial.private_session || 0;
+      } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
+        groupTotal = memberPackage.Package.PackagePromo.group_session || 0;
+        privateTotal = memberPackage.Package.PackagePromo.private_session || 0;
+      } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
+        groupTotal = memberPackage.Package.PackageBonus.group_session || 0;
+        privateTotal = memberPackage.Package.PackageBonus.private_session || 0;
+      }
+      
       return {
         group: total.group + groupTotal,
         semi_private: total.semi_private + semiPrivateTotal,
@@ -189,10 +213,34 @@ const getMyPackages = async (req, res) => {
         return hasValidOrder || isBonusPackage;
       })
       .map((memberPackage, index) => {
-        // Calculate session details for this package using member package data
-        const groupSessions = memberPackage.group_sessions || 0;
-        const semiPrivateSessions = memberPackage.semi_private_sessions || 0;
-        const privateSessions = memberPackage.private_sessions || 0;
+        // Calculate session details for this package from package definition
+        let groupSessions = 0;
+        let semiPrivateSessions = 0;
+        let privateSessions = 0;
+        
+        // Get session counts from package definition
+        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+          const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+          const sessionCount = memberPackage.Package.PackageMembership.session || 0;
+          
+          if (categoryName === 'Semi-Private Class') {
+            semiPrivateSessions = sessionCount;
+          } else if (categoryName === 'Private Class') {
+            privateSessions = sessionCount;
+          } else {
+            groupSessions = sessionCount;
+          }
+        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
+          groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
+          privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
+        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
+          groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
+          privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
+        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
+          groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
+          privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
+        }
+        
         const totalSessions = groupSessions + semiPrivateSessions + privateSessions;
         
         const usedGroupSessions = memberPackage.used_group_session || 0;
