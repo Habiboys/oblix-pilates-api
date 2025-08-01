@@ -61,6 +61,19 @@ const getMyPackages = async (req, res) => {
     
     // Get all member packages sorted by priority for history
     const allMemberPackages = await getAllMemberPackagesByPriority(member_id);
+    
+    // Calculate total sessions owned by member (not just remaining)
+    const totalSessionsOwned = allMemberPackages.reduce((total, memberPackage) => {
+      const groupTotal = memberPackage.group_sessions || 0;
+      const semiPrivateTotal = memberPackage.semi_private_sessions || 0;
+      const privateTotal = memberPackage.private_sessions || 0;
+      return {
+        group: total.group + groupTotal,
+        semi_private: total.semi_private + semiPrivateTotal,
+        private: total.private + privateTotal,
+        all: total.all + groupTotal + semiPrivateTotal + privateTotal
+      };
+    }, { group: 0, semi_private: 0, private: 0, all: 0 });
 
     // Process packages with updated session data
     const packagesWithUsage = memberPackages.map((memberPackage) => {
@@ -228,26 +241,26 @@ const getMyPackages = async (req, res) => {
       message: 'My packages retrieved successfully',
       data: {
         total_sessions: {
-          total: totalAvailableSessions.total_all_sessions,
+          total: totalSessionsOwned.all,
           used: totalAvailableSessions.used_all_sessions,
           remaining: totalAvailableSessions.remaining_all_sessions
         },
         group_sessions: {
-          total: totalAvailableSessions.total_group_sessions,
+          total: totalSessionsOwned.group,
           used: totalAvailableSessions.used_group_sessions,
           remaining: totalAvailableSessions.remaining_group_sessions
         },
         semi_private_sessions: {
-          total: totalAvailableSessions.total_semi_private_sessions,
+          total: totalSessionsOwned.semi_private,
           used: totalAvailableSessions.used_semi_private_sessions,
           remaining: totalAvailableSessions.remaining_semi_private_sessions
         },
         private_sessions: {
-          total: totalAvailableSessions.total_private_sessions,
+          total: totalSessionsOwned.private,
           used: totalAvailableSessions.used_private_sessions,
           remaining: totalAvailableSessions.remaining_private_sessions
         },
-        package_history: packageHistory
+        active_package: packageHistory
       }
     };
 
