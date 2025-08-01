@@ -93,13 +93,7 @@ const createUserBooking = async (req, res) => {
                     message: 'Anda sudah melakukan booking untuk schedule ini'
                 });
             }
-        }
-
-        if (existingBooking) {
-            return res.status(400).json({
-                success: false,
-                message: 'Anda sudah melakukan booking untuk schedule ini'
-            });
+            // Jika status cancelled, akan di-reuse nanti (tidak perlu return error)
         }
 
         // Validasi konflik jadwal member
