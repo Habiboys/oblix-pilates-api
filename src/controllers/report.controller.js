@@ -6,7 +6,10 @@ const { getTrainerRateByClassType } = require('../utils/trainerUtils');
 // Get revenue report
 const getRevenueReport = async (req, res) => {
     try {
-        const { start_date, end_date } = req.query;
+        const { start_date, end_date, page = 1, limit = 10 } = req.query;
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const offset = (pageNum - 1) * limitNum;
         
         // Set default date range if not provided (current month)
         const today = new Date();
@@ -46,7 +49,17 @@ const getRevenueReport = async (req, res) => {
             return sum + (parseFloat(payment.Order?.total_amount) || 0);
         }, 0);
 
-        // Get payment details with Order and Member information
+        // Get total count for pagination
+        const totalPaymentsCount = await Payment.count({
+            where: {
+                payment_status: 'success',
+                transaction_time: {
+                    [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
+                }
+            }
+        });
+
+        // Get payment details with Order and Member information (with pagination)
         const payments = await Payment.findAll({
             where: {
                 payment_status: 'success',
@@ -65,12 +78,17 @@ const getRevenueReport = async (req, res) => {
                     ]
                 }
             ],
-            order: [['transaction_time', 'DESC']]
+            order: [['transaction_time', 'DESC']],
+            limit: limitNum,
+            offset: offset
         });
+
+        // Calculate pagination info
+        const totalPages = Math.ceil(totalPaymentsCount / limitNum);
 
         // Format payment data
         const formattedPayments = payments.map((payment, index) => ({
-            no: index + 1,
+            no: offset + index + 1,
             payment_date: new Date(payment.transaction_time).toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'short',
@@ -100,6 +118,14 @@ const getRevenueReport = async (req, res) => {
                 date_range: {
                     start_date: startDate,
                     end_date: endDate
+                },
+                pagination: {
+                    current_page: pageNum,
+                    total_pages: totalPages,
+                    total_items: totalPaymentsCount,
+                    items_per_page: limitNum,
+                    has_next_page: pageNum < totalPages,
+                    has_prev_page: pageNum > 1
                 }
             }
         });
