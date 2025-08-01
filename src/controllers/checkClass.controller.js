@@ -124,16 +124,14 @@ const getAvailableClasses = async (req, res) => {
         let canBook = false;
         let availableSessions = 0;
         
-        if (priorityPackage) {
-          if (scheduleType === 'group') {
-            availableSessions = remainingSessions.group;
-          } else if (scheduleType === 'semi_private') {
-            availableSessions = remainingSessions.semi_private;
-          } else if (scheduleType === 'private') {
-            availableSessions = remainingSessions.private;
-          }
-          canBook = availableSessions > 0;
+        if (scheduleType === 'group') {
+          availableSessions = remainingSessions.group;
+        } else if (scheduleType === 'semi_private') {
+          availableSessions = remainingSessions.semi_private;
+        } else if (scheduleType === 'private') {
+          availableSessions = remainingSessions.private;
         }
+        canBook = availableSessions > 0;
 
         // Check if member already booked this schedule
         const existingBooking = await Booking.findOne({

@@ -1,4 +1,4 @@
-const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Booking, Schedule, Category } = require('../models');
+const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Booking, Schedule, Category, Order } = require('../models');
 const { Op } = require('sequelize');
 
 /**
