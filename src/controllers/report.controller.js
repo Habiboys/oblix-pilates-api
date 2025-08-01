@@ -6,7 +6,7 @@ const { getTrainerRateByClassType } = require('../utils/trainerUtils');
 // Get revenue report
 const getRevenueReport = async (req, res) => {
     try {
-        const { start_date, end_date, page = 1, limit = 10 } = req.query;
+        const { start_date, end_date, page = 1, limit = 10, search } = req.query;
         const pageNum = parseInt(page);
         const limitNum = parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
@@ -49,35 +49,75 @@ const getRevenueReport = async (req, res) => {
             return sum + (parseFloat(payment.Order?.total_amount) || 0);
         }, 0);
 
-        // Get total count for pagination
-        const totalPaymentsCount = await Payment.count({
-            where: {
-                payment_status: 'success',
-                transaction_time: {
-                    [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
-                }
+        // Build search conditions
+        const searchConditions = {
+            payment_status: 'success',
+            transaction_time: {
+                [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
             }
-        });
+        };
 
-        // Get payment details with Order and Member information (with pagination)
-        const payments = await Payment.findAll({
-            where: {
-                payment_status: 'success',
-                transaction_time: {
-                    [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
-                }
-            },
-            include: [
+        // Add search conditions if search parameter is provided
+        let includeConditions = [
+            {
+                model: Order,
+                include: [
+                    {
+                        model: Member,
+                        attributes: ['id', 'full_name']
+                    }
+                ]
+            }
+        ];
+
+        if (search && search.trim()) {
+            const searchTerm = `%${search.trim()}%`;
+            includeConditions = [
                 {
                     model: Order,
                     include: [
                         {
                             model: Member,
-                            attributes: ['id', 'full_name']
+                            attributes: ['id', 'full_name'],
+                            where: {
+                                full_name: {
+                                    [Op.like]: searchTerm
+                                }
+                            }
                         }
-                    ]
+                    ],
+                    where: {
+                        [Op.or]: [
+                            {
+                                package_name: {
+                                    [Op.like]: searchTerm
+                                }
+                            }
+                        ]
+                    }
                 }
-            ],
+            ];
+            
+            // Add payment method search to main conditions
+            searchConditions[Op.or] = [
+                {
+                    payment_type: {
+                        [Op.like]: searchTerm
+                    }
+                }
+            ];
+        }
+
+        // Get total count for pagination with search
+        const totalPaymentsCount = await Payment.count({
+            where: searchConditions,
+            include: includeConditions
+        });
+
+        // Get payment details with Order and Member information (with pagination and search)
+        const payments = await Payment.findAll({
+            where: searchConditions,
+            include: includeConditions,
             order: [['transaction_time', 'DESC']],
             limit: limitNum,
             offset: offset

@@ -6659,6 +6659,8 @@ paths:
 
         **Features:**
         - Filter by date range (default: current month)
+        - Search by member name, package name, or payment method
+        - Pagination support
         - Total members, payments, and revenue metrics
         - Detailed payment list with member and package information
 
@@ -6680,6 +6682,29 @@ paths:
             format: date
             example: '2025-01-31'
           description: End date for report (YYYY-MM-DD)
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+          description: Number of items per page (max 100)
+        - in: query
+          name: search
+          schema:
+            type: string
+            example: sutejo
+          description: Search by member name, package name, or payment method
       responses:
         '200':
           description: Revenue report retrieved successfully
