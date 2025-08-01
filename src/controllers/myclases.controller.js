@@ -82,6 +82,12 @@ const getMyClasses = async (req, res) => {
                         {
                             model: Trainer,
                             attributes: ['id', 'title', 'picture']
+                        },
+                        {
+                            model: Booking,
+                            attributes: ['id', 'status'],
+                            where: { status: 'signup' },
+                            required: false
                         }
                     ]
                 }
@@ -140,8 +146,9 @@ const getMyClasses = async (req, res) => {
                 const scheduleType = schedule?.type || 'group';
                 const totalSpots = schedule.pax || 20;
                 
-                // Get booked count for this schedule
-                const bookedCount = booking.status === 'signup' ? 1 : 0; // Simplified for now
+                // Get booked count from the schedule's booking count (this is a simplified approach)
+                // In a real implementation, you might want to add a virtual field or use a more efficient query
+                const bookedCount = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'signup').length : 0;
 
                 // For waitlist, show waitlist position instead of spot
                 let spotInfo = `${bookedCount}/${totalSpots}`;
