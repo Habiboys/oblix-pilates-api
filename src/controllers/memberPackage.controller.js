@@ -176,45 +176,22 @@ const getMyPackages = async (req, res) => {
         return hasValidOrder || isBonusPackage;
       })
       .map((memberPackage, index) => {
-        // Calculate session details for this package
-        let totalSessions = 0;
-        let groupSessions = 0;
-        let semiPrivateSessions = 0;
-        let privateSessions = 0;
+        // Calculate session details for this package using member package data
+        const groupSessions = memberPackage.group_sessions || 0;
+        const semiPrivateSessions = memberPackage.semi_private_sessions || 0;
+        const privateSessions = memberPackage.private_sessions || 0;
+        const totalSessions = groupSessions + semiPrivateSessions + privateSessions;
         
-        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
-          const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
-          const sessionCount = memberPackage.Package.PackageMembership.session || 0;
-          
-          if (categoryName === 'Semi-Private Class') {
-            semiPrivateSessions = sessionCount;
-            totalSessions = sessionCount;
-          } else if (categoryName === 'Private Class') {
-            privateSessions = sessionCount;
-            totalSessions = sessionCount;
-          } else {
-            groupSessions = sessionCount;
-            totalSessions = sessionCount;
-          }
-        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
-          groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
-          privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
-          totalSessions = groupSessions + privateSessions;
-        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
-          groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
-          privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
-          totalSessions = groupSessions + privateSessions;
-        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-          groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
-          privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
-          totalSessions = groupSessions + privateSessions;
-        }
-
-        const usedGroupSessions = groupSessions - (memberPackage.remaining_group_session || 0);
-        const usedSemiPrivateSessions = semiPrivateSessions - (memberPackage.remaining_semi_private_session || 0);
-        const usedPrivateSessions = privateSessions - (memberPackage.remaining_private_session || 0);
+        const usedGroupSessions = memberPackage.used_group_session || 0;
+        const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
+        const usedPrivateSessions = memberPackage.used_private_session || 0;
         const usedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
-        const remainingSessions = totalSessions - usedSessions;
+        
+        const remainingGroupSessions = memberPackage.remaining_group_session || 0;
+        const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
+        const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
+        const remainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
+        
         const progressPercentage = totalSessions > 0 ? Math.round((usedSessions / totalSessions) * 100) : 0;
 
         return {
@@ -230,17 +207,17 @@ const getMyPackages = async (req, res) => {
           group_sessions: {
             total: groupSessions,
             used: usedGroupSessions,
-            remaining: memberPackage.remaining_group_session || 0
+            remaining: remainingGroupSessions
           },
           semi_private_sessions: {
             total: semiPrivateSessions,
             used: usedSemiPrivateSessions,
-            remaining: memberPackage.remaining_semi_private_session || 0
+            remaining: remainingSemiPrivateSessions
           },
           private_sessions: {
             total: privateSessions,
             used: usedPrivateSessions,
-            remaining: memberPackage.remaining_private_session || 0
+            remaining: remainingPrivateSessions
           }
         };
       });

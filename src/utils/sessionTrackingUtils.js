@@ -580,14 +580,34 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
         available = memberPackage.remaining_private_session || 0;
         canHandleScheduleType = available > 0;
       } else if (scheduleType === 'semi_private') {
-        // Semi-private can use either group or private sessions
-        const groupAvailable = memberPackage.remaining_group_session || 0;
-        const privateAvailable = memberPackage.remaining_private_session || 0;
-        available = Math.max(groupAvailable, privateAvailable);
-        canHandleScheduleType = available > 0;
+        // Prioritaskan sesi semi-private terlebih dahulu
+        const semiPrivateAvailable = memberPackage.remaining_semi_private_session || 0;
+        if (semiPrivateAvailable > 0) {
+          available = semiPrivateAvailable;
+          canHandleScheduleType = true;
+        } else {
+          // Fallback ke group atau private jika tidak ada sesi semi-private
+          const groupAvailable = memberPackage.remaining_group_session || 0;
+          const privateAvailable = memberPackage.remaining_private_session || 0;
+          available = Math.max(groupAvailable, privateAvailable);
+          canHandleScheduleType = available > 0;
+        }
       }
 
       if (canHandleScheduleType) {
+        // Determine which session type is being used
+        let sessionTypeUsed = scheduleType;
+        if (scheduleType === 'semi_private') {
+          const semiPrivateAvailable = memberPackage.remaining_semi_private_session || 0;
+          if (semiPrivateAvailable > 0) {
+            sessionTypeUsed = 'semi_private';
+          } else {
+            const groupAvailable = memberPackage.remaining_group_session || 0;
+            const privateAvailable = memberPackage.remaining_private_session || 0;
+            sessionTypeUsed = groupAvailable >= privateAvailable ? 'group' : 'private';
+          }
+        }
+
         if (!bestPackage || available > bestAvailable) {
           // If this is the first package or has more sessions, make it the best
           if (bestPackage) {
@@ -599,6 +619,7 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
             package_name: memberPackage.Package?.name || 'Unknown Package',
             package_type: memberPackage.Package?.type || 'unknown',
             available_sessions: available,
+            session_type_used: sessionTypeUsed,
             priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
           };
           bestAvailable = available;
@@ -609,6 +630,7 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
             package_name: memberPackage.Package?.name || 'Unknown Package',
             package_type: memberPackage.Package?.type || 'unknown',
             available_sessions: available,
+            session_type_used: sessionTypeUsed,
             priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
           });
         }
