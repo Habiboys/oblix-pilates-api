@@ -1546,9 +1546,9 @@ components:
                 description: "When the booking was cancelled"
               cancelled_by:
                 type: string
-                format: uuid
+                enum: [user, admin, system]
                 nullable: true
-                description: "User ID who cancelled the booking (null for system auto-cancel)"
+                description: "Who cancelled the booking (user, admin, or system)"
               session_left:
                 type: object
                 nullable: true

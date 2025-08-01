@@ -640,7 +640,7 @@ const adminCancelBooking = async (req, res) => {
                 schedule_time: booking.Schedule.time_start,
                 status: booking.status,
                 cancelled_at: booking.updatedAt,
-                cancelled_by: req.user.id,
+                cancelled_by: 'admin',
                 cancel_reason: cancelReason,
                 promoted_from_waitlist: promotionResult ? {
                     member_name: promotionResult.Member?.full_name,

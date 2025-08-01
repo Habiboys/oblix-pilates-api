@@ -517,8 +517,9 @@ paths:
                         example: "2025-01-15T10:30:00Z"
                       cancelled_by:
                         type: string
-                        format: uuid
-                        example: "123e4567-e89b-12d3-a456-426614174003"
+                        enum: [user, admin, system]
+                        example: "user"
+                        description: "Who cancelled the booking (user, admin, or system)"
                       cancel_reason:
                         type: string
                         example: "Class cancelled due to trainer unavailability"

@@ -426,8 +426,9 @@ components:
           nullable: true
         cancelled_by:
           type: string
-          format: uuid
+          enum: [user, admin, system]
           nullable: true
+          description: "Who cancelled the order (user, admin, or system)"
         cancel_reason:
           type: string
           nullable: true
