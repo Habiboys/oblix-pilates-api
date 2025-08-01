@@ -93,14 +93,6 @@ const createUserBooking = async (req, res) => {
                     message: 'Anda sudah melakukan booking untuk schedule ini'
                 });
             }
-            
-            // Jika booking terakhir adalah cancelled, berikan informasi
-            if (existingBooking.status === 'cancelled') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Anda sudah pernah booking dan cancel untuk schedule ini. Silakan hubungi admin jika ingin booking kembali.'
-                });
-            }
         }
 
         if (existingBooking) {
@@ -173,15 +165,33 @@ const createUserBooking = async (req, res) => {
 
         const selectedPackageId = bestPackage.package_id;
 
-        // Buat booking
-        const booking = await Booking.create({
-            schedule_id,
-            member_id,
-            package_id: selectedPackageId,
-            status: bookingStatus,
-            booking_date: new Date(),
-            notes: bookingNotes
-        });
+        let booking;
+        let isReusedBooking = false;
+
+        // Jika ada existing booking dengan status cancelled, gunakan itu
+        if (existingBooking && existingBooking.status === 'cancelled') {
+            // Update existing booking
+            await existingBooking.update({
+                status: bookingStatus,
+                booking_date: new Date(),
+                notes: bookingNotes,
+                cancelled_by: null // Reset cancelled_by
+            });
+            booking = existingBooking;
+            isReusedBooking = true;
+            logger.info(`♻️ Reusing cancelled booking ${existingBooking.id} for member ${member_id}`);
+        } else {
+            // Buat booking baru
+            booking = await Booking.create({
+                schedule_id,
+                member_id,
+                package_id: selectedPackageId,
+                status: bookingStatus,
+                booking_date: new Date(),
+                notes: bookingNotes
+            });
+            logger.info(`🆕 Created new booking ${booking.id} for member ${member_id}`);
+        }
 
         // Fetch booking dengan associations
         const createdBooking = await Booking.findByPk(booking.id, {
@@ -254,7 +264,7 @@ const createUserBooking = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Booking berhasil dibuat',
+            message: isReusedBooking ? 'Booking berhasil diaktifkan kembali' : 'Booking berhasil dibuat',
             data: {
                 booking_id: createdBooking.id,
                 status: createdBooking.status,
