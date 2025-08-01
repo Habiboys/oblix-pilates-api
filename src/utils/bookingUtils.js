@@ -141,7 +141,7 @@ const processWaitlistPromotion = async (scheduleId) => {
             }
         });
 
-        const maxCapacity = schedule.type === 'semi_private' ? 4 : 20;
+        const maxCapacity = schedule.pax || 20;
 
         // If we have space, promote from waitlist
         if (currentSignups < maxCapacity) {

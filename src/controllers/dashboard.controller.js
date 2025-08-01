@@ -50,8 +50,7 @@ const getDashboardData = async (req, res) => {
         // Format today classes data
         const formattedTodayClasses = todayClasses.map((schedule, index) => {
             const signupCount = schedule.Bookings ? schedule.Bookings.length : 0;
-            const maxCapacity = schedule.type === 'semi_private' ? 4 : 
-                               schedule.type === 'private' ? 1 : 20;
+            const maxCapacity = schedule.pax || 20;
 
             return {
                 no: index + 1,
@@ -249,8 +248,7 @@ const getTodayClasses = async (req, res) => {
         // Format today classes data
         const formattedTodayClasses = todayClasses.map((schedule, index) => {
             const signupCount = schedule.Bookings ? schedule.Bookings.length : 0;
-            const maxCapacity = schedule.type === 'semi_private' ? 4 : 
-                               schedule.type === 'private' ? 1 : 20;
+            const maxCapacity = schedule.pax || 20;
 
             return {
                 no: index + 1,

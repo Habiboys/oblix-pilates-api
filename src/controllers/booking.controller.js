@@ -73,7 +73,7 @@ const createUserBooking = async (req, res) => {
             }
         });
 
-        const maxCapacity = schedule.type === 'semi_private' ? 4 : schedule.pax || 20;
+        const maxCapacity = schedule.pax || 20;
         const minSignup = schedule.min_signup || 1;
         
         // Tentukan status booking

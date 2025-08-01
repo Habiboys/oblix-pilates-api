@@ -328,7 +328,7 @@ const getPayrollDetail = async (req, res) => {
         // Format class details with rate per class
         const classDetails = await Promise.all(schedules.map(async (schedule, index) => {
             const signupCount = schedule.Bookings ? schedule.Bookings.length : 0;
-            const maxCapacity = schedule.type === 'semi_private' ? 4 : 
+                            const maxCapacity = schedule.pax || 20; 
                                schedule.type === 'private' ? 1 : 20;
             const classType = schedule.type;
             const rate = await getTrainerRateByClassType(trainer.id, classType);

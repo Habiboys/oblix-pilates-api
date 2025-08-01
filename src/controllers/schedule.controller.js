@@ -1589,9 +1589,8 @@ whereClause.date_start = {
             const signupBookings = schedule.Bookings.filter(b => b.status === 'signup');
             const waitlistBookings = schedule.Bookings.filter(b => b.status === 'waiting_list');
             
-            // Tentukan kapasitas maksimal berdasarkan tipe kelas
-            const maxCapacity = schedule.type === 'semi_private' ? 4 : 
-                               schedule.type === 'private' ? 1 : 20;
+            // Tentukan kapasitas maksimal berdasarkan field pax
+            const maxCapacity = schedule.pax || 20;
             
             // Hitung slot tersisa
             const availableSlots = Math.max(0, maxCapacity - signupBookings.length);

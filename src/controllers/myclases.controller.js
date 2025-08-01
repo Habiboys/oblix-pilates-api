@@ -120,8 +120,7 @@ const getMyClasses = async (req, res) => {
 
                 // Calculate spot information with default fallback
                 const scheduleType = schedule?.type || 'group';
-                const totalSpots = scheduleType === 'semi_private' ? 4 : 
-                                  scheduleType === 'private' ? 1 : 20;
+                const totalSpots = schedule.pax || 20;
                 
                 // Get booked count for this schedule
                 const bookedCount = booking.status === 'signup' ? 1 : 0; // Simplified for now
