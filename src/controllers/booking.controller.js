@@ -76,15 +76,6 @@ const createUserBooking = async (req, res) => {
         const maxCapacity = schedule.pax || 20;
         const minSignup = schedule.min_signup || 1;
         
-        // Tentukan status booking
-        let bookingStatus = 'signup';
-        let bookingNotes = 'User booking';
-
-        if (currentSignups >= maxCapacity) {
-            bookingStatus = 'waiting_list';
-            bookingNotes = 'Booking masuk waitlist karena kelas penuh';
-        }
-
         // Cek apakah sudah ada booking untuk member ini di schedule ini
         const existingBooking = await Booking.findOne({
             where: {
@@ -153,6 +144,15 @@ const createUserBooking = async (req, res) => {
                     required_sessions: 1
                 }
             });
+        }
+
+        // Tentukan status booking (setelah memastikan member punya sesi)
+        let bookingStatus = 'signup';
+        let bookingNotes = 'User booking';
+
+        if (currentSignups >= maxCapacity) {
+            bookingStatus = 'waiting_list';
+            bookingNotes = 'Booking masuk waitlist karena kelas penuh';
         }
 
         const selectedPackageId = bestPackage.package_id;

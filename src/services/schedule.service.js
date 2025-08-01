@@ -10,8 +10,14 @@ class ScheduleService {
     /**
      * Get kapasitas maksimal berdasarkan tipe schedule
      */
-    static getMaxCapacity(type) {
-        switch (type) {
+    static getMaxCapacity(schedule) {
+        // Gunakan field pax dari schedule, fallback ke default berdasarkan type
+        if (schedule.pax) {
+            return schedule.pax;
+        }
+        
+        // Fallback ke default jika pax tidak ada
+        switch (schedule.type) {
             case 'group':
                 return 20;
             case 'semi_private':
@@ -45,7 +51,7 @@ class ScheduleService {
      * Hitung status kelas berdasarkan booking
      */
     static calculateScheduleStatus(schedule, signupBookings, waitlistBookings) {
-        const maxCapacity = this.getMaxCapacity(schedule.type);
+        const maxCapacity = this.getMaxCapacity(schedule);
         const minSignup = this.getMinSignup(schedule.type, schedule.min_signup);
         const availableSlots = Math.max(0, maxCapacity - signupBookings.length);
         const isFull = availableSlots === 0;
