@@ -80,12 +80,28 @@ const createUserBooking = async (req, res) => {
         const existingBooking = await Booking.findOne({
             where: {
                 schedule_id,
-                member_id,
-                status: {
-                    [require('sequelize').Op.in]: ['signup', 'waiting_list'] // Hanya cek booking yang aktif
-                }
-            }
+                member_id
+            },
+            order: [['createdAt', 'DESC']] // Ambil booking terbaru
         });
+
+        if (existingBooking) {
+            // Jika ada booking dengan status aktif, tidak boleh booking lagi
+            if (['signup', 'waiting_list'].includes(existingBooking.status)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Anda sudah melakukan booking untuk schedule ini'
+                });
+            }
+            
+            // Jika booking terakhir adalah cancelled, berikan informasi
+            if (existingBooking.status === 'cancelled') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Anda sudah pernah booking dan cancel untuk schedule ini. Silakan hubungi admin jika ingin booking kembali.'
+                });
+            }
+        }
 
         if (existingBooking) {
             return res.status(400).json({

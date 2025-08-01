@@ -89,17 +89,35 @@ const getMyClasses = async (req, res) => {
             order: orderClause
         });
 
+        logger.info(`Found ${bookings.length} bookings before filtering`);
+        if (type === 'waitlist') {
+            logger.info(`Waitlist bookings found: ${bookings.filter(b => b.status === 'waiting_list').length}`);
+            bookings.forEach(b => {
+                if (b.status === 'waiting_list') {
+                    logger.info(`Waitlist booking: ${b.id}, Schedule: ${b.Schedule?.date_start}, Status: ${b.status}`);
+                }
+            });
+        }
+
         // Filter by date after getting the data
         const filteredBookings = bookings.filter(booking => {
-            if (!booking.Schedule) return false;
+            if (!booking.Schedule) {
+                logger.warn(`Booking ${booking.id} has no schedule`);
+                return false;
+            }
             
             const scheduleDate = booking.Schedule.date_start;
-            if (!scheduleDate) return false;
+            if (!scheduleDate) {
+                logger.warn(`Schedule ${booking.Schedule.id} has no date_start`);
+                return false;
+            }
 
             switch (type) {
                 case 'upcoming':
-                case 'waitlist':
                     return scheduleDate >= currentDate.toISOString().split('T')[0];
+                case 'waitlist':
+                    // For waitlist, show all waitlist bookings regardless of date
+                    return true;
                 case 'post':
                     return scheduleDate < currentDate.toISOString().split('T')[0];
                 case 'cancelled':
@@ -125,6 +143,13 @@ const getMyClasses = async (req, res) => {
                 // Get booked count for this schedule
                 const bookedCount = booking.status === 'signup' ? 1 : 0; // Simplified for now
 
+                // For waitlist, show waitlist position instead of spot
+                let spotInfo = `${bookedCount}/${totalSpots}`;
+                if (booking.status === 'waiting_list') {
+                    // Get waitlist position (this is simplified, you might want to calculate actual position)
+                    spotInfo = `Waitlist #${index + 1}`;
+                }
+
                 return {
                     no: index + 1,
                     booking_id: booking.id,
@@ -132,7 +157,7 @@ const getMyClasses = async (req, res) => {
                     time: schedule ? `${schedule.time_start} - ${schedule.time_end}` : 'Unknown',
                     course: classData?.class_name || 'Unknown Class',
                     coach: trainerData?.title || 'Unknown Coach',
-                    spot: `${bookedCount}/${totalSpots}`,
+                    spot: spotInfo,
                     status: booking.status,
                     schedule_id: schedule?.id,
                     class_id: classData?.id,
