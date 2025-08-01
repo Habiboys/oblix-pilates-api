@@ -53,12 +53,9 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     cancelled_by: {
-      type: DataTypes.UUID,
+      type: DataTypes.STRING,
       allowNull: true,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'user atau admin'
     }
   }, {
     sequelize,

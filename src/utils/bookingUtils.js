@@ -72,7 +72,7 @@ const autoCancelExpiredBookings = async () => {
                             await booking.update({
                                 status: 'cancelled',
                                 notes: `Auto-cancelled: Kelas dibatalkan karena tidak memenuhi minimum peserta (${signupCount}/${minSignup}) dalam ${cancelBufferMinutes} menit sebelum kelas`,
-                                cancelled_by: null // System auto-cancel
+                                cancelled_by: 'system' // System auto-cancel
                             });
 
                             cancelledCount++;

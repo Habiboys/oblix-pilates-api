@@ -334,7 +334,7 @@ const updateBookingStatus = async (req, res) => {
         await booking.update({
             status: status || booking.status,
             notes: notes || booking.notes,
-            cancelled_by: status === 'cancelled' ? req.user.id : null
+            cancelled_by: status === 'cancelled' ? 'admin' : null
         });
 
         // Update session usage jika status berubah dari waiting_list ke signup
@@ -439,7 +439,7 @@ const cancelBooking = async (req, res) => {
         await booking.update({
             status: 'cancelled',
             notes: cancelReason,
-            cancelled_by: req.user.id // User yang melakukan cancel
+            cancelled_by: 'user' // User yang melakukan cancel
         });
 
         // Send WhatsApp cancellation notification (async)
@@ -570,7 +570,7 @@ const adminCancelBooking = async (req, res) => {
         await booking.update({
             status: 'cancelled',
             notes: cancelReason,
-            cancelled_by: req.user.id // Admin yang melakukan cancel
+            cancelled_by: 'admin' // Admin yang melakukan cancel
         });
 
         // Send WhatsApp cancellation notification (async)
