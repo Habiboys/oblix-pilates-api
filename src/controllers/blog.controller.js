@@ -2,6 +2,7 @@ const { Blog } = require('../models');
 const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
+const { generateUniqueSlug } = require('../utils/slugUtils');
 
 // Get all blogs with pagination and search
 const getAllBlogs = async (req, res) => {
@@ -12,7 +13,8 @@ const getAllBlogs = async (req, res) => {
         const whereClause = search ? {
             [Op.or]: [
                 { title: { [Op.like]: `%${search}%` } },
-                { content: { [Op.like]: `%${search}%` } }
+                { content: { [Op.like]: `%${search}%` } },
+                { slug: { [Op.like]: `%${search}%` } }
             ]
         } : {};
 
@@ -20,7 +22,8 @@ const getAllBlogs = async (req, res) => {
             where: whereClause,
             order: [['createdAt', 'DESC']],
             limit: parseInt(limit),
-            offset: parseInt(offset)
+            offset: parseInt(offset),
+            attributes: ['id', 'title', 'slug', 'picture', 'createdAt', 'updatedAt']
         });
 
         const totalPages = Math.ceil(count / limit);
@@ -66,6 +69,31 @@ const getBlogById = async (req, res) => {
     }
 };
 
+// Get blog by slug
+const getBlogBySlug = async (req, res) => {
+    try {
+        const { slug } = req.params;
+
+        const blog = await Blog.findOne({
+            where: { slug }
+        });
+
+        if (!blog) {
+            return res.status(404).json({
+                message: 'Blog not found'
+            });
+        }
+
+        res.status(200).json({
+            message: 'Blog retrieved successfully',
+            data: blog
+        });
+    } catch (error) {
+        console.error('Get blog by slug error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Create new blog
 const createBlog = async (req, res) => {
     try {
@@ -86,8 +114,17 @@ const createBlog = async (req, res) => {
             });
         }
 
+        // Generate unique slug
+        const checkSlugExists = async (slug) => {
+            const existing = await Blog.findOne({ where: { slug } });
+            return !!existing;
+        };
+        
+        const slug = await generateUniqueSlug(title, checkSlugExists);
+
         const blogData = {
             title,
+            slug,
             content,
             picture: req.file ? req.file.filename : null
         };
@@ -155,7 +192,22 @@ const updateBlog = async (req, res) => {
         }
 
         const updateData = {};
-        if (title !== undefined) updateData.title = title;
+        if (title !== undefined) {
+            updateData.title = title;
+            // Generate new slug if title changed
+            if (title !== blog.title) {
+                const checkSlugExists = async (slug) => {
+                    const existing = await Blog.findOne({ 
+                        where: { 
+                            slug,
+                            id: { [Op.ne]: id } // Exclude current blog
+                        }
+                    });
+                    return !!existing;
+                };
+                updateData.slug = await generateUniqueSlug(title, checkSlugExists);
+            }
+        }
         if (content !== undefined) updateData.content = content;
 
         // Handle picture update
@@ -224,6 +276,7 @@ const deleteBlog = async (req, res) => {
 module.exports = {
     getAllBlogs,
     getBlogById,
+    getBlogBySlug,
     createBlog,
     updateBlog,
     deleteBlog

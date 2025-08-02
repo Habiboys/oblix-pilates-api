@@ -34,8 +34,18 @@ const getBlogSchema = Joi.object({
     })
 });
 
+const getBlogBySlugSchema = Joi.object({
+    slug: Joi.string().min(3).max(255).required().messages({
+        'string.empty': 'Slug is required',
+        'string.min': 'Slug must be at least 3 characters long',
+        'string.max': 'Slug cannot exceed 255 characters',
+        'any.required': 'Slug is required'
+    })
+});
+
 module.exports = {
     createBlogSchema,
     updateBlogSchema,
-    getBlogSchema
+    getBlogSchema,
+    getBlogBySlugSchema
 }; 

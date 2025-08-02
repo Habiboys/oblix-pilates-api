@@ -23,7 +23,6 @@ module.exports = (sequelize, DataTypes) => {
     title: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true,
       validate: {
         notEmpty: {
           msg: 'Title is required'
@@ -31,6 +30,20 @@ module.exports = (sequelize, DataTypes) => {
         len: {
           args: [3, 255],
           msg: 'Title must be between 3 and 255 characters'
+        }
+      }
+    },
+    slug: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      unique: true,
+      validate: {
+        notEmpty: {
+          msg: 'Slug is required'
+        },
+        len: {
+          args: [3, 255],
+          msg: 'Slug must be between 3 and 255 characters'
         }
       }
     },

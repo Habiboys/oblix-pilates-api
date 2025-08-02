@@ -3,6 +3,7 @@ const router = express.Router();
 const { 
     getAllBlogs, 
     getBlogById, 
+    getBlogBySlug,
     createBlog, 
     updateBlog, 
     deleteBlog
@@ -13,11 +14,13 @@ const { uploadFile, handleUploadError } = require('../middlewares/upload.middlew
 const { 
     createBlogSchema, 
     updateBlogSchema, 
-    getBlogSchema 
+    getBlogSchema,
+    getBlogBySlugSchema
 } = require('../validations/blog.validation');
 
 // Public routes - semua user bisa akses
 router.get('/', getAllBlogs);
+router.get('/slug/:slug', validate(getBlogBySlugSchema, 'params'), getBlogBySlug);
 router.get('/:id', validate(getBlogSchema, 'params'), getBlogById);
 
 // Admin only routes - hanya admin yang bisa create, update, delete
