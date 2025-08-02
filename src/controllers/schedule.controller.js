@@ -1024,6 +1024,11 @@ const getPrivateScheduleById = async (req, res) => {
 // Create new private schedule with auto booking
 const createPrivateSchedule = async (req, res) => {
     try {
+        logger.info('🚀 Starting createPrivateSchedule with data:', {
+            body: req.body,
+            user: req.user?.id
+        });
+
         const {
             class_id,
             trainer_id,
@@ -1040,37 +1045,46 @@ const createPrivateSchedule = async (req, res) => {
             repeat_days // Added repeat_days
         } = req.body;
 
+        logger.info('📋 Validating input data...');
+
         // Validate class exists
         const classData = await Class.findByPk(class_id);
         if (!classData) {
+            logger.warn('❌ Class not found:', class_id);
             return res.status(400).json({
                 status: 'error',
                 message: 'Class not found'
             });
         }
+        logger.info('✅ Class validated:', classData.class_name);
 
         // Validate trainer exists
         const trainer = await Trainer.findByPk(trainer_id);
         if (!trainer) {
+            logger.warn('❌ Trainer not found:', trainer_id);
             return res.status(400).json({
                 status: 'error',
                 message: 'Trainer not found'
             });
         }
+        logger.info('✅ Trainer validated:', trainer.title);
 
         // Validate member exists
         const member = await Member.findByPk(member_id);
         if (!member) {
+            logger.warn('❌ Member not found:', member_id);
             return res.status(400).json({
                 status: 'error',
                 message: 'Member not found'
             });
         }
+        logger.info('✅ Member validated:', member.full_name);
 
         // Validasi konflik jadwal akan dilakukan setelah schedule dibuat
 
         // Validate repeat_type
         if (repeat_type === 'weekly' && !schedule_until) {
+            logger.warn('❌ Schedule until date is required for weekly repeat');
             return res.status(400).json({
                 status: 'error',
                 message: 'Schedule until date is required for weekly repeat'
@@ -1079,6 +1093,7 @@ const createPrivateSchedule = async (req, res) => {
 
         // date_start wajib untuk semua jenis schedule
         if (!date_start) {
+            logger.warn('❌ date_start is required for all schedules');
             return res.status(400).json({
                 status: 'error',
                 message: 'date_start is required for all schedules'
@@ -1089,6 +1104,7 @@ const createPrivateSchedule = async (req, res) => {
         let picture = null;
         if (req.file) {
             picture = req.file.filename;
+            logger.info('📸 Picture uploaded:', picture);
         }
 
         // Create schedule data
@@ -1110,11 +1126,16 @@ const createPrivateSchedule = async (req, res) => {
             picture
         };
 
+        logger.info('📅 Creating schedule(s) with data:', scheduleData);
+
         // Create schedule(s) berdasarkan repeat type
         const createdSchedules = await createRepeatSchedules(scheduleData, repeat_type, schedule_until, repeat_days);
+        logger.info(`✅ Created ${createdSchedules.length} schedule(s)`);
 
         // Cek konflik jadwal trainer dan member untuk semua schedule yang akan dibuat
         for (const schedule of createdSchedules) {
+            logger.info(`🔍 Checking conflicts for schedule: ${schedule.id} on ${schedule.date_start}`);
+            
             // Cek konflik trainer
             const trainerConflict = await validateTrainerScheduleConflict(
                 trainer_id,
@@ -1125,6 +1146,7 @@ const createPrivateSchedule = async (req, res) => {
             );
 
             if (trainerConflict.hasConflict) {
+                logger.warn('❌ Trainer conflict detected:', trainerConflict.conflicts);
                 // Hapus schedule yang sudah dibuat jika ada konflik
                 for (const createdSchedule of createdSchedules) {
                     await createdSchedule.destroy();
@@ -1138,6 +1160,7 @@ const createPrivateSchedule = async (req, res) => {
                     }
                 });
             }
+            logger.info('✅ No trainer conflicts');
 
             // Cek konflik member
             const memberConflict = await validateMemberScheduleConflict(
@@ -1148,6 +1171,7 @@ const createPrivateSchedule = async (req, res) => {
             );
 
             if (memberConflict.hasConflict) {
+                logger.warn('❌ Member conflict detected:', memberConflict.conflicts);
                 // Hapus schedule yang sudah dibuat jika ada konflik
                 for (const createdSchedule of createdSchedules) {
                     await createdSchedule.destroy();
@@ -1161,12 +1185,15 @@ const createPrivateSchedule = async (req, res) => {
                     }
                 });
             }
+            logger.info('✅ No member conflicts');
         }
 
         // Cek jatah sesi member sebelum booking
+        logger.info(`🔍 Checking session availability for member: ${member_id}, required: ${createdSchedules.length}`);
         const sessionValidation = await validateSessionAvailability(member_id, createdSchedules.length);
         
         if (!sessionValidation.isValid) {
+            logger.warn('❌ Insufficient sessions:', sessionValidation);
             return res.status(400).json({
                 status: 'error',
                 message: 'Member tidak memiliki jatah sesi yang cukup untuk booking',
@@ -1179,11 +1206,15 @@ const createPrivateSchedule = async (req, res) => {
                 }
             });
         }
+        logger.info('✅ Session validation passed');
 
         // Buat alokasi sesi untuk booking
+        logger.info('📦 Creating session allocation...');
         const sessionAllocation = await createSessionAllocation(member_id, createdSchedules.length);
+        logger.info(`✅ Session allocation created: ${sessionAllocation.length} allocations`);
 
         // Auto booking untuk setiap schedule yang dibuat
+        logger.info('📝 Creating auto bookings...');
         const bookings = [];
         for (let i = 0; i < createdSchedules.length; i++) {
             const schedule = createdSchedules[i];
@@ -1199,6 +1230,7 @@ const createPrivateSchedule = async (req, res) => {
             });
             
             bookings.push(booking);
+            logger.info(`✅ Booking created: ${booking.id} for schedule: ${schedule.id}`);
         }
 
         // Fetch created schedule dengan associations (ambil yang pertama untuk response)
@@ -1234,6 +1266,7 @@ const createPrivateSchedule = async (req, res) => {
             logger.error('❌ Error refreshing dynamic cancel scheduling:', error);
         }
 
+        logger.info('🎉 Private schedule creation completed successfully');
         res.status(201).json({
             message: `Private schedule created successfully${repeat_type === 'weekly' ? ` (${createdSchedules.length} schedules generated)` : ''}`,
             data: {
@@ -1256,6 +1289,7 @@ const createPrivateSchedule = async (req, res) => {
                 fs.unlinkSync(filePath);
             }
         }
+        logger.error('❌ Create private schedule error:', error);
         console.error('Create private schedule error:', error);
         res.status(500).json({ 
             status: 'error',

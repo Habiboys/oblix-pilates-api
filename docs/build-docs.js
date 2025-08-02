@@ -257,6 +257,17 @@ if (myClassesDoc) {
 }
 
 
+
+// Load and merge upload endpoints
+const uploadDoc = loadYamlFile(path.join(__dirname, 'upload.yaml'));
+if (uploadDoc) {
+  console.log('📋 Upload doc paths:', Object.keys(uploadDoc.paths || {}));
+  mergePaths(baseDoc, uploadDoc);
+  console.log('✅ Merged upload endpoints');
+} else {
+  console.log('❌ Failed to load upload.yaml');
+}
+
     // Add tags
   baseDoc.tags = [
     {
@@ -342,6 +353,10 @@ if (myClassesDoc) {
   {
     name: 'Report',
     description: 'Revenue and payroll reporting system'
+  },
+  {
+    name: 'Upload',
+    description: 'File upload endpoints for content images'
   }
   ];
 

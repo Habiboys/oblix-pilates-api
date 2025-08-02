@@ -7,10 +7,10 @@ const createBlogSchema = Joi.object({
         'string.max': 'Title cannot exceed 255 characters',
         'any.required': 'Title is required'
     }),
-    content: Joi.string().min(10).max(10000).required().messages({
+    content: Joi.string().min(10).max(50000).required().messages({
         'string.empty': 'Content is required',
         'string.min': 'Content must be at least 10 characters long',
-        'string.max': 'Content cannot exceed 10000 characters',
+        'string.max': 'Content cannot exceed 50000 characters',
         'any.required': 'Content is required'
     })
 });
@@ -20,9 +20,9 @@ const updateBlogSchema = Joi.object({
         'string.min': 'Title must be at least 3 characters long',
         'string.max': 'Title cannot exceed 255 characters'
     }),
-    content: Joi.string().min(10).max(10000).optional().messages({
+    content: Joi.string().min(10).max(50000).optional().messages({
         'string.min': 'Content must be at least 10 characters long',
-        'string.max': 'Content cannot exceed 10000 characters'
+        'string.max': 'Content cannot exceed 50000 characters'
     })
 });
 

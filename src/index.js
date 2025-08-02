@@ -30,6 +30,7 @@ const reminderRoutes = require('./routes/reminder.route');
 const myClassesRoutes = require('./routes/myclasses.route');
 const dashboardRoutes = require('./routes/dashboard.route');
 const reportRoutes = require('./routes/report.route');
+const uploadRoutes = require('./routes/upload.route');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
@@ -91,6 +92,7 @@ app.use('/api/reminder', reminderRoutes);
 app.use('/api/my-classes', myClassesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/upload', uploadRoutes);
 app.get('/', (req, res) => {
   res.send('Hello World');
 });
@@ -98,13 +100,13 @@ app.get('/', (req, res) => {
 // Health check endpoint for Docker
 app.get('/health', (req, res) => {
   res.status(200).json({
-    status: 'healthy',
+    status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
 });
 
-// Error handling middleware (harus di akhir)
+// Error handling middleware
 app.use(errorLogger);
 
 app.listen(PORT, () => {

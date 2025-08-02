@@ -20,6 +20,9 @@ router.get('/my-orders/:id', validateToken, validate(getOrderByIdSchema, 'params
 router.get('/:id', validateToken, validate(getOrderByIdSchema, 'params'), orderController.getOrderById);
 router.delete('/:order_id/cancel', validateToken, validate(cancelOrderSchema, 'params'), orderController.cancelOrder);
 
+// Pending order payment redirect
+router.get('/pending/:order_id/details', validateToken, orderController.getPendingOrderDetails);
+
 // Payment callback routes (no authentication required)
 router.post('/payment/notification', validate(paymentNotificationSchema), orderController.paymentNotification);
 router.get('/payment/finish', orderController.paymentFinish);

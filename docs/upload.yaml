@@ -1,0 +1,199 @@
+openapi: 3.0.0
+info:
+  title: Upload API
+  description: API untuk upload dan mengelola gambar content
+  version: 1.0.0
+
+paths:
+  /api/upload/content-image:
+    post:
+      summary: Upload gambar content
+      description: Upload gambar untuk digunakan dalam content blog
+      tags:
+        - Upload
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: File gambar (JPEG, PNG, GIF, WebP, maksimal 5MB)
+      responses:
+        '200':
+          description: Gambar berhasil diupload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Gambar berhasil diupload"
+                  data:
+                    $ref: '#/components/schemas/UploadedImage'
+        '400':
+          $ref: './base.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './base.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './base.yaml#/components/responses/Forbidden'
+        '500':
+          $ref: './base.yaml#/components/responses/InternalServerError'
+
+  /api/upload/content-images:
+    get:
+      summary: Mendapatkan semua gambar content
+      description: Mendapatkan daftar semua gambar content untuk gallery picker
+      tags:
+        - Upload
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daftar gambar content berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Daftar gambar content berhasil diambil"
+                  data:
+                    $ref: '#/components/schemas/ContentImagesList'
+        '401':
+          $ref: './base.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './base.yaml#/components/responses/Forbidden'
+        '500':
+          $ref: './base.yaml#/components/responses/InternalServerError'
+
+  /api/upload/content-image/{filename}:
+    delete:
+      summary: Menghapus gambar content
+      description: Menghapus gambar content berdasarkan nama file
+      tags:
+        - Upload
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: filename
+          in: path
+          description: Nama file gambar
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Gambar berhasil dihapus
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Gambar berhasil dihapus"
+        '400':
+          $ref: './base.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './base.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './base.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './base.yaml#/components/responses/NotFound'
+        '500':
+          $ref: './base.yaml#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    UploadedImage:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: Nama file yang disimpan
+        originalName:
+          type: string
+          description: Nama file asli
+        size:
+          type: integer
+          description: Ukuran file dalam bytes
+        mimetype:
+          type: string
+          description: Tipe MIME file
+        url:
+          type: string
+          description: URL relatif untuk akses gambar
+        fullUrl:
+          type: string
+          description: URL lengkap untuk akses gambar
+      required:
+        - filename
+        - originalName
+        - size
+        - mimetype
+        - url
+        - fullUrl
+
+    ContentImage:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: Nama file
+        url:
+          type: string
+          description: URL relatif untuk akses gambar
+        fullUrl:
+          type: string
+          description: URL lengkap untuk akses gambar
+        size:
+          type: integer
+          description: Ukuran file dalam bytes
+        createdAt:
+          type: string
+          format: date-time
+          description: Waktu pembuatan file
+        modifiedAt:
+          type: string
+          format: date-time
+          description: Waktu terakhir modifikasi file
+      required:
+        - filename
+        - url
+        - fullUrl
+        - size
+        - createdAt
+        - modifiedAt
+
+    ContentImagesList:
+      type: object
+      properties:
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentImage'
+        total:
+          type: integer
+          description: Total jumlah gambar
+      required:
+        - images
+        - total 

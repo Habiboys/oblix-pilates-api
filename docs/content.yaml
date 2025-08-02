@@ -221,7 +221,7 @@ paths:
       tags:
         - Content Management
       summary: Get all blogs
-      description: Retrieve all blogs with pagination
+      description: Retrieve all blogs with pagination and search
       parameters:
         - in: query
           name: page
@@ -235,13 +235,31 @@ paths:
             type: integer
             default: 10
           description: Number of items per page
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search keyword (title, content, or slug)
       responses:
         '200':
           description: Blogs retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginationResponse'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Blogs retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      blogs:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BlogSummary'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
         '500':
           description: Internal server error
           content:
@@ -253,7 +271,7 @@ paths:
       tags:
         - Content Management
       summary: Create new blog
-      description: Create a new blog (Admin only)
+      description: Create a new blog with automatic slug generation (Admin only)
       security:
         - BearerAuth: []
       requestBody:
@@ -261,19 +279,38 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CreateBlogRequest'
+              type: object
+              required:
+                - title
+                - content
+              properties:
+                title:
+                  type: string
+                  description: Blog title
+                  minLength: 3
+                  maxLength: 255
+                content:
+                  type: string
+                  description: Blog content (HTML/JSON from editor)
+                  minLength: 10
+                  maxLength: 50000
+                picture:
+                  type: string
+                  format: binary
+                  description: Blog image
       responses:
         '201':
           description: Blog created successfully
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Blog'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Blog created successfully"
+                  data:
+                    $ref: '#/components/schemas/Blog'
         '400':
           description: Validation error
           content:
@@ -293,7 +330,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /blog/{id}:
+  /api/blogs/slug/{slug}:
+    get:
+      tags:
+        - Content Management
+      summary: Get blog by slug
+      description: Retrieve a specific blog by slug (SEO-friendly URL)
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 255
+          description: Blog slug
+      responses:
+        '200':
+          description: Blog retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Blog retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/Blog'
+        '404':
+          description: Blog not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/blogs/{id}:
     get:
       tags:
         - Content Management
@@ -313,12 +391,13 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Blog'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Blog retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/Blog'
         '404':
           description: Blog not found
           content:
@@ -336,7 +415,7 @@ paths:
       tags:
         - Content Management
       summary: Update blog
-      description: Update a blog by ID (Admin only)
+      description: Update a blog by ID with automatic slug regeneration (Admin only)
       security:
         - BearerAuth: []
       parameters:
@@ -352,19 +431,35 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/UpdateBlogRequest'
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: Blog title
+                  minLength: 3
+                  maxLength: 255
+                content:
+                  type: string
+                  description: Blog content (HTML/JSON from editor)
+                  minLength: 10
+                  maxLength: 50000
+                picture:
+                  type: string
+                  format: binary
+                  description: Blog image
       responses:
         '200':
           description: Blog updated successfully
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/SuccessResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Blog'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Blog updated successfully"
+                  data:
+                    $ref: '#/components/schemas/Blog'
         '400':
           description: Validation error
           content:
@@ -411,7 +506,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Blog deleted successfully"
         '401':
           description: Unauthorized
           content:

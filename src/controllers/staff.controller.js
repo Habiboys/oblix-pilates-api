@@ -344,7 +344,13 @@ const deleteStaff = async (req, res) => {
       where: {
         id,
         role: 'admin'
-      }
+      },
+      include: [
+        {
+          model: Member,
+          as: 'Member'
+        }
+      ]
     });
     
     if (!user) {
@@ -366,7 +372,12 @@ const deleteStaff = async (req, res) => {
       });
     }
 
-    // Delete user (this will also delete related Member due to CASCADE)
+    // Delete associated member data first if exists
+    if (user.Member) {
+      await user.Member.destroy();
+    }
+
+    // Delete user
     await user.destroy();
 
     res.json({
@@ -375,6 +386,15 @@ const deleteStaff = async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting staff:', error);
+    
+    // Handle foreign key constraint error specifically
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete staff with associated data. Please remove all related records first.'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Internal server error'

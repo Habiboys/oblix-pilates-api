@@ -119,7 +119,13 @@ const createOrder = async (req, res) => {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: 'Anda masih memiliki order yang sedang diproses untuk paket ini'
+        message: 'Anda masih memiliki order yang sedang diproses untuk paket ini',
+        data: {
+          pending_order_id: pendingOrder.id,
+          redirect_to_payment: true,
+          payment_url: pendingOrder.midtrans_redirect_url || pendingOrder.payment_url || null,
+          midtrans_token: pendingOrder.midtrans_token || null
+        }
       });
     }
 
@@ -132,10 +138,24 @@ const createOrder = async (req, res) => {
     });
 
     if (totalPendingOrders >= 3) {
+      // Get the oldest pending order to suggest user to complete it first
+      const oldestPendingOrder = await Order.findOne({
+        where: {
+          member_id,
+          status: { [Op.in]: ['pending', 'processing'] }
+        },
+        order: [['createdAt', 'ASC']]
+      });
+
       await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: 'Anda memiliki terlalu banyak order yang sedang diproses. Silakan selesaikan pembayaran terlebih dahulu.'
+        message: 'Anda memiliki terlalu banyak order yang sedang diproses. Silakan selesaikan pembayaran terlebih dahulu.',
+        data: {
+          oldest_pending_order_id: oldestPendingOrder?.id,
+          redirect_to_payment: true,
+          payment_url: oldestPendingOrder?.payment_url || null
+        }
       });
     }
 
@@ -1108,6 +1128,84 @@ const paymentPending = async (req, res) => {
   }
 };
 
+// Get pending order details for payment redirect
+const getPendingOrderDetails = async (req, res) => {
+  try {
+    const { order_id } = req.params;
+    const user_id = req.user.id;
+
+    console.log('Getting pending order details for:', { order_id, user_id });
+
+    // Get member ID from user
+    const member = await Member.findOne({
+      where: { user_id }
+    });
+
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    const member_id = member.id;
+    console.log('Member ID:', member_id);
+
+    const order = await Order.findOne({
+      where: {
+        id: order_id,
+        member_id,
+        status: { [Op.in]: ['pending', 'processing'] }
+      },
+      include: [
+        {
+          model: Package,
+          attributes: ['id', 'name', 'type', 'price']
+        }
+      ]
+    });
+
+    console.log('Query result:', order ? 'Found' : 'Not found');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order pending tidak ditemukan'
+      });
+    }
+
+    console.log('Order found:', order.id, order.order_number);
+
+    res.json({
+      success: true,
+      message: 'Detail order pending berhasil diambil',
+      data: {
+        order: {
+          id: order.id,
+          order_number: order.order_number,
+          total_amount: order.total_amount,
+          status: order.status,
+          payment_url: order.midtrans_redirect_url || order.payment_url,
+          midtrans_token: order.midtrans_token,
+          created_at: order.createdAt,
+          package: {
+            name: order.Package.name,
+            type: order.Package.type,
+            price: order.Package.price
+          }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting pending order details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getUserOrders,
@@ -1118,5 +1216,6 @@ module.exports = {
   paymentError,
   paymentPending,
   getMyOrders,
-  getMyOrderById
+  getMyOrderById,
+  getPendingOrderDetails
 }; 

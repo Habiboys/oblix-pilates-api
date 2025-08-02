@@ -52,15 +52,15 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     content: {
-      type: DataTypes.TEXT,
+      type: DataTypes.TEXT('LONG'),
       allowNull: false,
       validate: {
         notEmpty: {
           msg: 'Content is required'
         },
         len: {
-          args: [10, 10000],
-          msg: 'Content must be between 10 and 10000 characters'
+          args: [10, 50000],
+          msg: 'Content must be between 10 and 50000 characters'
         }
       }
     }
