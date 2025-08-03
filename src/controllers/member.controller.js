@@ -1,7 +1,9 @@
 const { Booking, Schedule, Class, Trainer, Member, User, MemberPackage, Package, Order, PackageMembership, Category, PackageFirstTrial, PackagePromo, PackageBonus } = require('../models');
 const { Op } = require('sequelize');
+const bcrypt = require('bcryptjs');
 const logger = require('../config/logger');
 const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage } = require('../utils/sessionTrackingUtils');
+const { generateMemberCode } = require('../utils/memberUtils');
 
 /**
  * Get member's classes based on type (upcoming, waitlist, post, cancelled)
@@ -861,7 +863,7 @@ const createMember = async (req, res) => {
       address,
       date_of_join: new Date(),
       picture,
-      status: 'active',
+      status: 'Registered', // Menggunakan default value dari model
       user_id: user.id
     });
 

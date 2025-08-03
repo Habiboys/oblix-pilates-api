@@ -140,10 +140,10 @@ const updateMemberSchema = Joi.object({
     }),
   
   status: Joi.string()
-    .valid('active', 'inactive')
+    .valid('Registered', 'Active', 'Inactive')
     .optional()
     .messages({
-      'any.only': 'Status harus active atau inactive'
+      'any.only': 'Status harus Registered, Active, atau Inactive'
     })
 });
 
@@ -182,11 +182,11 @@ const getMembersQuerySchema = Joi.object({
     }),
   
   status: Joi.string()
-    .valid('active', 'inactive')
+    .valid('Registered', 'Active', 'Inactive')
     .optional()
     .allow('')
     .messages({
-      'any.only': 'Status harus active atau inactive'
+      'any.only': 'Status harus Registered, Active, atau Inactive'
     })
 });
 
