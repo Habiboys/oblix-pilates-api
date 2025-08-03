@@ -10306,9 +10306,9 @@ paths:
             schema:
               type: object
               required:
-                - image
+                - picture
               properties:
-                image:
+                picture:
                   type: string
                   format: binary
                   description: File gambar (JPEG, PNG, GIF, WebP, maksimal 5MB)

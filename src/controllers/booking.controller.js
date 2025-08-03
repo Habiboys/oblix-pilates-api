@@ -350,6 +350,78 @@ const updateBookingStatus = async (req, res) => {
             }
         }
 
+        // Send WhatsApp notifications for status changes
+        try {
+            if (oldStatus === 'waiting_list' && status === 'signup') {
+                // Get full booking data with member info for notification
+                const fullBooking = await Booking.findByPk(id, {
+                    include: [
+                        {
+                            model: Schedule,
+                            include: [
+                                {
+                                    model: require('../models').Class
+                                },
+                                {
+                                    model: require('../models').Trainer
+                                }
+                            ]
+                        },
+                        {
+                            model: Member
+                        }
+                    ]
+                });
+
+                if (fullBooking) {
+                    twilioService.sendWaitlistPromotion(fullBooking)
+                        .then(result => {
+                            if (result.success) {
+                                logger.info(`✅ Waitlist promotion WhatsApp sent to ${fullBooking.Member.full_name}`);
+                            } else {
+                                logger.error(`❌ Failed to send waitlist promotion WhatsApp to ${fullBooking.Member.full_name}: ${result.error}`);
+                            }
+                        })
+                        .catch(error => {
+                            logger.error(`❌ Error sending waitlist promotion WhatsApp to ${fullBooking.Member.full_name}:`, error);
+                        });
+                }
+            } else if (status === 'cancelled') {
+                // Get full booking data with member info for cancellation notification
+                const fullBooking = await Booking.findByPk(id, {
+                    include: [
+                        {
+                            model: Schedule,
+                            include: [
+                                {
+                                    model: require('../models').Class
+                                }
+                            ]
+                        },
+                        {
+                            model: Member
+                        }
+                    ]
+                });
+
+                if (fullBooking) {
+                    twilioService.sendBookingCancellation(fullBooking, notes || 'Booking dibatalkan oleh admin')
+                        .then(result => {
+                            if (result.success) {
+                                logger.info(`✅ Booking cancellation WhatsApp sent to ${fullBooking.Member.full_name}`);
+                            } else {
+                                logger.error(`❌ Failed to send booking cancellation WhatsApp to ${fullBooking.Member.full_name}: ${result.error}`);
+                            }
+                        })
+                        .catch(error => {
+                            logger.error(`❌ Error sending booking cancellation WhatsApp to ${fullBooking.Member.full_name}:`, error);
+                        });
+                }
+            }
+        } catch (error) {
+            logger.error('Error sending WhatsApp notifications for status change:', error);
+        }
+
         // Jika booking di-cancel, cek waitlist untuk naik ke signup
         if (status === 'cancelled') {
             await processWaitlistPromotion(booking.schedule_id);
@@ -703,6 +775,30 @@ const updateAttendance = async (req, res) => {
             notes: notes || booking.notes
         });
 
+        // Send WhatsApp notification for absent/late attendance
+        if (attendance === 'absent' || attendance === 'late') {
+            try {
+                twilioService.sendAttendanceNotification(
+                    booking.Member.phone_number,
+                    booking.Member.full_name,
+                    booking.Schedule.Class.class_name,
+                    booking.Schedule.date_start,
+                    booking.Schedule.time_start,
+                    attendance
+                ).then(result => {
+                    if (result.success) {
+                        logger.info(`✅ Attendance notification WhatsApp sent to ${booking.Member.full_name}`);
+                    } else {
+                        logger.error(`❌ Failed to send attendance notification WhatsApp to ${booking.Member.full_name}: ${result.error}`);
+                    }
+                }).catch(error => {
+                    logger.error(`❌ Error sending attendance notification WhatsApp to ${booking.Member.full_name}:`, error);
+                });
+            } catch (error) {
+                logger.error('Error initiating attendance notification WhatsApp:', error);
+            }
+        }
+
         res.json({
             success: true,
             message: 'Attendance updated successfully',
@@ -783,6 +879,7 @@ const updateScheduleAttendance = async (req, res) => {
         // Update each booking attendance
         for (const booking of bookings) {
             const attendanceData = attendances.find(a => a.booking_id === booking.id);
+            const oldAttendance = booking.attendance;
             
             if (attendanceData) {
                 await booking.update({
@@ -798,6 +895,30 @@ const updateScheduleAttendance = async (req, res) => {
                     notes: booking.notes,
                     updated_at: booking.updatedAt
                 });
+
+                // Send WhatsApp notification for absent/late attendance
+                if (attendanceData.attendance === 'absent' || attendanceData.attendance === 'late') {
+                    try {
+                        twilioService.sendAttendanceNotification(
+                            booking.Member.phone_number,
+                            booking.Member.full_name,
+                            schedule.Class.class_name,
+                            schedule.date_start,
+                            schedule.time_start,
+                            attendanceData.attendance
+                        ).then(result => {
+                            if (result.success) {
+                                logger.info(`✅ Schedule attendance notification WhatsApp sent to ${booking.Member.full_name}`);
+                            } else {
+                                logger.error(`❌ Failed to send schedule attendance notification WhatsApp to ${booking.Member.full_name}: ${result.error}`);
+                            }
+                        }).catch(error => {
+                            logger.error(`❌ Error sending schedule attendance notification WhatsApp to ${booking.Member.full_name}:`, error);
+                        });
+                    } catch (error) {
+                        logger.error('Error initiating schedule attendance notification WhatsApp:', error);
+                    }
+                }
             } else {
                 // Default to present if not specified
                 await booking.update({
