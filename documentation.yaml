@@ -7,6 +7,8 @@ info:
     name: API Support
     email: support@oblixpilates.com
 servers:
+  - url: https://api.oblixpilates.id/api
+    description: Production server
   - url: https://api-oblix.metro-software.com/api
     description: Metro Test server
   - url: https://oblix-pilates-api-439190874535.us-central1.run.app/api
