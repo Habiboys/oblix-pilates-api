@@ -26,6 +26,16 @@ class MidtransService {
       const expiredTime = new Date();
       expiredTime.setMinutes(expiredTime.getMinutes() + config.midtrans.expiredTime);
       
+      // Format start_time sesuai format Midtrans: yyyy-MM-dd hh:mm:ss Z
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const startTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds} +0700`;
+      
       const parameter = {
         transaction_details: {
           order_id: orderData.order_number,
@@ -49,13 +59,14 @@ class MidtransService {
         },
         // Add expired time configuration
         expiry: {
-          start_time: new Date().toISOString(),
+          start_time: startTime,
           unit: 'minutes',
           duration: config.midtrans.expiredTime
         }
       };
 
       logger.info(`Creating Midtrans transaction with expired time: ${config.midtrans.expiredTime} minutes`);
+      logger.info(`Start time formatted: ${startTime}`);
       logger.info('Creating Midtrans transaction with parameter:', JSON.stringify(parameter, null, 2));
       
       const transaction = await snap.createTransaction(parameter);
@@ -68,7 +79,11 @@ class MidtransService {
         message: error.message,
         response: error.ApiResponse,
         httpStatusCode: error.httpStatusCode,
-        rawHttpClientData: error.rawHttpClientData
+        rawHttpClientData: {
+          status: error.rawHttpClientData?.status,
+          statusText: error.rawHttpClientData?.statusText,
+          data: error.rawHttpClientData?.data
+        }
       });
       throw new Error('Failed to create payment transaction');
     }
