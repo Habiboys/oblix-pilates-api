@@ -117,14 +117,17 @@ const createOrder = async (req, res) => {
 
     if (pendingOrder) {
       await transaction.rollback();
-      return res.status(400).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: 'Anda masih memiliki order yang sedang diproses untuk paket ini',
         data: {
           pending_order_id: pendingOrder.id,
           redirect_to_payment: true,
           payment_url: pendingOrder.midtrans_redirect_url || pendingOrder.payment_url || null,
-          midtrans_token: pendingOrder.midtrans_token || null
+          midtrans_token: pendingOrder.midtrans_token || null,
+          order_status: pendingOrder.status,
+          order_amount: pendingOrder.total_amount,
+          created_at: pendingOrder.createdAt
         }
       });
     }
@@ -148,13 +151,16 @@ const createOrder = async (req, res) => {
       });
 
       await transaction.rollback();
-      return res.status(400).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: 'Anda memiliki terlalu banyak order yang sedang diproses. Silakan selesaikan pembayaran terlebih dahulu.',
         data: {
           oldest_pending_order_id: oldestPendingOrder?.id,
           redirect_to_payment: true,
-          payment_url: oldestPendingOrder?.payment_url || null
+          payment_url: oldestPendingOrder?.payment_url || null,
+          order_status: oldestPendingOrder?.status,
+          order_amount: oldestPendingOrder?.total_amount,
+          created_at: oldestPendingOrder?.createdAt
         }
       });
     }

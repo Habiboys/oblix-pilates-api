@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Oblix Pilates API
-  description: API untuk aplikasi Oblix Pilates - sistem manajemen studio pilates
+  description: API untuk aplikasi Oblix Pilates - sistem manajemen  pilates
   version: 1.0.0
   contact:
     name: API Support
@@ -6593,6 +6593,69 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /order/pending/{order_id}/details:
+    get:
+      tags:
+        - Order Management
+      summary: Get pending order details for payment
+      description: >
+        Retrieve details of a pending order for payment redirect. This endpoint is used when a user has an existing
+        pending order and needs to continue with payment.
+
+
+        **Use cases:**
+
+        - User tries to create a new order but already has a pending order
+
+        - User wants to continue payment for an existing pending order
+
+        - Frontend needs to redirect user to payment page
+
+
+        **Response includes:**
+
+        - Order details (ID, order number, amount)
+
+        - Payment URL for redirect
+
+        - Midtrans token for payment processing
+
+        - Package information
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          description: ID order yang pending
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Pending order details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingOrderDetailsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Pending order not found
           content:
             application/json:
               schema:

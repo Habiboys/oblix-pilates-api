@@ -332,6 +332,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /order/pending/{order_id}/details:
+    get:
+      tags:
+        - Order Management
+      summary: Get pending order details for payment
+      description: |
+        Retrieve details of a pending order for payment redirect. This endpoint is used when a user has an existing pending order and needs to continue with payment.
+        
+        **Use cases:**
+        - User tries to create a new order but already has a pending order
+        - User wants to continue payment for an existing pending order
+        - Frontend needs to redirect user to payment page
+        
+        **Response includes:**
+        - Order details (ID, order number, amount)
+        - Payment URL for redirect
+        - Midtrans token for payment processing
+        - Package information
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          description: ID order yang pending
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Pending order details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingOrderDetailsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Pending order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     CreateOrderRequest:
@@ -767,4 +821,72 @@ components:
         token:
           type: string
           nullable: true
-          example: "eyJ0b2tlbiI6ImV4YW1wbGUtdG9rZW4ifQ==" 
+          example: "eyJ0b2tlbiI6ImV4YW1wbGUtdG9rZW4ifQ=="
+
+    PendingOrderDetailsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Detail order pending berhasil diambil"
+        data:
+          type: object
+          properties:
+            order:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  example: "123e4567-e89b-12d3-a456-426614174000"
+                order_number:
+                  type: string
+                  example: "ORD-20250129-001"
+                total_amount:
+                  type: number
+                  format: float
+                  example: 500000.00
+                status:
+                  type: string
+                  enum: [pending, processing]
+                  example: "pending"
+                payment_url:
+                  type: string
+                  nullable: true
+                  example: "https://app.midtrans.com/snap/v2/vtweb/12345678901"
+                midtrans_token:
+                  type: string
+                  nullable: true
+                  example: "eyJ0b2tlbiI6ImV4YW1wbGUtdG9rZW4ifQ=="
+                created_at:
+                  type: string
+                  format: date-time
+                  example: "2025-01-29T10:30:00Z"
+                package:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "Monthly Membership"
+                    type:
+                      type: string
+                      enum: [membership, first_trial, promo, bonus]
+                      example: "membership"
+                    price:
+                      type: number
+                      format: float
+                      example: 500000.00
+              required:
+                - id
+                - order_number
+                - total_amount
+                - status
+                - created_at
+                - package
+      required:
+        - success
+        - message
+        - data 

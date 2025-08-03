@@ -111,7 +111,7 @@ Jangan lupa kelas pilates Anda besok:
 ⏰ *Waktu*: ${formattedTime}
 🏷️ *Kelas*: ${classInfo.class_name}
 👨‍🏫 *Trainer*: ${trainer.title}
-📍 *Lokasi*: Oblix Pilates Studio
+📍 *Lokasi*: Oblix Pilates
 
 *Status Booking*: ${booking.status === 'signup' ? '✅ Terdaftar' : '⏳ Dalam Antrian'}
 
@@ -124,7 +124,7 @@ Jika tidak bisa hadir, silakan cancel booking minimal 2 jam sebelum kelas dimula
 
 Terima kasih! 🙏
 
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(member.phone_number, message);
 
@@ -177,7 +177,7 @@ Kami akan mengirimkan reminder H-1 sebelum kelas dimulai.
 
 Terima kasih telah memilih Oblix Pilates! 🙏
 
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(member.phone_number, message);
 
@@ -229,7 +229,7 @@ Jika Anda ingin booking ulang, silakan akses aplikasi kami.
 
 Terima kasih! 🙏
 
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(member.phone_number, message);
 
@@ -282,7 +282,7 @@ Kami akan mengirimkan reminder H-1 sebelum kelas dimulai.
 
 Terima kasih! 🙏
 
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(member.phone_number, message);
 
@@ -338,7 +338,7 @@ Silakan booking kelas lain yang tersedia.
 
 Terima kasih atas pengertiannya! 🙏
 
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
             const result = await sendWhatsAppMessage(member.phone_number, message);
             results.push({
@@ -404,7 +404,7 @@ ${attendance === 'absent'
 
 Terima kasih! 🙏
 
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(phoneNumber, message);
 
@@ -442,10 +442,10 @@ Kelas Anda telah dibatalkan oleh admin:
 
 ❌ *Alasan:* ${reason}
 
-Untuk informasi lebih lanjut, silakan hubungi admin studio.
+Untuk informasi lebih lanjut, silakan hubungi admin.
 
 Terima kasih,
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(phoneNumber, message);
 
@@ -482,10 +482,10 @@ Paket Anda hampir habis sesinya:
 • Segera booking kelas untuk menggunakan sesi yang tersisa
 • Pertimbangkan untuk membeli paket baru sebelum masa berlaku berakhir
 
-Untuk informasi lebih lanjut, silakan hubungi admin studio.
+Untuk informasi lebih lanjut, silakan hubungi admin.
 
 Terima kasih,
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(phone_number, message);
 
@@ -526,10 +526,10 @@ Paket Anda akan segera berakhir:
 • Booking kelas segera untuk menggunakan sesi yang tersisa
 • Pertimbangkan untuk membeli paket baru sebelum berakhir
 
-Untuk informasi lebih lanjut, silakan hubungi admin studio.
+Untuk informasi lebih lanjut, silakan hubungi admin.
 
 Terima kasih,
-*Oblix Pilates Studio*`;
+*Oblix Pilates*`;
 
         return await sendWhatsAppMessage(phone_number, message);
 

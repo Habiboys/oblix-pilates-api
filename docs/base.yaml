@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Oblix Pilates API
-  description: API untuk aplikasi Oblix Pilates - sistem manajemen studio pilates
+  description: API untuk aplikasi Oblix Pilates - sistem manajemen  pilates
   version: 1.0.0
   contact:
     name: API Support
