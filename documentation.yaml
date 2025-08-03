@@ -2950,7 +2950,7 @@ paths:
       summary: Check user purchase status
       description: Get user's package purchase status (has_purchased_package)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Purchase status retrieved successfully
@@ -8146,7 +8146,7 @@ paths:
       summary: Get scheduled cancel tasks status
       description: Get the current status of all scheduled cancel tasks for dynamic scheduling
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Scheduled cancel tasks status retrieved successfully
@@ -8190,7 +8190,7 @@ paths:
       summary: Refresh dynamic cancel scheduling
       description: Manually refresh the dynamic cancel scheduling system to pick up new or updated schedules
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Dynamic cancel scheduling refreshed successfully
@@ -10298,7 +10298,7 @@ paths:
       tags:
         - Upload
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -10343,7 +10343,7 @@ paths:
       tags:
         - Upload
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Daftar gambar content berhasil diambil
@@ -10373,7 +10373,7 @@ paths:
       tags:
         - Upload
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: filename
           in: path

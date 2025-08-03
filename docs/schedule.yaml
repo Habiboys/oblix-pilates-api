@@ -981,7 +981,7 @@ paths:
       summary: Get scheduled cancel tasks status
       description: Get the current status of all scheduled cancel tasks for dynamic scheduling
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Scheduled cancel tasks status retrieved successfully
@@ -1024,7 +1024,7 @@ paths:
       summary: Refresh dynamic cancel scheduling
       description: Manually refresh the dynamic cancel scheduling system to pick up new or updated schedules
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Dynamic cancel scheduling refreshed successfully

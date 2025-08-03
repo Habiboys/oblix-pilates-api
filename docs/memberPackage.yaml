@@ -162,7 +162,7 @@ components:
           type: string
           example: "Error message"
   securitySchemes:
-    bearerAuth:
+    BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT 

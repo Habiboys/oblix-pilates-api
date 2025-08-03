@@ -1,18 +1,13 @@
-openapi: 3.0.0
-info:
-  title: Upload API
-  description: API untuk upload dan mengelola gambar content
-  version: 1.0.0
 
 paths:
-  /api/upload/content-image:
+  /upload/content-image:
     post:
       summary: Upload gambar content
       description: Upload gambar untuk digunakan dalam content blog
       tags:
         - Upload
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -51,14 +46,14 @@ paths:
         '500':
           $ref: './base.yaml#/components/responses/InternalServerError'
 
-  /api/upload/content-images:
+  /upload/content-images:
     get:
       summary: Mendapatkan semua gambar content
       description: Mendapatkan daftar semua gambar content untuk gallery picker
       tags:
         - Upload
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Daftar gambar content berhasil diambil
@@ -82,14 +77,14 @@ paths:
         '500':
           $ref: './base.yaml#/components/responses/InternalServerError'
 
-  /api/upload/content-image/{filename}:
+  /upload/content-image/{filename}:
     delete:
       summary: Menghapus gambar content
       description: Menghapus gambar content berdasarkan nama file
       tags:
         - Upload
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - name: filename
           in: path

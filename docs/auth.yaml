@@ -234,7 +234,7 @@ paths:
       summary: Check user purchase status
       description: Get user's package purchase status (has_purchased_package)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       responses:
         '200':
           description: Purchase status retrieved successfully
