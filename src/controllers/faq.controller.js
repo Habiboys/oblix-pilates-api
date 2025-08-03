@@ -18,7 +18,7 @@ const getAllFaqs = async (req, res) => {
             where: whereClause,
             limit: parseInt(limit),
             offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'ASC']]
         });
 
         const totalPages = Math.ceil(faqs.count / limit);

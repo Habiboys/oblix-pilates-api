@@ -10374,7 +10374,7 @@ paths:
                 picture:
                   type: string
                   format: binary
-                  description: File gambar (JPEG, PNG, GIF, WebP, maksimal 5MB)
+                  description: File gambar (JPEG, PNG, GIF, WebP, maksimal 10MB)
       responses:
         '200':
           description: Gambar berhasil diupload

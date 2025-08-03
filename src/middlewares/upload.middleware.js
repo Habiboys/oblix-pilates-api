@@ -12,20 +12,33 @@ const createStorage = (folder) => {
 const compressAndConvertToWebP = async (buffer, folder) => {
     try {
         const fileSizeInMB = buffer.length / (1024 * 1024);
-        const isLargeFile = fileSizeInMB > 1; // Compress jika > 1MB
+        const isLargeFile = fileSizeInMB > 3; // Compress jika > 3MB (dinaikkan dari 1MB)
+        const isMediumFile = fileSizeInMB > 1; // Medium file 1-3MB
 
         let processedBuffer;
 
         if (isLargeFile) {
-            // Compress dan resize untuk file besar (> 1MB)
+            // Compress dan resize untuk file besar (> 3MB)
             processedBuffer = await sharp(buffer)
-                .resize(1200, 1200, { // Max width/height 1200px
+                .resize(1920, 1920, { // Max width/height 1920px (dinaikkan dari 1200px)
                     fit: 'inside',
                     withoutEnlargement: true
                 })
                 .webp({ 
-                    quality: 80, // Quality 80%
-                    effort: 6 // Compression effort
+                    quality: 90, // Quality 90% (dinaikkan dari 80%)
+                    effort: 4 // Compression effort dikurangi untuk kualitas lebih baik
+                })
+                .toBuffer();
+        } else if (isMediumFile) {
+            // Compress ringan untuk file medium (1-3MB)
+            processedBuffer = await sharp(buffer)
+                .resize(1600, 1600, { // Max width/height 1600px
+                    fit: 'inside',
+                    withoutEnlargement: true
+                })
+                .webp({ 
+                    quality: 95, // Quality 95%
+                    effort: 3 // Compression effort ringan
                 })
                 .toBuffer();
         } else {
@@ -33,7 +46,7 @@ const compressAndConvertToWebP = async (buffer, folder) => {
             processedBuffer = await sharp(buffer)
                 .webp({ 
                     quality: 100, // Quality 100% untuk file kecil
-                    effort: 6
+                    effort: 2 // Compression effort minimal
                 })
                 .toBuffer();
         }
@@ -75,7 +88,7 @@ const uploadFile = (folder, required = false) => {
         storage: storage,
         fileFilter: fileFilter,
         limits: {
-            fileSize: 5 * 1024 * 1024 // 5MB limit
+            fileSize: 10 * 1024 * 1024 // 10MB limit (dinaikkan dari 5MB)
         }
     });
 
@@ -84,7 +97,7 @@ const uploadFile = (folder, required = false) => {
             if (err instanceof multer.MulterError) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
                     return res.status(400).json({
-                        message: 'File size too large. Maximum size is 5MB'
+                        message: 'File size too large. Maximum size is 10MB'
                     });
                 }
                 return res.status(400).json({
@@ -126,7 +139,7 @@ const handleUploadError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({
-                message: 'File size too large. Maximum size is 5MB'
+                message: 'File size too large. Maximum size is 10MB'
             });
         }
         return res.status(400).json({

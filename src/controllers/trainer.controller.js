@@ -20,7 +20,7 @@ const getAllTrainers = async (req, res) => {
             where: whereClause,
             limit: parseInt(limit),
             offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'ASC']]
         });
 
         // Add rate information to each trainer
