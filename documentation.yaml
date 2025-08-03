@@ -10291,7 +10291,7 @@ paths:
                   message:
                     type: string
                     example: Internal server error
-  /api/upload/content-image:
+  /upload/content-image:
     post:
       summary: Upload gambar content
       description: Upload gambar untuk digunakan dalam content blog
@@ -10336,7 +10336,7 @@ paths:
           $ref: ./base.yaml#/components/responses/Forbidden
         '500':
           $ref: ./base.yaml#/components/responses/InternalServerError
-  /api/upload/content-images:
+  /upload/content-images:
     get:
       summary: Mendapatkan semua gambar content
       description: Mendapatkan daftar semua gambar content untuk gallery picker
@@ -10366,7 +10366,7 @@ paths:
           $ref: ./base.yaml#/components/responses/Forbidden
         '500':
           $ref: ./base.yaml#/components/responses/InternalServerError
-  /api/upload/content-image/{filename}:
+  /upload/content-image/{filename}:
     delete:
       summary: Menghapus gambar content
       description: Menghapus gambar content berdasarkan nama file
