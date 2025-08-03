@@ -22,6 +22,10 @@ class MidtransService {
    */
   static async createTransaction(orderData) {
     try {
+      // Calculate expired time
+      const expiredTime = new Date();
+      expiredTime.setMinutes(expiredTime.getMinutes() + config.midtrans.expiredTime);
+      
       const parameter = {
         transaction_details: {
           order_id: orderData.order_number,
@@ -42,9 +46,16 @@ class MidtransService {
           finish: `${config.app.baseUrl}/api/order/payment/finish`,
           error: `${config.app.baseUrl}/api/order/payment/error`,
           pending: `${config.app.baseUrl}/api/order/payment/pending`
+        },
+        // Add expired time configuration
+        expiry: {
+          start_time: new Date().toISOString(),
+          unit: 'minutes',
+          duration: config.midtrans.expiredTime
         }
       };
 
+      logger.info(`Creating Midtrans transaction with expired time: ${config.midtrans.expiredTime} minutes`);
       logger.info('Creating Midtrans transaction with parameter:', JSON.stringify(parameter, null, 2));
       
       const transaction = await snap.createTransaction(parameter);

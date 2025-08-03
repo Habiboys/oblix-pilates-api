@@ -32,7 +32,9 @@ module.exports = {
         isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
         merchantId: process.env.MIDTRANS_MERCHANT_ID,
         serverKey: process.env.MIDTRANS_SERVER_KEY,
-        clientKey: process.env.MIDTRANS_CLIENT_KEY
+        clientKey: process.env.MIDTRANS_CLIENT_KEY,
+        // Payment expired time in minutes (default: 24 hours = 1440 minutes)
+        expiredTime: parseInt(process.env.MIDTRANS_EXPIRED_TIME) || 1440
     },
     // App configuration
     app: {

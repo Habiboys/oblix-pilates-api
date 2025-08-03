@@ -132,38 +132,7 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Check if member has any pending orders (limit concurrent orders)
-    const totalPendingOrders = await Order.count({
-      where: {
-        member_id,
-        status: { [Op.in]: ['pending', 'processing'] }
-      }
-    });
-
-    if (totalPendingOrders >= 3) {
-      // Get the oldest pending order to suggest user to complete it first
-      const oldestPendingOrder = await Order.findOne({
-        where: {
-          member_id,
-          status: { [Op.in]: ['pending', 'processing'] }
-        },
-        order: [['createdAt', 'ASC']]
-      });
-
-      await transaction.rollback();
-      return res.status(200).json({
-        success: true,
-        message: 'Anda memiliki terlalu banyak order yang sedang diproses. Silakan selesaikan pembayaran terlebih dahulu.',
-        data: {
-          oldest_pending_order_id: oldestPendingOrder?.id,
-          redirect_to_payment: true,
-          payment_url: oldestPendingOrder?.payment_url || null,
-          order_status: oldestPendingOrder?.status,
-          order_amount: oldestPendingOrder?.total_amount,
-          created_at: oldestPendingOrder?.createdAt
-        }
-      });
-    }
+    
 
     // Get member details
     const member = await Member.findByPk(member_id, {
