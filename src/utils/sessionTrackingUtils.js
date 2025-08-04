@@ -809,27 +809,27 @@ const getTotalAvailableSessions = async (memberId) => {
     // Calculate total, used, and remaining sessions from all packages
     for (const memberPackage of sortedPackages) {
       // Group sessions
-      const groupTotal = memberPackage.group_sessions || 0;
       const groupUsed = memberPackage.used_group_session || 0;
       const groupRemaining = memberPackage.remaining_group_session || 0;
+      const groupTotal = groupUsed + groupRemaining;
       
       totalGroupSessions += groupTotal;
       usedGroupSessions += groupUsed;
       remainingGroupSessions += groupRemaining;
       
       // Semi-private sessions
-      const semiPrivateTotal = memberPackage.semi_private_sessions || 0;
       const semiPrivateUsed = memberPackage.used_semi_private_session || 0;
       const semiPrivateRemaining = memberPackage.remaining_semi_private_session || 0;
+      const semiPrivateTotal = semiPrivateUsed + semiPrivateRemaining;
       
       totalSemiPrivateSessions += semiPrivateTotal;
       usedSemiPrivateSessions += semiPrivateUsed;
       remainingSemiPrivateSessions += semiPrivateRemaining;
       
       // Private sessions
-      const privateTotal = memberPackage.private_sessions || 0;
       const privateUsed = memberPackage.used_private_session || 0;
       const privateRemaining = memberPackage.remaining_private_session || 0;
+      const privateTotal = privateUsed + privateRemaining;
       
       totalPrivateSessions += privateTotal;
       usedPrivateSessions += privateUsed;

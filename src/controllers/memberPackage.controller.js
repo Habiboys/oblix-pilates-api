@@ -164,10 +164,22 @@ const getMyPackages = async (req, res) => {
     // Process packages for history (sorted by priority)
     const packageHistory = allMemberPackages
       .filter(memberPackage => {
-        // Include paket yang memiliki order paid ATAU paket bonus
-        const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
-        const isBonusPackage = memberPackage.Package?.type === 'bonus';
-        return hasValidOrder || isBonusPackage;
+        // Include semua paket yang aktif (belum expired dan memiliki session)
+        const currentDate = new Date();
+        const endDate = new Date(memberPackage.end_date);
+        const isNotExpired = endDate >= currentDate;
+        
+        // Cek apakah ada session yang tersisa
+        const hasRemainingSessions = (memberPackage.remaining_group_session || 0) > 0 || 
+                                   (memberPackage.remaining_private_session || 0) > 0 || 
+                                   (memberPackage.remaining_semi_private_session || 0) > 0;
+        
+        // Cek apakah ada total session (untuk package yang baru dibuat)
+        const hasTotalSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.used_group_session || 0) > 0 ||
+                               (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0) > 0 ||
+                               (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0) > 0;
+        
+        return isNotExpired && (hasRemainingSessions || hasTotalSessions);
       })
       .map((memberPackage, index) => {
         // Use session data from MemberPackage (remaining + used)
