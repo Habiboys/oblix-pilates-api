@@ -523,6 +523,9 @@ const cancelBooking = async (req, res) => {
             cancelled_by: 'user' // User yang melakukan cancel
         });
 
+        // PERBAIKAN: Refresh booking data untuk memastikan status sudah terupdate
+        await booking.reload();
+
         // Send WhatsApp cancellation notification (async)
         try {
             twilioService.sendBookingCancellation(booking, cancelReason)
@@ -541,6 +544,7 @@ const cancelBooking = async (req, res) => {
         }
 
         // PERBAIKAN: Update session usage setelah cancel untuk mengembalikan quota
+        // Pastikan booking status sudah 'cancelled' sebelum update session
         try {
             const memberPackage = await require('../models').MemberPackage.findOne({
                 where: {
@@ -550,6 +554,7 @@ const cancelBooking = async (req, res) => {
             });
             
             if (memberPackage) {
+                logger.info(`🔄 Updating session usage after cancel. Booking status: ${booking.status}`);
                 await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
                 logger.info(`✅ Session usage updated after canceling booking for member ${booking.member_id}`);
             }
@@ -654,6 +659,9 @@ const adminCancelBooking = async (req, res) => {
             cancelled_by: 'admin' // Admin yang melakukan cancel
         });
 
+        // PERBAIKAN: Refresh booking data untuk memastikan status sudah terupdate
+        await booking.reload();
+
         // Send WhatsApp cancellation notification (async)
         try {
             twilioService.sendAdminCancellation(
@@ -677,6 +685,7 @@ const adminCancelBooking = async (req, res) => {
         }
 
         // PERBAIKAN: Update session usage setelah admin cancel untuk mengembalikan quota
+        // Pastikan booking status sudah 'cancelled' sebelum update session
         try {
             const memberPackage = await require('../models').MemberPackage.findOne({
                 where: {
@@ -686,6 +695,7 @@ const adminCancelBooking = async (req, res) => {
             });
             
             if (memberPackage) {
+                logger.info(`🔄 Updating session usage after admin cancel. Booking status: ${booking.status}`);
                 await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
                 logger.info(`✅ Session usage updated after admin canceling booking for member ${booking.member_id}`);
             }
