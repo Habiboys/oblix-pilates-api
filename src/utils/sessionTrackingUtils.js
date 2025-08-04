@@ -351,11 +351,11 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       totalGroupSessions = package.PackagePromo.group_session || 0;
       totalPrivateSessions = package.PackagePromo.private_session || 0;
     } else if (package.type === 'bonus' && package.PackageBonus) {
-      // PERBAIKAN: Untuk bonus package, total session diambil dari PackageBonus definition
-      // karena ini adalah total awal yang diberikan, bukan dari MemberPackage
+      // PERBAIKAN: PackageBonus hanya punya group_session dan private_session
+      // TIDAK ADA semi_private_session
       totalGroupSessions = package.PackageBonus.group_session || 0;
       totalPrivateSessions = package.PackageBonus.private_session || 0;
-      totalSemiPrivateSessions = 0; // PackageBonus tidak memiliki semi_private_session
+      totalSemiPrivateSessions = 0; // Bonus package tidak punya semi-private
     }
 
     // Hitung used sessions dari booking yang aktif (status = 'signup')
@@ -419,7 +419,6 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     const remainingGroupSessions = Math.max(0, totalGroupSessions - usedGroupSessions);
     const remainingSemiPrivateSessions = Math.max(0, totalSemiPrivateSessions - usedSemiPrivateSessions);
     const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
-
 
     // Update member package
     await MemberPackage.update({
@@ -599,17 +598,20 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
         available = memberPackage.remaining_private_session || 0;
         canHandleScheduleType = available > 0;
       } else if (scheduleType === 'semi_private') {
-        // Prioritaskan sesi semi-private terlebih dahulu
-        const semiPrivateAvailable = memberPackage.remaining_semi_private_session || 0;
-        if (semiPrivateAvailable > 0) {
-          available = semiPrivateAvailable;
-          canHandleScheduleType = true;
+        // PERBAIKAN: Semi-private hanya ada di membership package
+        // dan ditentukan oleh category, bukan sebagai kolom terpisah
+        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+          const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+          if (categoryName === 'Semi-Private Class') {
+            available = memberPackage.remaining_semi_private_session || 0;
+            canHandleScheduleType = available > 0;
+          } else {
+            // Membership dengan category lain tidak bisa handle semi-private
+            canHandleScheduleType = false;
+          }
         } else {
-          // Fallback ke group atau private jika tidak ada sesi semi-private
-          const groupAvailable = memberPackage.remaining_group_session || 0;
-          const privateAvailable = memberPackage.remaining_private_session || 0;
-          available = Math.max(groupAvailable, privateAvailable);
-          canHandleScheduleType = available > 0;
+          // Non-membership packages tidak punya semi-private
+          canHandleScheduleType = false;
         }
       }
 
@@ -617,14 +619,8 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
         // Determine which session type is being used
         let sessionTypeUsed = scheduleType;
         if (scheduleType === 'semi_private') {
-          const semiPrivateAvailable = memberPackage.remaining_semi_private_session || 0;
-          if (semiPrivateAvailable > 0) {
-            sessionTypeUsed = 'semi_private';
-          } else {
-            const groupAvailable = memberPackage.remaining_group_session || 0;
-            const privateAvailable = memberPackage.remaining_private_session || 0;
-            sessionTypeUsed = groupAvailable >= privateAvailable ? 'group' : 'private';
-          }
+          // Semi-private hanya bisa dari membership dengan category Semi-Private Class
+          sessionTypeUsed = 'semi_private';
         }
 
         const currentPackage = {

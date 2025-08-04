@@ -540,10 +540,22 @@ const cancelBooking = async (req, res) => {
             logger.error('Error initiating WhatsApp cancellation:', error);
         }
 
-        // PERBAIKAN: Tidak perlu update session usage setelah cancel
-        // Session usage akan dihitung ulang saat ada booking baru
-        // Ini mencegah overwrite paket lain yang tidak terkait
-        logger.info(`ℹ️ Skipping session usage update after cancel to prevent overwrite of other packages`);
+        // PERBAIKAN: Update session usage setelah cancel untuk mengembalikan quota
+        try {
+            const memberPackage = await require('../models').MemberPackage.findOne({
+                where: {
+                    member_id: booking.member_id,
+                    package_id: booking.package_id
+                }
+            });
+            
+            if (memberPackage) {
+                await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
+                logger.info(`✅ Session usage updated after canceling booking for member ${booking.member_id}`);
+            }
+        } catch (error) {
+            logger.error(`❌ Failed to update session usage after cancel: ${error.message}`);
+        }
 
         // Process waitlist promotion jika booking yang di-cancel adalah signup
         let promotionResult = null;
@@ -664,10 +676,22 @@ const adminCancelBooking = async (req, res) => {
             logger.error('Error initiating admin cancellation WhatsApp:', error);
         }
 
-        // PERBAIKAN: Tidak perlu update session usage setelah admin cancel
-        // Session usage akan dihitung ulang saat ada booking baru
-        // Ini mencegah overwrite paket lain yang tidak terkait
-        logger.info(`ℹ️ Skipping session usage update after admin cancel to prevent overwrite of other packages`);
+        // PERBAIKAN: Update session usage setelah admin cancel untuk mengembalikan quota
+        try {
+            const memberPackage = await require('../models').MemberPackage.findOne({
+                where: {
+                    member_id: booking.member_id,
+                    package_id: booking.package_id
+                }
+            });
+            
+            if (memberPackage) {
+                await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
+                logger.info(`✅ Session usage updated after admin canceling booking for member ${booking.member_id}`);
+            }
+        } catch (error) {
+            logger.error(`❌ Failed to update session usage after admin cancel: ${error.message}`);
+        }
 
         // Process waitlist promotion jika booking yang di-cancel adalah signup
         let promotionResult = null;
