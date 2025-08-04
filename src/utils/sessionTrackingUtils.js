@@ -351,19 +351,19 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       totalGroupSessions = package.PackagePromo.group_session || 0;
       totalPrivateSessions = package.PackagePromo.private_session || 0;
     } else if (package.type === 'bonus' && package.PackageBonus) {
-      // PERBAIKAN: Untuk bonus package, total session diambil dari MemberPackage
-      // (remaining + used) bukan dari PackageBonus definition untuk menghindari overwrite
-      totalGroupSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.used_group_session || 0);
-      totalPrivateSessions = (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0);
-      totalSemiPrivateSessions = (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0);
+      // PERBAIKAN: Untuk bonus package, total session diambil dari PackageBonus definition
+      // karena ini adalah total awal yang diberikan, bukan dari MemberPackage
+      totalGroupSessions = package.PackageBonus.group_session || 0;
+      totalPrivateSessions = package.PackageBonus.private_session || 0;
+      totalSemiPrivateSessions = package.PackageBonus.semi_private_session || 0;
     }
 
-    // Hitung used sessions dari booking
+    // Hitung used sessions dari booking yang aktif (status = 'signup')
     const bookings = await Booking.findAll({
       where: {
         member_id: memberId,
         package_id: packageId,
-        status: 'signup'
+        status: 'signup' // Hanya booking yang aktif
       },
       attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
       include: [
@@ -390,7 +390,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       }
     });
 
-    // Jika ada booking baru, tambahkan ke perhitungan
+    // Jika ada booking baru yang belum dihitung, tambahkan ke perhitungan
     if (newBookingId) {
       const newBooking = await Booking.findByPk(newBookingId, {
         include: [
@@ -401,7 +401,10 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
         ]
       });
 
-      if (newBooking && newBooking.Schedule) {
+      // Hanya tambahkan jika booking baru belum ada di daftar bookings
+      const isNewBookingIncluded = bookings.some(booking => booking.id === newBookingId);
+      
+      if (newBooking && newBooking.Schedule && !isNewBookingIncluded) {
         if (newBooking.Schedule.type === 'group') {
           usedGroupSessions++;
         } else if (newBooking.Schedule.type === 'semi_private') {
@@ -418,8 +421,6 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
 
     // Update member package
-    // Untuk semua package types, update used sessions dan remaining sessions
-    // Remaining sessions dihitung dari total - used
     await MemberPackage.update({
       used_group_session: usedGroupSessions,
       used_semi_private_session: usedSemiPrivateSessions,
