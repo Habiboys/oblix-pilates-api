@@ -406,17 +406,41 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
 
     // Update member package
-    await MemberPackage.update({
-      used_group_session: usedGroupSessions,
-      used_semi_private_session: usedSemiPrivateSessions,
-      used_private_session: usedPrivateSessions,
-      remaining_group_session: remainingGroupSessions,
-      remaining_semi_private_session: remainingSemiPrivateSessions,
-      remaining_private_session: remainingPrivateSessions
-    }, {
-      where: { id: memberPackageId }
+    // Untuk bonus package, jangan overwrite session fields yang sudah diisi manual
+    const memberPackage = await MemberPackage.findByPk(memberPackageId, {
+      include: [{ model: Package }]
     });
+    
+    if (memberPackage && memberPackage.Package && memberPackage.Package.type === 'bonus') {
+      // Untuk bonus package, hanya update used sessions, jangan overwrite remaining sessions
+      await MemberPackage.update({
+        used_group_session: usedGroupSessions,
+        used_semi_private_session: usedSemiPrivateSessions,
+        used_private_session: usedPrivateSessions,
+        // Jangan update remaining sessions untuk bonus package
+        // remaining_group_session: remainingGroupSessions,
+        // remaining_semi_private_session: remainingSemiPrivateSessions,
+        // remaining_private_session: remainingPrivateSessions
+      }, {
+        where: { id: memberPackageId }
+      });
+    } else {
+      // Untuk package lain, update semua fields seperti biasa
+      await MemberPackage.update({
+        used_group_session: usedGroupSessions,
+        used_semi_private_session: usedSemiPrivateSessions,
+        used_private_session: usedPrivateSessions,
+        remaining_group_session: remainingGroupSessions,
+        remaining_semi_private_session: remainingSemiPrivateSessions,
+        remaining_private_session: remainingPrivateSessions
+      }, {
+        where: { id: memberPackageId }
+      });
+    }
 
+    // Ambil data member package yang sudah diupdate untuk return value yang akurat
+    const updatedMemberPackage = await MemberPackage.findByPk(memberPackageId);
+    
     return {
       total_group: totalGroupSessions,
       total_semi_private: totalSemiPrivateSessions,
@@ -424,9 +448,9 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       used_group: usedGroupSessions,
       used_semi_private: usedSemiPrivateSessions,
       used_private: usedPrivateSessions,
-      remaining_group: remainingGroupSessions,
-      remaining_semi_private: remainingSemiPrivateSessions,
-      remaining_private: remainingPrivateSessions
+      remaining_group: updatedMemberPackage.remaining_group_session,
+      remaining_semi_private: updatedMemberPackage.remaining_semi_private_session,
+      remaining_private: updatedMemberPackage.remaining_private_session
     };
 
   } catch (error) {

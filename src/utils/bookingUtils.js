@@ -313,43 +313,43 @@ const sendH1Reminders = async () => {
 /**
  * Get booking statistics for monitoring
 //  */
-const getBookingStatistics = async () => {
-    try {
-        const currentTime = new Date();
-        const today = currentTime.toISOString().split('T')[0];
+// const getBookingStatistics = async () => {
+//     try {
+//         const currentTime = new Date();
+//         const today = currentTime.toISOString().split('T')[0];
 
-        const stats = await Booking.findAll({
-            where: {
-                '$Schedule.date_start$': {
-                    [Op.gte]: today
-                }
-            },
-            attributes: [
-                'id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt',
-                [require('sequelize').fn('COUNT', require('sequelize').col('Booking.id')), 'count']
-            ],
-            include: [
-                {
-                    model: Schedule,
-                    attributes: ['id', 'date_start', 'time_start', 'type', 'min_signup']
-                }
-            ],
-            group: ['Booking.status', 'Schedule.id', 'Schedule.date_start', 'Schedule.time_start', 'Schedule.type', 'Schedule.min_signup']
-        });
+//         const stats = await Booking.findAll({
+//             where: {
+//                 '$Schedule.date_start$': {
+//                     [Op.gte]: today
+//                 }
+//             },
+//             attributes: [
+//                 'id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt',
+//                 [require('sequelize').fn('COUNT', require('sequelize').col('Booking.id')), 'count']
+//             ],
+//             include: [
+//                 {
+//                     model: Schedule,
+//                     attributes: ['id', 'date_start', 'time_start', 'type', 'min_signup']
+//                 }
+//             ],
+//             group: ['Booking.status', 'Schedule.id', 'Schedule.date_start', 'Schedule.time_start', 'Schedule.type', 'Schedule.min_signup']
+//         });
 
-        return {
-            success: true,
-            statistics: stats
-        };
+//         return {
+//             success: true,
+//             statistics: stats
+//         };
 
-    } catch (error) {
-        logger.error('Error getting booking statistics:', error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-};
+//     } catch (error) {
+//         logger.error('Error getting booking statistics:', error);
+//         return {
+//             success: false,
+//             error: error.message
+//         };
+//     }
+// };
 
 module.exports = {
     autoCancelExpiredBookings,

@@ -270,18 +270,21 @@ const createBonusPackage = async (req, res) => {
       member_id: member_id,
       package_id: newPackage.id,
       start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-      end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
+      end_date: endDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+      // Set session fields untuk bonus package
+      used_group_session: 0,
+      used_private_session: 0,
+      used_semi_private_session: 0,
+      remaining_group_session: group_session ? parseInt(group_session) : 0,
+      remaining_private_session: private_session ? parseInt(private_session) : 0,
+      remaining_semi_private_session: 0
     }, { transaction: t });
 
     await t.commit();
 
-    // Update session usage untuk member package baru (di luar transaction)
-    try {
-      await updateSessionUsage(memberPackage.id, member_id, newPackage.id);
-      logger.info(`✅ Session usage updated for new bonus package ${memberPackage.id}`);
-    } catch (error) {
-      logger.error(`❌ Failed to update session usage for bonus package: ${error.message}`);
-    }
+    // Tidak perlu update session usage untuk bonus package baru
+    // karena session fields sudah diisi dengan benar saat create
+    logger.info(`✅ Bonus package created successfully with session fields: group=${group_session || 0}, private=${private_session || 0}`);
 
     res.status(201).json({
       success: true,
@@ -378,8 +381,27 @@ const updateBonusPackage = async (req, res) => {
         member_id: member_id,
         package_id: package.id,
         start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-        end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
+        end_date: endDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+        // Set session fields untuk bonus package
+        used_group_session: 0,
+        used_private_session: 0,
+        used_semi_private_session: 0,
+        remaining_group_session: group_session ? parseInt(group_session) : 0,
+        remaining_private_session: private_session ? parseInt(private_session) : 0,
+        remaining_semi_private_session: 0
       });
+    } else {
+      // Jika tidak ada member_id baru, update session fields untuk member packages yang sudah ada
+      const existingMemberPackages = await MemberPackage.findAll({
+        where: { package_id: package.id }
+      });
+
+      for (const memberPackage of existingMemberPackages) {
+        await memberPackage.update({
+          remaining_group_session: group_session !== undefined ? parseInt(group_session) : memberPackage.remaining_group_session,
+          remaining_private_session: private_session !== undefined ? parseInt(private_session) : memberPackage.remaining_private_session
+        });
+      }
     }
 
     // Update package
@@ -389,20 +411,20 @@ const updateBonusPackage = async (req, res) => {
     });
 
     // Update package bonus
-    if (group_session && private_session) {
+    if (group_session !== undefined || private_session !== undefined) {
       const existingBonus = await PackageBonus.findOne({
         where: { package_id: package.id }
       });
       if (existingBonus) {
         await existingBonus.update({
-          group_session: parseInt(group_session),
-          private_session: parseInt(private_session)
+          group_session: group_session !== undefined ? parseInt(group_session) : existingBonus.group_session,
+          private_session: private_session !== undefined ? parseInt(private_session) : existingBonus.private_session
         });
       } else {
         await PackageBonus.create({
           package_id: package.id,
-          group_session: parseInt(group_session),
-          private_session: parseInt(private_session)
+          group_session: group_session ? parseInt(group_session) : null,
+          private_session: private_session ? parseInt(private_session) : null
         });
       }
     }

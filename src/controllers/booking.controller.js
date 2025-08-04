@@ -65,6 +65,21 @@ const createUserBooking = async (req, res) => {
             });
         }
 
+        // Cek booking deadline hour
+        const bookingDeadline = new Date(scheduleDateTime.getTime() - (schedule.booking_deadline_hour * 60 * 60 * 1000));
+        
+        if (currentDateTime >= bookingDeadline) {
+            return res.status(400).json({
+                success: false,
+                message: `Booking sudah ditutup. Deadline booking adalah ${schedule.booking_deadline_hour} jam sebelum kelas dimulai`,
+                data: {
+                    schedule_start: scheduleDateTime,
+                    booking_deadline: bookingDeadline,
+                    booking_deadline_hour: schedule.booking_deadline_hour
+                }
+            });
+        }
+
         // Cek kapasitas schedule dan tentukan status booking
         const currentSignups = await Booking.count({
             where: {
