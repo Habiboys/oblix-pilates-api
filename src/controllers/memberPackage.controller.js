@@ -62,35 +62,19 @@ const getMyPackages = async (req, res) => {
     // Get all member packages sorted by priority for history
     const allMemberPackages = await getAllMemberPackagesByPriority(member_id);
     
-    // Calculate total sessions owned by member from package definitions
+    // Calculate total sessions owned by member from MemberPackage (remaining + used)
     const totalSessionsOwned = allMemberPackages.reduce((total, memberPackage) => {
-      let groupTotal = 0;
-      let semiPrivateTotal = 0;
-      let privateTotal = 0;
+      const usedGroupSessions = memberPackage.used_group_session || 0;
+      const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
+      const usedPrivateSessions = memberPackage.used_private_session || 0;
+      const remainingGroupSessions = memberPackage.remaining_group_session || 0;
+      const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
+      const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
       
-      // Get session counts from package definition
-      if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
-        const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
-        const sessionCount = memberPackage.Package.PackageMembership.session || 0;
-        
-        if (categoryName === 'Semi-Private Class') {
-          semiPrivateTotal = sessionCount;
-        } else if (categoryName === 'Private Class') {
-          privateTotal = sessionCount;
-        } else {
-          groupTotal = sessionCount;
-        }
-      } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
-        groupTotal = memberPackage.Package.PackageFirstTrial.group_session || 0;
-        privateTotal = memberPackage.Package.PackageFirstTrial.private_session || 0;
-      } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
-        groupTotal = memberPackage.Package.PackagePromo.group_session || 0;
-        privateTotal = memberPackage.Package.PackagePromo.private_session || 0;
-      } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-        // Untuk bonus package, gunakan session dari MemberPackage (yang sudah diisi manual)
-        groupTotal = memberPackage.remaining_group_session || 0;
-        privateTotal = memberPackage.remaining_private_session || 0;
-      }
+      // Total = remaining + used
+      const groupTotal = remainingGroupSessions + usedGroupSessions;
+      const semiPrivateTotal = remainingSemiPrivateSessions + usedSemiPrivateSessions;
+      const privateTotal = remainingPrivateSessions + usedPrivateSessions;
       
       return {
         group: total.group + groupTotal,
@@ -102,50 +86,21 @@ const getMyPackages = async (req, res) => {
 
     // Process packages with updated session data
     const packagesWithUsage = memberPackages.map((memberPackage) => {
-      // Get total sessions based on package type
-      let totalSessions = 0;
-      let groupSessions = 0;
-      let semiPrivateSessions = 0;
-      let privateSessions = 0;
-      
-      if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
-        // Untuk membership, session type ditentukan oleh category
-        const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
-        const sessionCount = memberPackage.Package.PackageMembership.session || 0;
-        
-        if (categoryName === 'Semi-Private Class') {
-          semiPrivateSessions = sessionCount;
-          totalSessions = sessionCount;
-        } else if (categoryName === 'Private Class') {
-          privateSessions = sessionCount;
-          totalSessions = sessionCount;
-        } else {
-          // Default ke group (termasuk 'Group Class' atau category lain)
-          groupSessions = sessionCount;
-          totalSessions = sessionCount;
-        }
-      } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
-        groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
-        privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
-        totalSessions = groupSessions + privateSessions;
-      } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
-        groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
-        privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
-        totalSessions = groupSessions + privateSessions;
-      } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-        // Untuk bonus package, gunakan session dari MemberPackage (yang sudah diisi manual)
-        groupSessions = memberPackage.remaining_group_session || 0;
-        privateSessions = memberPackage.remaining_private_session || 0;
-        totalSessions = groupSessions + privateSessions;
-      }
-
-      // Use updated session data from MemberPackage
+      // Use session data from MemberPackage (remaining + used)
       const usedGroupSessions = memberPackage.used_group_session || 0;
       const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
       const usedPrivateSessions = memberPackage.used_private_session || 0;
       const remainingGroupSessions = memberPackage.remaining_group_session || 0;
       const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
       const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
+      
+      // Total = remaining + used
+      const groupSessions = remainingGroupSessions + usedGroupSessions;
+      const semiPrivateSessions = remainingSemiPrivateSessions + usedSemiPrivateSessions;
+      const privateSessions = remainingPrivateSessions + usedPrivateSessions;
+      const totalSessions = groupSessions + semiPrivateSessions + privateSessions;
+
+      // Session data sudah dideklarasikan di atas
       
       // Calculate total used sessions based on package type
       let totalUsedSessions = 0;
@@ -215,45 +170,21 @@ const getMyPackages = async (req, res) => {
         return hasValidOrder || isBonusPackage;
       })
       .map((memberPackage, index) => {
-        // Calculate session details for this package from package definition
-        let groupSessions = 0;
-        let semiPrivateSessions = 0;
-        let privateSessions = 0;
-        
-        // Get session counts from package definition
-        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
-          const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
-          const sessionCount = memberPackage.Package.PackageMembership.session || 0;
-          
-          if (categoryName === 'Semi-Private Class') {
-            semiPrivateSessions = sessionCount;
-          } else if (categoryName === 'Private Class') {
-            privateSessions = sessionCount;
-          } else {
-            groupSessions = sessionCount;
-          }
-        } else if (memberPackage.Package?.type === 'first_trial' && memberPackage.Package?.PackageFirstTrial) {
-          groupSessions = memberPackage.Package.PackageFirstTrial.group_session || 0;
-          privateSessions = memberPackage.Package.PackageFirstTrial.private_session || 0;
-        } else if (memberPackage.Package?.type === 'promo' && memberPackage.Package?.PackagePromo) {
-          groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
-          privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
-        } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-          // Untuk bonus package, gunakan session dari MemberPackage (yang sudah diisi manual)
-          groupSessions = memberPackage.remaining_group_session || 0;
-          privateSessions = memberPackage.remaining_private_session || 0;
-        }
-        
-        const totalSessions = groupSessions + semiPrivateSessions + privateSessions;
-        
+        // Use session data from MemberPackage (remaining + used)
         const usedGroupSessions = memberPackage.used_group_session || 0;
         const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
         const usedPrivateSessions = memberPackage.used_private_session || 0;
-        const usedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
-        
         const remainingGroupSessions = memberPackage.remaining_group_session || 0;
         const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
         const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
+        
+        // Total = remaining + used
+        const groupSessions = remainingGroupSessions + usedGroupSessions;
+        const semiPrivateSessions = remainingSemiPrivateSessions + usedSemiPrivateSessions;
+        const privateSessions = remainingPrivateSessions + usedPrivateSessions;
+        const totalSessions = groupSessions + semiPrivateSessions + privateSessions;
+        
+        const usedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
         const remainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
         
         const progressPercentage = totalSessions > 0 ? Math.round((usedSessions / totalSessions) * 100) : 0;
