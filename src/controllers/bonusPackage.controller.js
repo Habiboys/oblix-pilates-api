@@ -20,7 +20,10 @@ const getAllBonusPackages = async (req, res) => {
     }
 
     const { count, rows: packages } = await Package.findAndCountAll({
-      where: whereClause,
+      where: {
+        ...whereClause,
+        is_deleted: false
+      },
       include: [
         {
           model: PackageBonus
@@ -108,7 +111,8 @@ const getBonusPackageById = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'bonus'
+        type: 'bonus',
+        is_deleted: false
       },
       include: [
         {
@@ -323,7 +327,8 @@ const updateBonusPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'bonus'
+        type: 'bonus',
+        is_deleted: false
       }
     });
     
@@ -339,7 +344,8 @@ const updateBonusPackage = async (req, res) => {
       const existingPackage = await Package.findOne({
         where: { 
           type: 'bonus',
-          id: { [Op.ne]: id }
+          id: { [Op.ne]: id },
+          is_deleted: false
         }
       });
 
@@ -486,7 +492,8 @@ const deleteBonusPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'bonus'
+        type: 'bonus',
+        is_deleted: false
       }
     });
     
@@ -506,8 +513,8 @@ const deleteBonusPackage = async (req, res) => {
       });
     }
 
-    // Delete package (this will also delete related package_bonus due to CASCADE)
-    await package.destroy();
+    // Soft delete package (set is_deleted = true)
+    await package.update({ is_deleted: true });
 
     res.json({
       success: true,

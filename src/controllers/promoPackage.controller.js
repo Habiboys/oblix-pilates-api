@@ -18,7 +18,10 @@ const getAllPromoPackages = async (req, res) => {
     }
 
     const { count, rows: packages } = await Package.findAndCountAll({
-      where: whereClause,
+      where: {
+        ...whereClause,
+        is_deleted: false
+      },
       include: [
         {
           model: PackagePromo
@@ -76,7 +79,8 @@ const getPromoPackageById = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'promo'
+        type: 'promo',
+        is_deleted: false
       },
       include: [
         {
@@ -142,7 +146,8 @@ const createPromoPackage = async (req, res) => {
     const existingPackage = await Package.findOne({
       where: { 
         name,
-        type: 'promo'
+        type: 'promo',
+        is_deleted: false
       },
       transaction: t
     });
@@ -236,7 +241,8 @@ const updatePromoPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'promo'
+        type: 'promo',
+        is_deleted: false
       }
     });
     
@@ -253,7 +259,8 @@ const updatePromoPackage = async (req, res) => {
         where: { 
           name,
           type: 'promo',
-          id: { [Op.ne]: id }
+          id: { [Op.ne]: id },
+          is_deleted: false
         }
       });
 
@@ -333,7 +340,8 @@ const deletePromoPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'promo'
+        type: 'promo',
+        is_deleted: false
       }
     });
     
@@ -353,11 +361,8 @@ const deletePromoPackage = async (req, res) => {
       });
     }
 
-    // Delete package (this will also delete related package_promo due to CASCADE)
-    await package.destroy();
-    await PackagePromo.destroy({
-      where: { package_id: id }
-    });
+    // Soft delete package (set is_deleted = true)
+    await package.update({ is_deleted: true });
 
     res.json({
       success: true,

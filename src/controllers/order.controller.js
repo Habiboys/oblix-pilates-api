@@ -24,9 +24,9 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Validate package exists
+    // Validate package exists and is not deleted
     const package = await Package.findByPk(package_id);
-    if (!package) {
+    if (!package || package.is_deleted) {
       await transaction.rollback();
       return res.status(404).json({
         success: false,

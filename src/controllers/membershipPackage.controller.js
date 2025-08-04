@@ -18,7 +18,10 @@ const getAllMembershipPackages = async (req, res) => {
     }
 
     const { count, rows: packages } = await Package.findAndCountAll({
-      where: whereClause,
+      where: {
+        ...whereClause,
+        is_deleted: false
+      },
       include: [
         {
           model: PackageMembership,
@@ -82,7 +85,8 @@ const getMembershipPackageById = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'membership'
+        type: 'membership',
+        is_deleted: false
       },
       include: [
         {
@@ -148,10 +152,11 @@ const createMembershipPackage = async (req, res) => {
     } = req.body;
 
     // Check if package with same name exists
-    const existingPackage = await Package.findOne({
-      where: { 
+        const existingPackage = await Package.findOne({
+      where: {
         name,
-        type: 'membership'
+        type: 'membership',
+        is_deleted: false
       }
     });
 
@@ -251,7 +256,8 @@ const updateMembershipPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'membership'
+        type: 'membership',
+        is_deleted: false
       }
     });
     
@@ -268,7 +274,8 @@ const updateMembershipPackage = async (req, res) => {
         where: { 
           name,
           type: 'membership',
-          id: { [Op.ne]: id }
+          id: { [Op.ne]: id },
+          is_deleted: false
         }
       });
 
@@ -372,7 +379,8 @@ const deleteMembershipPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'membership'
+        type: 'membership',
+        is_deleted: false
       }
     });
     
@@ -392,8 +400,8 @@ const deleteMembershipPackage = async (req, res) => {
       });
     }
 
-    // Delete package (this will also delete related package_membership due to CASCADE)
-    await package.destroy();
+    // Soft delete package (set is_deleted = true)
+    await package.update({ is_deleted: true });
 
     res.json({
       success: true,

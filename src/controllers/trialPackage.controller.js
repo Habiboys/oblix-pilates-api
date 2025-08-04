@@ -18,7 +18,10 @@ const getAllTrialPackages = async (req, res) => {
     }
 
     const { count, rows: packages } = await Package.findAndCountAll({
-      where: whereClause,
+      where: {
+        ...whereClause,
+        is_deleted: false
+      },
       include: [
         {
           model: PackageFirstTrial
@@ -74,7 +77,8 @@ const getTrialPackageById = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'first_trial'
+        type: 'first_trial',
+        is_deleted: false
       },
       include: [
         {
@@ -132,10 +136,11 @@ const createTrialPackage = async (req, res) => {
     } = req.body;
 
     // Check if package with same name exists
-    const existingPackage = await Package.findOne({
-      where: { 
+        const existingPackage = await Package.findOne({
+      where: {
         name,
-        type: 'first_trial'
+        type: 'first_trial',
+        is_deleted: false
       }
     });
 
@@ -218,7 +223,8 @@ const updateTrialPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'first_trial'
+        type: 'first_trial',
+        is_deleted: false
       }
     });
     
@@ -235,7 +241,8 @@ const updateTrialPackage = async (req, res) => {
         where: { 
           name,
           type: 'first_trial',
-          id: { [Op.ne]: id }
+          id: { [Op.ne]: id },
+          is_deleted: false
         }
       });
 
@@ -320,7 +327,8 @@ const deleteTrialPackage = async (req, res) => {
     const package = await Package.findOne({
       where: {
         id,
-        type: 'first_trial'
+        type: 'first_trial',
+        is_deleted: false
       }
     });
     
@@ -340,8 +348,8 @@ const deleteTrialPackage = async (req, res) => {
       });
     }
 
-    // Delete package (this will also delete related package_first_trial due to CASCADE)
-    await package.destroy();
+    // Soft delete package (set is_deleted = true)
+    await package.update({ is_deleted: true });
 
     res.json({
       success: true,

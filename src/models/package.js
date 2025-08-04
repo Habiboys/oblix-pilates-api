@@ -65,6 +65,11 @@ module.exports = (sequelize, DataTypes) => {
     reminder_session: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    is_deleted: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   }, {
     sequelize,
