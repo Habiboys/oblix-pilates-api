@@ -355,7 +355,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       // karena ini adalah total awal yang diberikan, bukan dari MemberPackage
       totalGroupSessions = package.PackageBonus.group_session || 0;
       totalPrivateSessions = package.PackageBonus.private_session || 0;
-      totalSemiPrivateSessions = package.PackageBonus.semi_private_session || 0;
+      totalSemiPrivateSessions = 0; // PackageBonus tidak memiliki semi_private_session
     }
 
     // Hitung used sessions dari booking yang aktif (status = 'signup')
@@ -419,6 +419,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     const remainingGroupSessions = Math.max(0, totalGroupSessions - usedGroupSessions);
     const remainingSemiPrivateSessions = Math.max(0, totalSemiPrivateSessions - usedSemiPrivateSessions);
     const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
+
 
     // Update member package
     await MemberPackage.update({
