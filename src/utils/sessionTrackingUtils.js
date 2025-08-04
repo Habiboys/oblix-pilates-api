@@ -326,37 +326,11 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       throw new Error('Member package not found');
     }
 
-    // Hitung total session berdasarkan tipe package
-    let totalGroupSessions = 0;
-    let totalSemiPrivateSessions = 0;
-    let totalPrivateSessions = 0;
-
-    if (package.type === 'membership' && package.PackageMembership) {
-      // Untuk membership, session type ditentukan oleh category
-      const categoryName = package.PackageMembership.Category?.category_name;
-      const sessionCount = package.PackageMembership.session || 0;
-      
-      if (categoryName === 'Semi-Private Class') {
-        totalSemiPrivateSessions = sessionCount;
-      } else if (categoryName === 'Private Class') {
-        totalPrivateSessions = sessionCount;
-      } else {
-        // Default ke group (termasuk 'Group Class' atau category lain)
-        totalGroupSessions = sessionCount;
-      }
-    } else if (package.type === 'first_trial' && package.PackageFirstTrial) {
-      totalGroupSessions = package.PackageFirstTrial.group_session || 0;
-      totalPrivateSessions = package.PackageFirstTrial.private_session || 0;
-    } else if (package.type === 'promo' && package.PackagePromo) {
-      totalGroupSessions = package.PackagePromo.group_session || 0;
-      totalPrivateSessions = package.PackagePromo.private_session || 0;
-    } else if (package.type === 'bonus' && package.PackageBonus) {
-      // PERBAIKAN: Untuk bonus package, total session diambil dari PackageBonus definition
-      // Ini adalah nilai awal yang benar, bukan dari MemberPackage yang sudah berubah
-      totalGroupSessions = package.PackageBonus.group_session || 0;
-      totalPrivateSessions = package.PackageBonus.private_session || 0;
-      totalSemiPrivateSessions = 0; // Bonus package tidak punya semi-private
-    }
+    // PERBAIKAN: Total session diambil dari MemberPackage (remaining + used)
+    // bukan dari Package definition untuk menghindari overwrite
+    let totalGroupSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.used_group_session || 0);
+    let totalSemiPrivateSessions = (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0);
+    let totalPrivateSessions = (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0);
 
     // Hitung used sessions dari booking yang aktif (status = 'signup')
     const bookings = await Booking.findAll({
