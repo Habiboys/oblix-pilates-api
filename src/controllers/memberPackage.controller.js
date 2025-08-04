@@ -13,8 +13,8 @@ const getMyPackages = async (req, res) => {
       });
     }
 
-    // Update session usage untuk semua member packages terlebih dahulu
-    await updateAllMemberPackagesSessionUsage(member_id);
+    // Tidak perlu update session usage di sini karena akan meng-overwrite bonus package
+    // Session usage akan diupdate saat ada booking baru
 
     // Get all member packages with related data
     const memberPackages = await MemberPackage.findAll({
@@ -87,8 +87,9 @@ const getMyPackages = async (req, res) => {
         groupTotal = memberPackage.Package.PackagePromo.group_session || 0;
         privateTotal = memberPackage.Package.PackagePromo.private_session || 0;
       } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-        groupTotal = memberPackage.Package.PackageBonus.group_session || 0;
-        privateTotal = memberPackage.Package.PackageBonus.private_session || 0;
+        // Untuk bonus package, gunakan session dari MemberPackage (yang sudah diisi manual)
+        groupTotal = memberPackage.remaining_group_session || 0;
+        privateTotal = memberPackage.remaining_private_session || 0;
       }
       
       return {
@@ -132,8 +133,9 @@ const getMyPackages = async (req, res) => {
         privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
         totalSessions = groupSessions + privateSessions;
       } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-        groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
-        privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
+        // Untuk bonus package, gunakan session dari MemberPackage (yang sudah diisi manual)
+        groupSessions = memberPackage.remaining_group_session || 0;
+        privateSessions = memberPackage.remaining_private_session || 0;
         totalSessions = groupSessions + privateSessions;
       }
 
@@ -237,8 +239,9 @@ const getMyPackages = async (req, res) => {
           groupSessions = memberPackage.Package.PackagePromo.group_session || 0;
           privateSessions = memberPackage.Package.PackagePromo.private_session || 0;
         } else if (memberPackage.Package?.type === 'bonus' && memberPackage.Package?.PackageBonus) {
-          groupSessions = memberPackage.Package.PackageBonus.group_session || 0;
-          privateSessions = memberPackage.Package.PackageBonus.private_session || 0;
+          // Untuk bonus package, gunakan session dari MemberPackage (yang sudah diisi manual)
+          groupSessions = memberPackage.remaining_group_session || 0;
+          privateSessions = memberPackage.remaining_private_session || 0;
         }
         
         const totalSessions = groupSessions + semiPrivateSessions + privateSessions;
