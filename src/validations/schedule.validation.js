@@ -97,6 +97,23 @@ const createGroupScheduleSchema = Joi.object({
         }
     }
     
+    // Custom validation for pax > min_signup
+    if (value.pax && value.min_signup) {
+        if (value.pax <= value.min_signup) {
+            return helpers.error('any.invalid', { message: 'Pax must be greater than minimum signup' });
+        }
+    }
+    
+    // Custom validation for booking_deadline_hour > cancel_buffer_minutes
+    if (value.booking_deadline_hour && value.cancel_buffer_minutes) {
+        const deadlineHours = value.booking_deadline_hour;
+        const bufferHours = value.cancel_buffer_minutes / 60; // Convert minutes to hours
+        
+        if (deadlineHours <= bufferHours) {
+            return helpers.error('any.invalid', { message: 'Booking deadline hour must be greater than cancel buffer time' });
+        }
+    }
+    
     return value;
 });
 
@@ -175,6 +192,23 @@ const updateGroupScheduleSchema = Joi.object({
         
         if (untilDate <= startDate) {
             return helpers.error('any.invalid', { message: 'Schedule until date must be after date start' });
+        }
+    }
+    
+    // Custom validation for pax > min_signup
+    if (value.pax && value.min_signup) {
+        if (value.pax <= value.min_signup) {
+            return helpers.error('any.invalid', { message: 'Pax must be greater than minimum signup' });
+        }
+    }
+    
+    // Custom validation for booking_deadline_hour > cancel_buffer_minutes
+    if (value.booking_deadline_hour && value.cancel_buffer_minutes) {
+        const deadlineHours = value.booking_deadline_hour;
+        const bufferHours = value.cancel_buffer_minutes / 60; // Convert minutes to hours
+        
+        if (deadlineHours <= bufferHours) {
+            return helpers.error('any.invalid', { message: 'Booking deadline hour must be greater than cancel buffer time' });
         }
     }
     
@@ -298,6 +332,23 @@ const createSemiPrivateScheduleSchema = Joi.object({
         }
     }
     
+    // Custom validation for pax > min_signup
+    if (value.pax && value.min_signup) {
+        if (value.pax <= value.min_signup) {
+            return helpers.error('any.invalid', { message: 'Pax must be greater than minimum signup' });
+        }
+    }
+    
+    // Custom validation for booking_deadline_hour > cancel_buffer_minutes
+    if (value.booking_deadline_hour && value.cancel_buffer_minutes) {
+        const deadlineHours = value.booking_deadline_hour;
+        const bufferHours = value.cancel_buffer_minutes / 60; // Convert minutes to hours
+        
+        if (deadlineHours <= bufferHours) {
+            return helpers.error('any.invalid', { message: 'Booking deadline hour must be greater than cancel buffer time' });
+        }
+    }
+    
     return value;
 });
 
@@ -373,6 +424,23 @@ const updateSemiPrivateScheduleSchema = Joi.object({
         
         if (untilDate <= startDate) {
             return helpers.error('any.invalid', { message: 'Schedule until date must be after date start' });
+        }
+    }
+    
+    // Custom validation for pax > min_signup
+    if (value.pax && value.min_signup) {
+        if (value.pax <= value.min_signup) {
+            return helpers.error('any.invalid', { message: 'Pax must be greater than minimum signup' });
+        }
+    }
+    
+    // Custom validation for booking_deadline_hour > cancel_buffer_minutes
+    if (value.booking_deadline_hour && value.cancel_buffer_minutes) {
+        const deadlineHours = value.booking_deadline_hour;
+        const bufferHours = value.cancel_buffer_minutes / 60; // Convert minutes to hours
+        
+        if (deadlineHours <= bufferHours) {
+            return helpers.error('any.invalid', { message: 'Booking deadline hour must be greater than cancel buffer time' });
         }
     }
     

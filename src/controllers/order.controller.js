@@ -132,6 +132,36 @@ const createOrder = async (req, res) => {
       });
     }
 
+    // Check if member has expired order for this package
+    const expiredOrder = await Order.findOne({
+      where: {
+        member_id,
+        package_id,
+        status: { [Op.in]: ['pending', 'processing'] },
+        expired_at: { [Op.lt]: new Date() } // Order yang sudah expired
+      }
+    });
+
+    if (expiredOrder) {
+      await transaction.rollback();
+      return res.status(200).json({
+        success: true,
+        message: 'Anda memiliki order yang sudah expired untuk paket ini',
+        data: {
+          expired_order_id: expiredOrder.id,
+          redirect_to_payment: true,
+          payment_url: expiredOrder.midtrans_redirect_url || expiredOrder.payment_url || null,
+          midtrans_token: expiredOrder.midtrans_token || null,
+          order_status: expiredOrder.status,
+          order_amount: expiredOrder.total_amount,
+          created_at: expiredOrder.createdAt,
+          expired_at: expiredOrder.expired_at,
+          is_expired: true,
+          message: 'Order ini sudah expired, tetapi Anda masih bisa melanjutkan pembayaran'
+        }
+      });
+    }
+
     
 
     // Get member details

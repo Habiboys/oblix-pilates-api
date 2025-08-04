@@ -209,7 +209,13 @@ const createUserBooking = async (req, res) => {
             include: [
                 {
                     model: Member,
-                    attributes: ['id', 'full_name', 'username', 'member_code', 'phone_number']
+                    attributes: ['id', 'full_name', 'username', 'member_code', 'phone_number'],
+                    include: [
+                        {
+                            model: require('../models').User,
+                            attributes: ['id', 'email']
+                        }
+                    ]
                 },
                 {
                     model: Schedule,
@@ -256,21 +262,22 @@ const createUserBooking = async (req, res) => {
             logger.error(`❌ Error stack: ${error.stack}`);
         }
 
-        // Send WhatsApp confirmation (async, don't wait for response)
+        // Send WhatsApp and email confirmation (async, don't wait for response)
         try {
             twilioService.sendBookingConfirmation(createdBooking)
                 .then(result => {
                     if (result.success) {
-                        logger.info(`✅ WhatsApp confirmation sent to ${createdBooking.Member.full_name}`);
+                        logger.info(`✅ WhatsApp & Email confirmation sent to ${createdBooking.Member.full_name}`);
+                        logger.info(`📱 WhatsApp: ${result.whatsapp.success ? '✅' : '❌'}, 📧 Email: ${result.email.success ? '✅' : '❌'}`);
                     } else {
-                        logger.error(`❌ Failed to send WhatsApp confirmation to ${createdBooking.Member.full_name}: ${result.error}`);
+                        logger.error(`❌ Failed to send confirmation to ${createdBooking.Member.full_name}: ${result.error}`);
                     }
                 })
                 .catch(error => {
-                    logger.error(`❌ Error sending WhatsApp confirmation to ${createdBooking.Member.full_name}:`, error);
+                    logger.error(`❌ Error sending confirmation to ${createdBooking.Member.full_name}:`, error);
                 });
         } catch (error) {
-            logger.error('Error initiating WhatsApp confirmation:', error);
+            logger.error('Error initiating confirmation:', error);
         }
 
         res.status(201).json({
@@ -317,6 +324,15 @@ const updateBookingStatus = async (req, res) => {
                     include: [
                         {
                             model: require('../models').Class
+                        }
+                    ]
+                },
+                {
+                    model: Member,
+                    include: [
+                        {
+                            model: require('../models').User,
+                            attributes: ['id', 'email']
                         }
                     ]
                 }
@@ -385,7 +401,13 @@ const updateBookingStatus = async (req, res) => {
                             ]
                         },
                         {
-                            model: Member
+                            model: Member,
+                            include: [
+                                {
+                                    model: require('../models').User,
+                                    attributes: ['id', 'email']
+                                }
+                            ]
                         }
                     ]
                 });
@@ -394,13 +416,14 @@ const updateBookingStatus = async (req, res) => {
                     twilioService.sendWaitlistPromotion(fullBooking)
                         .then(result => {
                             if (result.success) {
-                                logger.info(`✅ Waitlist promotion WhatsApp sent to ${fullBooking.Member.full_name}`);
+                                logger.info(`✅ Waitlist promotion WhatsApp & Email sent to ${fullBooking.Member.full_name}`);
+                                logger.info(`📱 WhatsApp: ${result.whatsapp.success ? '✅' : '❌'}, 📧 Email: ${result.email.success ? '✅' : '❌'}`);
                             } else {
-                                logger.error(`❌ Failed to send waitlist promotion WhatsApp to ${fullBooking.Member.full_name}: ${result.error}`);
+                                logger.error(`❌ Failed to send waitlist promotion to ${fullBooking.Member.full_name}: ${result.error}`);
                             }
                         })
                         .catch(error => {
-                            logger.error(`❌ Error sending waitlist promotion WhatsApp to ${fullBooking.Member.full_name}:`, error);
+                            logger.error(`❌ Error sending waitlist promotion to ${fullBooking.Member.full_name}:`, error);
                         });
                 }
             } else if (status === 'cancelled') {
@@ -416,7 +439,13 @@ const updateBookingStatus = async (req, res) => {
                             ]
                         },
                         {
-                            model: Member
+                            model: Member,
+                            include: [
+                                {
+                                    model: require('../models').User,
+                                    attributes: ['id', 'email']
+                                }
+                            ]
                         }
                     ]
                 });
@@ -425,13 +454,14 @@ const updateBookingStatus = async (req, res) => {
                     twilioService.sendBookingCancellation(fullBooking, notes || 'Booking dibatalkan oleh admin')
                         .then(result => {
                             if (result.success) {
-                                logger.info(`✅ Booking cancellation WhatsApp sent to ${fullBooking.Member.full_name}`);
+                                logger.info(`✅ Booking cancellation WhatsApp & Email sent to ${fullBooking.Member.full_name}`);
+                                logger.info(`📱 WhatsApp: ${result.whatsapp.success ? '✅' : '❌'}, 📧 Email: ${result.email.success ? '✅' : '❌'}`);
                             } else {
-                                logger.error(`❌ Failed to send booking cancellation WhatsApp to ${fullBooking.Member.full_name}: ${result.error}`);
+                                logger.error(`❌ Failed to send booking cancellation to ${fullBooking.Member.full_name}: ${result.error}`);
                             }
                         })
                         .catch(error => {
-                            logger.error(`❌ Error sending booking cancellation WhatsApp to ${fullBooking.Member.full_name}:`, error);
+                            logger.error(`❌ Error sending booking cancellation to ${fullBooking.Member.full_name}:`, error);
                         });
                 }
             }
@@ -480,7 +510,13 @@ const cancelBooking = async (req, res) => {
                     ]
                 },
                 {
-                    model: Member
+                    model: Member,
+                    include: [
+                        {
+                            model: require('../models').User,
+                            attributes: ['id', 'email']
+                        }
+                    ]
                 }
             ]
         });
@@ -527,21 +563,22 @@ const cancelBooking = async (req, res) => {
 
         console.log(`🔄 Booking ${booking.id} status updated to: ${booking.status}`);
 
-        // Send WhatsApp cancellation notification (async)
+        // Send WhatsApp and email cancellation notification (async)
         try {
             twilioService.sendBookingCancellation(booking, cancelReason)
                 .then(result => {
                     if (result.success) {
-                        logger.info(`✅ WhatsApp cancellation sent to ${booking.Member.full_name}`);
+                        logger.info(`✅ WhatsApp & Email cancellation sent to ${booking.Member.full_name}`);
+                        logger.info(`📱 WhatsApp: ${result.whatsapp.success ? '✅' : '❌'}, 📧 Email: ${result.email.success ? '✅' : '❌'}`);
                     } else {
-                        logger.error(`❌ Failed to send WhatsApp cancellation to ${booking.Member.full_name}: ${result.error}`);
+                        logger.error(`❌ Failed to send cancellation to ${booking.Member.full_name}: ${result.error}`);
                     }
                 })
                 .catch(error => {
-                    logger.error(`❌ Error sending WhatsApp cancellation to ${booking.Member.full_name}:`, error);
+                    logger.error(`❌ Error sending cancellation to ${booking.Member.full_name}:`, error);
                 });
         } catch (error) {
-            logger.error('Error initiating WhatsApp cancellation:', error);
+            logger.error('Error initiating cancellation:', error);
         }
 
         // PERBAIKAN: Update session usage setelah cancel untuk mengembalikan quota
@@ -684,26 +721,41 @@ const adminCancelBooking = async (req, res) => {
 
         console.log(`🔄 Booking ${booking.id} status updated to: ${booking.status}`);
 
-        // Send WhatsApp cancellation notification (async)
+        // Send WhatsApp and email cancellation notification (async)
         try {
-            twilioService.sendAdminCancellation(
+            // Send WhatsApp
+            const whatsappResult = await twilioService.sendAdminCancellation(
                 booking.Member.phone_number,
                 booking.Member.full_name,
                 booking.Schedule.Class.class_name,
                 booking.Schedule.date_start,
                 booking.Schedule.time_start,
                 cancelReason
-            ).then(result => {
-                if (result.success) {
-                    logger.info(`✅ Admin cancellation WhatsApp sent to ${booking.Member.full_name}`);
-                } else {
-                    logger.error(`❌ Failed to send admin cancellation WhatsApp to ${booking.Member.full_name}: ${result.error}`);
-                }
-            }).catch(error => {
-                logger.error(`❌ Error sending admin cancellation WhatsApp to ${booking.Member.full_name}:`, error);
-            });
+            );
+            
+            // Send email
+            const memberEmail = booking.Member.User?.email || booking.Member.email;
+            let emailResult = { success: false, error: 'No email available' };
+            
+            if (memberEmail) {
+                emailResult = await emailService.sendAdminCancellationEmail(
+                    booking.Member.full_name,
+                    memberEmail,
+                    booking.Schedule.Class.class_name,
+                    booking.Schedule.date_start,
+                    booking.Schedule.time_start,
+                    cancelReason
+                );
+            }
+            
+            if (whatsappResult.success) {
+                logger.info(`✅ Admin cancellation WhatsApp & Email sent to ${booking.Member.full_name}`);
+                logger.info(`📱 WhatsApp: ${whatsappResult.success ? '✅' : '❌'}, 📧 Email: ${emailResult.success ? '✅' : '❌'}`);
+            } else {
+                logger.error(`❌ Failed to send admin cancellation to ${booking.Member.full_name}: ${whatsappResult.error}`);
+            }
         } catch (error) {
-            logger.error('Error initiating admin cancellation WhatsApp:', error);
+            logger.error('Error initiating admin cancellation:', error);
         }
 
         // PERBAIKAN: Update session usage setelah admin cancel untuk mengembalikan quota

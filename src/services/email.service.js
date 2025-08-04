@@ -221,6 +221,98 @@ class EmailService {
         }
     }
 
+    async sendBookingConfirmationEmail(booking) {
+        try {
+            const member = booking.Member;
+            const schedule = booking.Schedule;
+            const classInfo = schedule.Class;
+            const trainer = schedule.Trainer;
+
+            // Format schedule time
+            const scheduleDate = new Date(`${schedule.date_start}T${schedule.time_start}`);
+            const formattedDate = scheduleDate.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const formattedTime = scheduleDate.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Check if email is available
+            const memberEmail = member.User?.email || member.email;
+            if (!memberEmail) {
+                console.log('No email available for member:', member.full_name);
+                return { success: false, error: 'No email available for member' };
+            }
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: memberEmail,
+                subject: 'Booking Berhasil - Oblix Pilates',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
+                        </div>
+                        
+                        <div style="padding: 30px; background-color: white;">
+                            <h2 style="color: #333; margin-bottom: 20px;">Booking Berhasil</h2>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Halo <strong>${member.full_name}</strong>,
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Booking kelas pilates Anda berhasil dibuat:
+                            </p>
+                            
+                            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <h3 style="color: #2d5a2d; margin-top: 0;">Detail Booking:</h3>
+                                <p><strong>Tanggal:</strong> ${formattedDate}</p>
+                                <p><strong>Waktu:</strong> ${formattedTime}</p>
+                                <p><strong>Kelas:</strong> ${classInfo.class_name}</p>
+                                <p><strong>Trainer:</strong> ${trainer.title}</p>
+                                <p><strong>Status:</strong> ${booking.status === 'signup' ? 'Terdaftar' : 'Dalam Antrian'}</p>
+                            </div>
+                            
+                            ${booking.status === 'waiting_list' ? `
+                            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                <p style="color: #856404; line-height: 1.6; margin: 0;">
+                                    <strong>Catatan:</strong> Anda masuk dalam antrian. Kami akan memberitahu jika ada slot kosong.
+                                </p>
+                            </div>
+                            ` : ''}
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Kami akan mengirimkan reminder H-1 sebelum kelas dimulai. Jangan lupa datang 10 menit sebelum kelas dimulai.
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <p style="color: #666; margin: 0; font-size: 14px;">
+                                © 2024 Oblix Pilates. All rights reserved.
+                            </p>
+                        </div>
+                    </div>
+                `
+            };
+
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log('Booking confirmation email sent successfully:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            console.error('Booking confirmation email sending failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     async sendBookingReminderEmail(booking) {
         try {
             const member = booking.Member;
@@ -241,54 +333,49 @@ class EmailService {
                 minute: '2-digit'
             });
 
+            // Check if email is available
+            const memberEmail = member.User?.email || member.email;
+            if (!memberEmail) {
+                console.log('No email available for member:', member.full_name);
+                return { success: false, error: 'No email available for member' };
+            }
+
             const mailOptions = {
                 from: process.env.EMAIL_USER,
-                to: member.User?.email || member.email,
+                to: memberEmail,
                 subject: 'Reminder Kelas Pilates - Oblix Pilates',
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-                            <h1 style="color: #333; margin: 0;">🏋️‍♀️ Oblix Pilates</h1>
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
                         </div>
                         
                         <div style="padding: 30px; background-color: white;">
                             <h2 style="color: #333; margin-bottom: 20px;">Reminder Kelas Pilates</h2>
                             
                             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-                                Halo <strong>${member.full_name}</strong>! 👋
+                                Halo <strong>${member.full_name}</strong>,
                             </p>
                             
                             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
                                 Jangan lupa kelas pilates Anda besok:
                             </p>
                             
-                            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h3 style="margin-top: 0; color: #2d5a2d;">📅 Detail Kelas:</h3>
+                            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <h3 style="color: #2d5a2d; margin-top: 0;">Detail Kelas:</h3>
                                 <p><strong>Tanggal:</strong> ${formattedDate}</p>
                                 <p><strong>Waktu:</strong> ${formattedTime}</p>
                                 <p><strong>Kelas:</strong> ${classInfo.class_name}</p>
                                 <p><strong>Trainer:</strong> ${trainer.title}</p>
-                                <p><strong>Lokasi:</strong> Oblix Pilates</p>
-                                <p><strong>Status:</strong> ${booking.status === 'signup' ? '✅ Terdaftar' : '⏳ Dalam Antrian'}</p>
-                            </div>
-                            
-                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                                <h4 style="margin-top: 0; color: #856404;">💡 Tips:</h4>
-                                <ul style="color: #856404; line-height: 1.6;">
-                                    <li>Datang 10 menit sebelum kelas dimulai</li>
-                                    <li>Bawa handuk dan air minum</li>
-                                    <li>Gunakan pakaian yang nyaman</li>
-                                </ul>
-                            </div>
-                            
-                            <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                                <p style="margin-bottom: 0; color: #721c24;">
-                                    <strong>⚠️ Penting:</strong> Jika tidak bisa hadir, silakan cancel booking minimal 2 jam sebelum kelas dimulai.
-                                </p>
+                                <p><strong>Status:</strong> ${booking.status === 'signup' ? 'Terdaftar' : 'Dalam Antrian'}</p>
                             </div>
                             
                             <p style="color: #666; line-height: 1.6;">
-                                Terima kasih! 🙏
+                                Jangan lupa datang 10 menit sebelum kelas dimulai. Bawa handuk dan air minum, serta gunakan pakaian yang nyaman.
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
                             </p>
                         </div>
                         
@@ -314,6 +401,12 @@ class EmailService {
         try {
             const { member_name, email, package_name, package_details, remaining_sessions, end_date, days_remaining } = reminderData;
 
+            // Check if email is available
+            if (!email) {
+                console.log('No email available for member:', member_name);
+                return { success: false, error: 'No email available for member' };
+            }
+
             const mailOptions = {
                 from: process.env.EMAIL_USER,
                 to: email,
@@ -321,7 +414,7 @@ class EmailService {
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-                            <h1 style="color: #333; margin: 0;">⚠️ Oblix Pilates</h1>
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
                         </div>
                         
                         <div style="padding: 30px; background-color: white;">
@@ -335,29 +428,20 @@ class EmailService {
                                 Paket Anda hampir habis sesinya:
                             </p>
                             
-                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h3 style="margin-top: 0; color: #856404;">📦 Detail Paket:</h3>
+                            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <h3 style="color: #555; margin-top: 0;">Detail Paket:</h3>
                                 <p><strong>Paket:</strong> ${package_name}</p>
                                 <p><strong>Detail:</strong> ${package_details}</p>
                                 <p><strong>Sesi Tersisa:</strong> ${remaining_sessions} sesi</p>
                                 <p><strong>Berakhir:</strong> ${end_date} (${days_remaining} hari lagi)</p>
                             </div>
                             
-                            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h4 style="margin-top: 0; color: #2d5a2d;">💡 Saran:</h4>
-                                <ul style="color: #2d5a2d; line-height: 1.6;">
-                                    <li>Segera booking kelas untuk menggunakan sesi yang tersisa</li>
-                                    <li>Pertimbangkan untuk membeli paket baru sebelum masa berlaku berakhir</li>
-                                </ul>
-                            </div>
-                            
                             <p style="color: #666; line-height: 1.6;">
-                                Untuk informasi lebih lanjut, silakan hubungi admin.
+                                Segera booking kelas untuk menggunakan sesi yang tersisa. Pertimbangkan untuk membeli paket baru sebelum masa berlaku berakhir.
                             </p>
                             
                             <p style="color: #666; line-height: 1.6;">
-                                Terima kasih,<br>
-                                <strong>Oblix Pilates</strong>
+                                Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
                             </p>
                         </div>
                         
@@ -379,9 +463,245 @@ class EmailService {
         }
     }
 
+    async sendWaitlistPromotionEmail(booking) {
+        try {
+            const member = booking.Member;
+            const schedule = booking.Schedule;
+            const classInfo = schedule.Class;
+            const trainer = schedule.Trainer;
+
+            // Format schedule time
+            const scheduleDate = new Date(`${schedule.date_start}T${schedule.time_start}`);
+            const formattedDate = scheduleDate.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const formattedTime = scheduleDate.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Check if email is available
+            const memberEmail = member.User?.email || member.email;
+            if (!memberEmail) {
+                console.log('No email available for member:', member.full_name);
+                return { success: false, error: 'No email available for member' };
+            }
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: memberEmail,
+                subject: 'Selamat! Anda Masuk Kelas - Oblix Pilates',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
+                        </div>
+                        
+                        <div style="padding: 30px; background-color: white;">
+                            <h2 style="color: #333; margin-bottom: 20px;">Selamat! Anda Masuk Kelas</h2>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Halo <strong>${member.full_name}</strong>,
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Selamat! Booking Anda telah dipromosikan dari antrian ke kelas:
+                            </p>
+                            
+                            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <h3 style="color: #2d5a2d; margin-top: 0;">Detail Kelas:</h3>
+                                <p><strong>Tanggal:</strong> ${formattedDate}</p>
+                                <p><strong>Waktu:</strong> ${formattedTime}</p>
+                                <p><strong>Kelas:</strong> ${classInfo.class_name}</p>
+                                <p><strong>Trainer:</strong> ${trainer.title}</p>
+                                <p><strong>Status:</strong> Terdaftar</p>
+                            </div>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Anda sekarang terdaftar untuk kelas ini. Jangan lupa datang tepat waktu dan kami akan mengirimkan reminder H-1 sebelum kelas dimulai.
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <p style="color: #666; margin: 0; font-size: 14px;">
+                                © 2024 Oblix Pilates. All rights reserved.
+                            </p>
+                        </div>
+                    </div>
+                `
+            };
+
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log('Waitlist promotion email sent successfully:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            console.error('Waitlist promotion email sending failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async sendAdminCancellationEmail(memberName, email, className, date, time, reason) {
+        try {
+            // Check if email is available
+            if (!email) {
+                console.log('No email available for member:', memberName);
+                return { success: false, error: 'No email available for member' };
+            }
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Kelas Dibatalkan oleh Admin - Oblix Pilates',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
+                        </div>
+                        
+                        <div style="padding: 30px; background-color: white;">
+                            <h2 style="color: #333; margin-bottom: 20px;">Kelas Dibatalkan</h2>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Halo <strong>${memberName}</strong>,
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Kelas Anda telah dibatalkan oleh admin:
+                            </p>
+                            
+                            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <h3 style="color: #555; margin-top: 0;">Detail Kelas:</h3>
+                                <p><strong>Kelas:</strong> ${className}</p>
+                                <p><strong>Tanggal:</strong> ${date}</p>
+                                <p><strong>Waktu:</strong> ${time}</p>
+                                <p><strong>Alasan:</strong> ${reason}</p>
+                            </div>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Session Anda telah dikembalikan ke paket. Anda dapat booking ulang kelas lain yang tersedia.
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <p style="color: #666; margin: 0; font-size: 14px;">
+                                © 2024 Oblix Pilates. All rights reserved.
+                            </p>
+                        </div>
+                    </div>
+                `
+            };
+
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log('Admin cancellation email sent successfully:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            console.error('Admin cancellation email sending failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async sendBookingCancellationEmail(booking, reason = 'Booking dibatalkan') {
+        try {
+            const member = booking.Member;
+            const schedule = booking.Schedule;
+            const classInfo = schedule.Class;
+
+            // Format schedule time
+            const scheduleDate = new Date(`${schedule.date_start}T${schedule.time_start}`);
+            const formattedDate = scheduleDate.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const formattedTime = scheduleDate.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Check if email is available
+            const memberEmail = member.User?.email || member.email;
+            if (!memberEmail) {
+                console.log('No email available for member:', member.full_name);
+                return { success: false, error: 'No email available for member' };
+            }
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: memberEmail,
+                subject: 'Booking Dibatalkan - Oblix Pilates',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
+                        </div>
+                        
+                        <div style="padding: 30px; background-color: white;">
+                            <h2 style="color: #333; margin-bottom: 20px;">Booking Dibatalkan</h2>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Halo <strong>${member.full_name}</strong>,
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Booking kelas pilates Anda telah dibatalkan:
+                            </p>
+                            
+                            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <h3 style="color: #555; margin-top: 0;">Detail Booking:</h3>
+                                <p><strong>Tanggal:</strong> ${formattedDate}</p>
+                                <p><strong>Waktu:</strong> ${formattedTime}</p>
+                                <p><strong>Kelas:</strong> ${classInfo.class_name}</p>
+                                <p><strong>Alasan:</strong> ${reason}</p>
+                            </div>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Session Anda telah dikembalikan ke paket. Anda dapat booking ulang kelas lain yang tersedia.
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <p style="color: #666; margin: 0; font-size: 14px;">
+                                © 2024 Oblix Pilates. All rights reserved.
+                            </p>
+                        </div>
+                    </div>
+                `
+            };
+
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log('Booking cancellation email sent successfully:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            console.error('Booking cancellation email sending failed:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     async sendExpiryReminderEmail(reminderData) {
         try {
             const { member_name, email, package_name, package_details, remaining_sessions, end_date, days_remaining } = reminderData;
+
+            // Check if email is available
+            if (!email) {
+                console.log('No email available for member:', member_name);
+                return { success: false, error: 'No email available for member' };
+            }
 
             const mailOptions = {
                 from: process.env.EMAIL_USER,
@@ -390,7 +710,7 @@ class EmailService {
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-                            <h1 style="color: #333; margin: 0;">⏰ Oblix Pilates</h1>
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
                         </div>
                         
                         <div style="padding: 30px; background-color: white;">
@@ -404,37 +724,20 @@ class EmailService {
                                 Paket Anda akan segera berakhir:
                             </p>
                             
-                            <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h3 style="margin-top: 0; color: #721c24;">📦 Detail Paket:</h3>
+                            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                <h3 style="color: #555; margin-top: 0;">Detail Paket:</h3>
                                 <p><strong>Paket:</strong> ${package_name}</p>
                                 <p><strong>Detail:</strong> ${package_details}</p>
                                 <p><strong>Sesi Tersisa:</strong> ${remaining_sessions} sesi</p>
                                 <p><strong>Berakhir:</strong> ${end_date} (${days_remaining} hari lagi)</p>
                             </div>
                             
-                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h4 style="margin-top: 0; color: #856404;">🚨 Penting:</h4>
-                                <ul style="color: #856404; line-height: 1.6;">
-                                    <li>Sesi yang tidak digunakan akan hangus setelah masa berlaku berakhir</li>
-                                    <li>Segera gunakan sesi yang tersisa atau beli paket baru</li>
-                                </ul>
-                            </div>
-                            
-                            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                                <h4 style="margin-top: 0; color: #2d5a2d;">💡 Saran:</h4>
-                                <ul style="color: #2d5a2d; line-height: 1.6;">
-                                    <li>Booking kelas segera untuk menggunakan sesi yang tersisa</li>
-                                    <li>Pertimbangkan untuk membeli paket baru sebelum berakhir</li>
-                                </ul>
-                            </div>
-                            
                             <p style="color: #666; line-height: 1.6;">
-                                Untuk informasi lebih lanjut, silakan hubungi admin.
+                                Sesi yang tidak digunakan akan hangus setelah masa berlaku berakhir. Segera booking kelas untuk menggunakan sesi yang tersisa atau pertimbangkan untuk membeli paket baru sebelum berakhir.
                             </p>
                             
                             <p style="color: #666; line-height: 1.6;">
-                                Terima kasih,<br>
-                                <strong>Oblix Pilates</strong>
+                                Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
                             </p>
                         </div>
                         
@@ -453,6 +756,132 @@ class EmailService {
         } catch (error) {
             console.error('Expiry reminder email sending failed:', error);
             return { success: false, error: error.message };
+        }
+    }
+
+    async sendClassCancellationEmail(bookings, schedule) {
+        try {
+            console.log('📧 sendClassCancellationEmail called with:', {
+                bookingsCount: bookings.length,
+                scheduleId: schedule.id,
+                scheduleDate: schedule.date_start,
+                scheduleTime: schedule.time_start,
+                hasClass: !!schedule.Class,
+                className: schedule.Class?.class_name
+            });
+            
+            const classInfo = schedule.Class;
+            const scheduleDate = new Date(`${schedule.date_start}T${schedule.time_start}`);
+            const formattedDate = scheduleDate.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const formattedTime = scheduleDate.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const results = [];
+
+            for (const booking of bookings) {
+                const member = booking.Member;
+                
+                console.log('📧 Processing member:', {
+                    memberId: member.id,
+                    memberName: member.full_name,
+                    hasUser: !!member.User,
+                    userEmail: member.User?.email,
+                    memberEmail: member.email
+                });
+                
+                // Check if email is available
+                const memberEmail = member.User?.email || member.email;
+                if (!memberEmail) {
+                    console.log('No email available for member:', member.full_name);
+                    results.push({
+                        member_id: member.id,
+                        member_name: member.full_name,
+                        success: false,
+                        error: 'No email available for member'
+                    });
+                    continue;
+                }
+
+                const mailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: memberEmail,
+                    subject: 'Kelas Dibatalkan - Oblix Pilates',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                            <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                                <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
+                            </div>
+                            
+                            <div style="padding: 30px; background-color: white;">
+                                <h2 style="color: #333; margin-bottom: 20px;">Kelas Dibatalkan</h2>
+                                
+                                <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                    Halo <strong>${member.full_name}</strong>,
+                                </p>
+                                
+                                <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                    Kelas pilates berikut telah dibatalkan karena tidak memenuhi minimum peserta:
+                                </p>
+                                
+                                <div style="background-color: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                                    <h3 style="color: #555; margin-top: 0;">Detail Kelas:</h3>
+                                    <p><strong>Tanggal:</strong> ${formattedDate}</p>
+                                    <p><strong>Waktu:</strong> ${formattedTime}</p>
+                                    <p><strong>Kelas:</strong> ${classInfo.class_name}</p>
+                                    <p><strong>Alasan:</strong> Tidak memenuhi minimum peserta</p>
+                                </div>
+                                
+                                <p style="color: #666; line-height: 1.6;">
+                                    Booking Anda telah dibatalkan secara otomatis. Session Anda telah dikembalikan ke paket.
+                                </p>
+                                
+                                <p style="color: #666; line-height: 1.6;">
+                                    Silakan booking kelas lain yang tersedia. Jika ada pertanyaan, jangan ragu untuk menghubungi tim support kami.
+                                </p>
+                            </div>
+                            
+                            <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                                <p style="color: #666; margin: 0; font-size: 14px;">
+                                    © 2024 Oblix Pilates. All rights reserved.
+                                </p>
+                            </div>
+                        </div>
+                    `
+                };
+
+                try {
+                    const result = await this.transporter.sendMail(mailOptions);
+                    results.push({
+                        member_id: member.id,
+                        member_name: member.full_name,
+                        success: true,
+                        messageId: result.messageId
+                    });
+                } catch (error) {
+                    console.error(`Failed to send class cancellation email to ${member.full_name}:`, error);
+                    results.push({
+                        member_id: member.id,
+                        member_name: member.full_name,
+                        success: false,
+                        error: error.message
+                    });
+                }
+            }
+
+            return results;
+        } catch (error) {
+            console.error('Error sending class cancellation emails:', error);
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 }

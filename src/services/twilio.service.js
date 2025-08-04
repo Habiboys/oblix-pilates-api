@@ -134,7 +134,7 @@ Terima kasih! 🙏
         const emailResult = await emailService.sendBookingReminderEmail(booking);
         
         return {
-            success: whatsappResult.success && emailResult.success,
+            success: whatsappResult.success || emailResult.success,
             whatsapp: whatsappResult,
             email: emailResult
         };
@@ -190,7 +190,19 @@ Terima kasih telah memilih Oblix Pilates! 🙏
 
 *Oblix Pilates*`;
 
-        return await sendWhatsAppMessage(member.phone_number, message);
+        // Send WhatsApp message
+        const whatsappResult = await sendWhatsAppMessage(member.phone_number, message);
+        
+        // Send email confirmation
+        const emailResult = await emailService.sendBookingConfirmationEmail(booking);
+        
+        // Return combined result - success if at least WhatsApp works
+        return {
+            success: whatsappResult.success || emailResult.success,
+            whatsapp: whatsappResult,
+            email: emailResult,
+            member_name: member.full_name
+        };
 
     } catch (error) {
         logger.error('Error sending booking confirmation:', error);
@@ -242,7 +254,19 @@ Terima kasih! 🙏
 
 *Oblix Pilates*`;
 
-        return await sendWhatsAppMessage(member.phone_number, message);
+        // Send WhatsApp message
+        const whatsappResult = await sendWhatsAppMessage(member.phone_number, message);
+        
+        // Send email cancellation
+        const emailResult = await emailService.sendBookingCancellationEmail(booking, reason);
+        
+        // Return combined result - success if at least WhatsApp works
+        return {
+            success: whatsappResult.success || emailResult.success,
+            whatsapp: whatsappResult,
+            email: emailResult,
+            member_name: member.full_name
+        };
 
     } catch (error) {
         logger.error('Error sending booking cancellation:', error);
@@ -295,7 +319,19 @@ Terima kasih! 🙏
 
 *Oblix Pilates*`;
 
-        return await sendWhatsAppMessage(member.phone_number, message);
+        // Send WhatsApp message
+        const whatsappResult = await sendWhatsAppMessage(member.phone_number, message);
+        
+        // Send email promotion
+        const emailResult = await emailService.sendWaitlistPromotionEmail(booking);
+        
+        // Return combined result - success if at least WhatsApp works
+        return {
+            success: whatsappResult.success || emailResult.success,
+            whatsapp: whatsappResult,
+            email: emailResult,
+            member_name: member.full_name
+        };
 
     } catch (error) {
         logger.error('Error sending waitlist promotion:', error);
@@ -329,6 +365,7 @@ const sendClassCancellation = async (bookings, schedule) => {
 
         const results = [];
 
+        // Send WhatsApp notifications
         for (const booking of bookings) {
             const member = booking.Member;
 
@@ -351,15 +388,47 @@ Terima kasih atas pengertiannya! 🙏
 
 *Oblix Pilates*`;
 
-            const result = await sendWhatsAppMessage(member.phone_number, message);
+            const whatsappResult = await sendWhatsAppMessage(member.phone_number, message);
             results.push({
                 member_id: member.id,
                 member_name: member.full_name,
-                ...result
+                whatsapp: whatsappResult
             });
         }
 
-        return results;
+        // Send email notifications
+        try {
+            logger.info(`📧 Starting email notifications for ${bookings.length} members`);
+            const emailService = require('./email.service');
+            const emailResults = await emailService.sendClassCancellationEmail(bookings, schedule);
+            
+            logger.info(`📧 Email service returned ${emailResults.length} results`);
+            
+            // Merge email results with WhatsApp results
+            for (let i = 0; i < results.length; i++) {
+                if (emailResults[i]) {
+                    results[i].email = emailResults[i];
+                    logger.info(`📧 Email result for ${results[i].member_name}: ${emailResults[i].success ? '✅' : '❌'}`);
+                } else {
+                    results[i].email = { success: false, error: 'No email result returned' };
+                    logger.error(`📧 No email result for ${results[i].member_name}`);
+                }
+            }
+        } catch (error) {
+            logger.error('Error sending class cancellation emails:', error);
+            // Add email error to all results
+            for (const result of results) {
+                result.email = { success: false, error: error.message };
+            }
+        }
+
+        // Calculate overall success (success if at least one channel works)
+        const overallResults = results.map(result => ({
+            ...result,
+            success: (result.whatsapp && result.whatsapp.success) || (result.email && result.email.success)
+        }));
+
+        return overallResults;
 
     } catch (error) {
         logger.error('Error sending class cancellation:', error);
@@ -458,7 +527,16 @@ Untuk informasi lebih lanjut, silakan hubungi admin.
 Terima kasih,
 *Oblix Pilates*`;
 
-        return await sendWhatsAppMessage(phoneNumber, message);
+        // Send WhatsApp message
+        const whatsappResult = await sendWhatsAppMessage(phoneNumber, message);
+        
+        // Note: Email will be sent separately from the controller since we need member email
+        
+        return {
+            success: whatsappResult.success,
+            whatsapp: whatsappResult,
+            member_name: memberName
+        };
 
     } catch (error) {
         logger.error('Error sending admin cancellation notification:', error);
@@ -505,7 +583,7 @@ Terima kasih,
         const emailResult = await emailService.sendLowSessionReminderEmail(reminderData);
         
         return {
-            success: whatsappResult.success && emailResult.success,
+            success: whatsappResult.success || emailResult.success,
             whatsapp: whatsappResult,
             email: emailResult
         };
@@ -559,7 +637,7 @@ Terima kasih,
         const emailResult = await emailService.sendExpiryReminderEmail(reminderData);
         
         return {
-            success: whatsappResult.success && emailResult.success,
+            success: whatsappResult.success || emailResult.success,
             whatsapp: whatsappResult,
             email: emailResult
         };

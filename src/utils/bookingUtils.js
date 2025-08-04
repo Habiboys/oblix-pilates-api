@@ -1,7 +1,8 @@
-const { Booking, Schedule, Member } = require('../models');
+const { Booking, Schedule, Member, MemberPackage } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
 const twilioService = require('../services/twilio.service');
+const { updateSessionUsage } = require('./sessionTrackingUtils');
 
 /**
  * Auto-cancel bookings when minimum signup is not met within cancel buffer time
@@ -61,7 +62,13 @@ const autoCancelExpiredBookings = async () => {
                         attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
                         include: [
                             {
-                                model: Member
+                                model: Member,
+                                include: [
+                                    {
+                                        model: require('../models').User,
+                                        attributes: ['id', 'email']
+                                    }
+                                ]
                             }
                         ]
                     });
@@ -74,6 +81,48 @@ const autoCancelExpiredBookings = async () => {
                                 notes: `Auto-cancelled: Kelas dibatalkan karena tidak memenuhi minimum peserta (${signupCount}/${minSignup}) dalam ${cancelBufferMinutes} menit sebelum kelas`,
                                 cancelled_by: 'system' // System auto-cancel
                             });
+
+                            // PERBAIKAN: Update session usage setelah auto cancel untuk mengembalikan quota
+                            try {
+                                // Refresh booking data untuk memastikan status terbaru
+                                await booking.reload();
+                                
+                                // Extract member_package_id dari notes
+                                let memberPackageId = null;
+                                if (booking.notes && booking.notes.includes('MemberPackageID:')) {
+                                    const match = booking.notes.match(/MemberPackageID: ([a-f0-9-]+)/);
+                                    if (match) {
+                                        memberPackageId = match[1];
+                                    }
+                                }
+                                
+                                // Gunakan member_package_id dari notes jika ada, jika tidak gunakan package_id
+                                let targetMemberPackage = null;
+                                if (memberPackageId) {
+                                    targetMemberPackage = await MemberPackage.findOne({
+                                        where: {
+                                            id: memberPackageId
+                                        }
+                                    });
+                                }
+                                
+                                // Fallback: cari berdasarkan package_id jika member_package_id tidak ditemukan
+                                if (!targetMemberPackage) {
+                                    targetMemberPackage = await MemberPackage.findOne({
+                                        where: {
+                                            member_id: booking.member_id,
+                                            package_id: booking.package_id
+                                        }
+                                    });
+                                }
+                                
+                                if (targetMemberPackage) {
+                                    await updateSessionUsage(targetMemberPackage.id, booking.member_id, targetMemberPackage.package_id);
+                                    logger.info(`✅ Session returned for member ${booking.Member.full_name} after auto-cancel`);
+                                }
+                            } catch (error) {
+                                logger.error(`❌ Failed to update session usage after auto-cancel for booking ${booking.id}: ${error.message}`);
+                            }
 
                             cancelledCount++;
                             cancelledBookings.push({
@@ -93,8 +142,34 @@ const autoCancelExpiredBookings = async () => {
 
                     // Send class cancellation notification to all cancelled members
                     try {
-                        const result = await twilioService.sendClassCancellation(bookingsToCancel, schedule);
-                        logger.info(`📱 Class cancellation notifications sent: ${result.length} members notified`);
+                        // Get schedule with Class info for notifications
+                        const scheduleWithClass = await Schedule.findByPk(schedule.id, {
+                            include: [
+                                {
+                                    model: require('../models').Class,
+                                    attributes: ['id', 'class_name']
+                                }
+                            ]
+                        });
+                        
+                        logger.info(`📧 Preparing to send notifications for ${bookingsToCancel.length} cancelled bookings`);
+                        logger.info(`📧 Schedule: ${scheduleWithClass.Class?.class_name || 'Unknown'} on ${schedule.date_start} ${schedule.time_start}`);
+                        
+                        const result = await twilioService.sendClassCancellation(bookingsToCancel, scheduleWithClass);
+                        const successCount = result.filter(r => r.success).length;
+                        const whatsappCount = result.filter(r => r.whatsapp && r.whatsapp.success).length;
+                        const emailCount = result.filter(r => r.email && r.email.success).length;
+                        
+                        logger.info(`📱 Class cancellation notifications sent: ${successCount}/${result.length} members notified successfully`);
+                        logger.info(`📱 WhatsApp: ${whatsappCount}/${result.length}, 📧 Email: ${emailCount}/${result.length}`);
+                        
+                        // Log detailed results for debugging
+                        result.forEach((r, index) => {
+                            logger.info(`📧 Member ${index + 1}: ${r.member_name} - WhatsApp: ${r.whatsapp?.success ? '✅' : '❌'}, Email: ${r.email?.success ? '✅' : '❌'}`);
+                            if (r.email && !r.email.success) {
+                                logger.error(`📧 Email failed for ${r.member_name}: ${r.email.error}`);
+                            }
+                        });
                     } catch (error) {
                         logger.error('❌ Error sending class cancellation notifications:', error);
                     }
@@ -176,21 +251,41 @@ const processWaitlistPromotion = async (scheduleId) => {
 
                 logger.info(`Booking ${nextWaitlistBooking.id} promoted from waitlist to signup for schedule ${scheduleId}`);
 
+                // Update session usage untuk member yang dipromosikan
+                try {
+                    const memberPackage = await require('../models').MemberPackage.findOne({
+                        where: {
+                            member_id: nextWaitlistBooking.member_id,
+                            package_id: nextWaitlistBooking.package_id
+                        }
+                    });
+                    
+                    if (memberPackage) {
+                        await updateSessionUsage(memberPackage.id, nextWaitlistBooking.member_id, nextWaitlistBooking.package_id);
+                        logger.info(`✅ Session usage updated for promoted member ${nextWaitlistBooking.Member.full_name}`);
+                    } else {
+                        logger.error(`❌ Member package not found for promoted member ${nextWaitlistBooking.Member.full_name}`);
+                    }
+                } catch (error) {
+                    logger.error(`❌ Failed to update session usage for promoted member ${nextWaitlistBooking.Member.full_name}: ${error.message}`);
+                }
+
                 // Send WhatsApp promotion notification (async)
                 try {
                     twilioService.sendWaitlistPromotion(nextWaitlistBooking)
                         .then(result => {
                             if (result.success) {
-                                logger.info(`✅ WhatsApp promotion notification sent to ${nextWaitlistBooking.Member.full_name}`);
+                                logger.info(`✅ WhatsApp & Email promotion notification sent to ${nextWaitlistBooking.Member.full_name}`);
+                                logger.info(`📱 WhatsApp: ${result.whatsapp.success ? '✅' : '❌'}, 📧 Email: ${result.email.success ? '✅' : '❌'}`);
                             } else {
-                                logger.error(`❌ Failed to send WhatsApp promotion notification to ${nextWaitlistBooking.Member.full_name}: ${result.error}`);
+                                logger.error(`❌ Failed to send promotion notification to ${nextWaitlistBooking.Member.full_name}: ${result.error}`);
                             }
                         })
                         .catch(error => {
-                            logger.error(`❌ Error sending WhatsApp promotion notification to ${nextWaitlistBooking.Member.full_name}:`, error);
+                            logger.error(`❌ Error sending promotion notification to ${nextWaitlistBooking.Member.full_name}:`, error);
                         });
                 } catch (error) {
-                    logger.error('Error initiating WhatsApp promotion notification:', error);
+                    logger.error('Error initiating promotion notification:', error);
                 }
 
                 return nextWaitlistBooking;
