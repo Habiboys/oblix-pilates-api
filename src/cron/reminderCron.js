@@ -4,9 +4,11 @@ const logger = require('../config/logger');
 
 /**
  * Schedule package reminder cron jobs
+ * Reminder berdasarkan field reminder_session dan reminder_day dari masing-masing paket
  */
 const schedulePackageReminders = () => {
     // Send all package reminders every day at 9:00 AM
+    // Reminder akan dikirim berdasarkan konfigurasi per paket (reminder_session & reminder_day)
     cron.schedule('0 9 * * *', async () => {
         try {
             logger.info('🕘 Starting scheduled package reminders...');
@@ -28,47 +30,9 @@ const schedulePackageReminders = () => {
         timezone: 'Asia/Jakarta'
     });
 
-    // Send low session reminders every 3 days at 10:00 AM
-    cron.schedule('0 10 */3 * *', async () => {
-        try {
-            logger.info('🕘 Starting scheduled low session reminders...');
-            
-            const result = await sendAllPackageReminders();
-            
-            if (result.success) {
-                logger.info(`✅ Scheduled low session reminders completed. Total sent: ${result.low_session.total_sent || 0}`);
-            } else {
-                logger.error('❌ Scheduled low session reminders failed:', result.error);
-            }
-        } catch (error) {
-            logger.error('❌ Error in scheduled low session reminders:', error);
-        }
-    }, {
-        scheduled: true,
-        timezone: 'Asia/Jakarta'
-    });
 
-    // Send expiry reminders every week on Monday at 11:00 AM
-    cron.schedule('0 11 * * 1', async () => {
-        try {
-            logger.info('🕘 Starting scheduled expiry reminders...');
-            
-            const result = await sendAllPackageReminders();
-            
-            if (result.success) {
-                logger.info(`✅ Scheduled expiry reminders completed. Total sent: ${result.expiry.total_sent || 0}`);
-            } else {
-                logger.error('❌ Scheduled expiry reminders failed:', result.error);
-            }
-        } catch (error) {
-            logger.error('❌ Error in scheduled expiry reminders:', error);
-        }
-    }, {
-        scheduled: true,
-        timezone: 'Asia/Jakarta'
-    });
 
-    logger.info('📅 Package reminder cron jobs scheduled successfully');
+    logger.info('📅 Package reminder cron job scheduled successfully (daily at 9:00 AM)');
 };
 
 /**

@@ -18,7 +18,26 @@ const writeToLogFile = (level, message, data = null) => {
     
     let logMessage = `[${formatTimestamp()}] [${level.toUpperCase()}] ${message}`;
     if (data) {
-        logMessage += ` - Data: ${JSON.stringify(data)}`;
+        try {
+            // Gunakan JSON.stringify dengan replacer untuk menangani circular reference
+            const safeData = JSON.stringify(data, (key, value) => {
+                // Skip circular references dan object yang kompleks
+                if (typeof value === 'object' && value !== null) {
+                    if (key === 'request' || key === 'res' || key === 'req' || key === 'config') {
+                        return '[Circular Reference]';
+                    }
+                    // Batasi depth untuk object kompleks
+                    if (value.constructor && value.constructor.name !== 'Object' && value.constructor.name !== 'Array') {
+                        return `[${value.constructor.name}]`;
+                    }
+                }
+                return value;
+            }, 2);
+            logMessage += ` - Data: ${safeData}`;
+        } catch (error) {
+            // Fallback jika masih ada masalah dengan JSON.stringify
+            logMessage += ` - Data: [Error serializing data: ${error.message}]`;
+        }
     }
     
     // Tulis log ke file

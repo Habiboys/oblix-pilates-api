@@ -178,7 +178,7 @@ const createGroupSchedule = async (req, res) => {
             repeat_type = 'none',
             schedule_until,
             booking_deadline_hour,
-            waitlist_lock_minutes,
+
             min_signup,
             cancel_buffer_minutes,
             repeat_days // Added repeat_days
@@ -236,7 +236,7 @@ const createGroupSchedule = async (req, res) => {
             repeat_type,
             schedule_until: repeat_type === 'weekly' ? schedule_until : null,
             booking_deadline_hour: parseInt(booking_deadline_hour),
-            waitlist_lock_minutes: parseInt(waitlist_lock_minutes),
+
             min_signup: parseInt(min_signup),
             cancel_buffer_minutes: parseInt(cancel_buffer_minutes),
             picture
@@ -331,7 +331,7 @@ const updateGroupSchedule = async (req, res) => {
             repeat_type,
             schedule_until,
             booking_deadline_hour,
-            waitlist_lock_minutes,
+            
             min_signup,
             cancel_buffer_minutes,
             repeat_days // Added repeat_days
@@ -406,7 +406,7 @@ const updateGroupSchedule = async (req, res) => {
         if (repeat_type !== undefined) updateData.repeat_type = repeat_type;
         if (schedule_until !== undefined) updateData.schedule_until = repeat_type === 'weekly' ? schedule_until : null;
         if (booking_deadline_hour !== undefined) updateData.booking_deadline_hour = parseInt(booking_deadline_hour);
-        if (waitlist_lock_minutes !== undefined) updateData.waitlist_lock_minutes = parseInt(waitlist_lock_minutes);
+        
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
         if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
@@ -606,7 +606,7 @@ const createSemiPrivateSchedule = async (req, res) => {
             repeat_type = 'none',
             schedule_until,
             booking_deadline_hour,
-            waitlist_lock_minutes,
+            
             min_signup,
             cancel_buffer_minutes,
             repeat_days // Added repeat_days
@@ -664,7 +664,7 @@ const createSemiPrivateSchedule = async (req, res) => {
             repeat_type,
             schedule_until: repeat_type === 'weekly' ? schedule_until : null,
             booking_deadline_hour: parseInt(booking_deadline_hour),
-            waitlist_lock_minutes: parseInt(waitlist_lock_minutes),
+            
             min_signup: parseInt(min_signup),
             cancel_buffer_minutes: parseInt(cancel_buffer_minutes),
             picture
@@ -759,7 +759,7 @@ const updateSemiPrivateSchedule = async (req, res) => {
             repeat_type,
             schedule_until,
             booking_deadline_hour,
-            waitlist_lock_minutes,
+            
             min_signup,
             cancel_buffer_minutes,
             repeat_days // Added repeat_days
@@ -834,7 +834,7 @@ const updateSemiPrivateSchedule = async (req, res) => {
         if (repeat_type !== undefined) updateData.repeat_type = repeat_type;
         if (schedule_until !== undefined) updateData.schedule_until = repeat_type === 'weekly' ? schedule_until : null;
         if (booking_deadline_hour !== undefined) updateData.booking_deadline_hour = parseInt(booking_deadline_hour);
-        if (waitlist_lock_minutes !== undefined) updateData.waitlist_lock_minutes = parseInt(waitlist_lock_minutes);
+        
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
         if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
@@ -1039,7 +1039,7 @@ const createPrivateSchedule = async (req, res) => {
             repeat_type = 'none',
             schedule_until,
             booking_deadline_hour,
-            waitlist_lock_minutes,
+            
             min_signup,
             cancel_buffer_minutes,
             repeat_days // Added repeat_days
@@ -1120,7 +1120,7 @@ const createPrivateSchedule = async (req, res) => {
             repeat_type,
             schedule_until: repeat_type === 'weekly' ? schedule_until : null,
             booking_deadline_hour: parseInt(booking_deadline_hour),
-            waitlist_lock_minutes: parseInt(waitlist_lock_minutes),
+            
             min_signup: parseInt(min_signup),
             cancel_buffer_minutes: parseInt(cancel_buffer_minutes),
             picture
@@ -1312,7 +1312,7 @@ const updatePrivateSchedule = async (req, res) => {
             repeat_type,
             schedule_until,
             booking_deadline_hour,
-            waitlist_lock_minutes,
+            
             min_signup,
             cancel_buffer_minutes,
             repeat_days // Added repeat_days
@@ -1398,7 +1398,7 @@ const updatePrivateSchedule = async (req, res) => {
         if (repeat_type !== undefined) updateData.repeat_type = repeat_type;
         if (schedule_until !== undefined) updateData.schedule_until = repeat_type === 'weekly' ? schedule_until : null;
         if (booking_deadline_hour !== undefined) updateData.booking_deadline_hour = parseInt(booking_deadline_hour);
-        if (waitlist_lock_minutes !== undefined) updateData.waitlist_lock_minutes = parseInt(waitlist_lock_minutes);
+        
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
         if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days

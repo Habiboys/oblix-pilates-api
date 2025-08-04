@@ -7,11 +7,16 @@ const getAllCategories = async (req, res) => {
     const { page = 1, limit = 10, search = '' } = req.query;
     const offset = (page - 1) * limit;
 
-    const whereClause = {};
+    // Clean search input - remove leading/trailing spaces
+    const cleanSearch = search.trim();
+
+    const whereClause = {
+      is_deleted: false // Only show non-deleted categories
+    };
     
-    if (search) {
+    if (cleanSearch) {
       whereClause.category_name = {
-                    [Op.like]: `%${search}%`
+        [Op.like]: `%${cleanSearch}%`
       };
     }
 
@@ -58,7 +63,12 @@ const getCategoryById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const category = await Category.findByPk(id);
+    const category = await Category.findOne({
+      where: {
+        id,
+        is_deleted: false
+      }
+    });
 
     if (!category) {
       return res.status(404).json({
@@ -93,9 +103,12 @@ const createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
 
-    // Check if category with same name exists
+    // Check if category with same name exists (only non-deleted)
     const existingCategory = await Category.findOne({
-      where: { category_name: name }
+      where: { 
+        category_name: name,
+        is_deleted: false
+      }
     });
 
     if (existingCategory) {
@@ -138,7 +151,12 @@ const updateCategory = async (req, res) => {
     const { id } = req.params;
     const { name, description } = req.body;
 
-    const category = await Category.findByPk(id);
+    const category = await Category.findOne({
+      where: {
+        id,
+        is_deleted: false
+      }
+    });
     
     if (!category) {
       return res.status(404).json({
@@ -147,12 +165,13 @@ const updateCategory = async (req, res) => {
       });
     }
 
-    // Check if category with same name exists (excluding current category)
+    // Check if category with same name exists (excluding current category, only non-deleted)
     if (name && name !== category.category_name) {
       const existingCategory = await Category.findOne({
         where: { 
           category_name: name,
-          id: { [Op.ne]: id }
+          id: { [Op.ne]: id },
+          is_deleted: false
         }
       });
 
@@ -196,7 +215,12 @@ const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const category = await Category.findByPk(id);
+    const category = await Category.findOne({
+      where: {
+        id,
+        is_deleted: false
+      }
+    });
     
     if (!category) {
       return res.status(404).json({
@@ -214,8 +238,8 @@ const deleteCategory = async (req, res) => {
       });
     }
 
-    // Delete category
-    await category.destroy();
+    // Soft delete category (set is_deleted = true)
+    await category.update({ is_deleted: true });
 
     res.json({
       success: true,

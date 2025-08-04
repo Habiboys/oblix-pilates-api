@@ -303,9 +303,7 @@ const getMemberSessionSummary = async (memberId) => {
  */
 const updateSessionUsage = async (memberPackageId, memberId, packageId, newBookingId = null, sessionType = null) => {
   try {
-    console.log(`🔄 updateSessionUsage called: memberPackageId=${memberPackageId}, memberId=${memberId}, packageId=${packageId}, newBookingId=${newBookingId}`);
-    
-    // Ambil data package untuk mengetahui total session
+    // Get package details
     const package = await Package.findByPk(packageId, {
       include: [
         { model: PackageMembership, include: [{ model: Category }] },
@@ -316,112 +314,186 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     });
 
     if (!package) {
-      throw new Error('Package not found');
+      throw new Error(`Package not found: ${packageId}`);
     }
 
-    // Ambil member package untuk mendapatkan session yang sudah diisi manual
+    // Get member package
     const memberPackage = await MemberPackage.findByPk(memberPackageId, {
-      include: [{ model: Package }]
-    });
-
-    if (!memberPackage) {
-      throw new Error('Member package not found');
-    }
-
-    // PERBAIKAN: Total session diambil dari MemberPackage (remaining + used)
-    // bukan dari Package definition untuk menghindari overwrite
-    let totalGroupSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.used_group_session || 0);
-    let totalSemiPrivateSessions = (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0);
-    let totalPrivateSessions = (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0);
-
-    console.log(`📊 Current MemberPackage session totals: group=${totalGroupSessions}, semi_private=${totalSemiPrivateSessions}, private=${totalPrivateSessions}`);
-
-    // Hitung used sessions dari booking yang aktif (status = 'signup')
-    const bookings = await Booking.findAll({
-      where: {
-        member_id: memberId,
-        package_id: packageId,
-        status: 'signup' // Hanya booking yang aktif
-      },
-      attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
       include: [
         {
-          model: Schedule,
-          attributes: ['type']
+          model: Package
         }
       ]
     });
 
-    console.log(`📋 Found ${bookings.length} active bookings (status='signup') for this package`);
+    if (!memberPackage) {
+      throw new Error(`MemberPackage not found: ${memberPackageId}`);
+    }
 
-    let usedGroupSessions = 0;
-    let usedSemiPrivateSessions = 0;
-    let usedPrivateSessions = 0;
+    // Calculate total sessions based on package type
+    let totalGroupSessions = 0;
+    let totalPrivateSessions = 0;
+    let totalSemiPrivateSessions = 0;
 
-    bookings.forEach(booking => {
-      if (booking.Schedule) {
-        if (booking.Schedule.type === 'group') {
-          usedGroupSessions++;
-        } else if (booking.Schedule.type === 'semi_private') {
-          usedSemiPrivateSessions++;
-        } else if (booking.Schedule.type === 'private') {
-          usedPrivateSessions++;
-        }
+    if (package.type === 'membership') {
+      // For membership, get from PackageMembership
+      const packageMembership = package.PackageMembership;
+      if (packageMembership) {
+        totalGroupSessions = packageMembership.session || 0;
+        totalPrivateSessions = 0; // Membership doesn't have private sessions
+        totalSemiPrivateSessions = 0; // Will be calculated based on category
       }
-    });
-
-    console.log(`📈 Calculated used sessions: group=${usedGroupSessions}, semi_private=${usedSemiPrivateSessions}, private=${usedPrivateSessions}`);
-
-    // Jika ada booking baru yang belum dihitung, tambahkan ke perhitungan
-    if (newBookingId) {
-      const newBooking = await Booking.findByPk(newBookingId, {
-        include: [
-          {
-            model: Schedule,
-            attributes: ['type']
-          }
-        ]
-      });
-
-      // Hanya tambahkan jika booking baru belum ada di daftar bookings
-      const isNewBookingIncluded = bookings.some(booking => booking.id === newBookingId);
-      
-      if (newBooking && newBooking.Schedule && !isNewBookingIncluded) {
-        if (newBooking.Schedule.type === 'group') {
-          usedGroupSessions++;
-        } else if (newBooking.Schedule.type === 'semi_private') {
-          usedSemiPrivateSessions++;
-        } else if (newBooking.Schedule.type === 'private') {
-          usedPrivateSessions++;
-        }
-        console.log(`➕ Added new booking ${newBookingId} (${newBooking.Schedule.type}): group=${usedGroupSessions}, semi_private=${usedSemiPrivateSessions}, private=${usedPrivateSessions}`);
+    } else if (package.type === 'first_trial') {
+      // For first trial, get from PackageFirstTrial
+      const packageFirstTrial = package.PackageFirstTrial;
+      if (packageFirstTrial) {
+        totalGroupSessions = packageFirstTrial.group_session || 0;
+        totalPrivateSessions = packageFirstTrial.private_session || 0;
+        totalSemiPrivateSessions = 0; // First trial doesn't have semi-private
+      }
+    } else if (package.type === 'promo') {
+      // For promo, get from PackagePromo
+      const packagePromo = package.PackagePromo;
+      if (packagePromo) {
+        totalGroupSessions = packagePromo.group_session || 0;
+        totalPrivateSessions = packagePromo.private_session || 0;
+        totalSemiPrivateSessions = 0; // Promo doesn't have semi-private
+      }
+    } else if (package.type === 'bonus') {
+      // For bonus, get from PackageBonus
+      const packageBonus = package.PackageBonus;
+      if (packageBonus) {
+        totalGroupSessions = packageBonus.group_session || 0;
+        totalPrivateSessions = packageBonus.private_session || 0;
+        totalSemiPrivateSessions = 0; // Bonus doesn't have semi-private
       }
     }
 
-    // Hitung remaining sessions
-    const remainingGroupSessions = Math.max(0, totalGroupSessions - usedGroupSessions);
-    const remainingSemiPrivateSessions = Math.max(0, totalSemiPrivateSessions - usedSemiPrivateSessions);
-    const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
+    // PERBAIKAN: Untuk semua tipe paket, gunakan total dari MemberPackage (remaining + used)
+    // Tapi jika MemberPackage masih kosong (baru dibuat), gunakan dari Package definition
+    const currentTotalGroup = (memberPackage.remaining_group_session || 0) + (memberPackage.used_group_session || 0);
+    const currentTotalPrivate = (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0);
+    const currentTotalSemiPrivate = (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0);
+    
+    // Jika MemberPackage masih kosong, gunakan dari Package definition
+    if (currentTotalGroup === 0 && currentTotalPrivate === 0 && currentTotalSemiPrivate === 0) {
+      // Gunakan total dari Package definition untuk paket baru
+      if (package.type === 'membership') {
+        const packageMembership = package.PackageMembership;
+              if (packageMembership) {
+        // Untuk membership, session type tergantung pada category
+        const categoryName = packageMembership.Category?.category_name;
+        if (categoryName === 'Semi-Private Class') {
+          totalGroupSessions = 0;
+          totalPrivateSessions = 0;
+          totalSemiPrivateSessions = packageMembership.session || 0;
+        } else if (categoryName === 'Private Class') {
+          totalGroupSessions = 0;
+          totalPrivateSessions = packageMembership.session || 0;
+          totalSemiPrivateSessions = 0;
+        } else {
+          // Group Class (default)
+          totalGroupSessions = packageMembership.session || 0;
+          totalPrivateSessions = 0;
+          totalSemiPrivateSessions = 0;
+        }
+      }
+      } else if (package.type === 'first_trial') {
+        const packageFirstTrial = package.PackageFirstTrial;
+        if (packageFirstTrial) {
+          totalGroupSessions = packageFirstTrial.group_session || 0;
+          totalPrivateSessions = packageFirstTrial.private_session || 0;
+          totalSemiPrivateSessions = 0;
+        }
+      } else if (package.type === 'promo') {
+        const packagePromo = package.PackagePromo;
+        if (packagePromo) {
+          totalGroupSessions = packagePromo.group_session || 0;
+          totalPrivateSessions = packagePromo.private_session || 0;
+          totalSemiPrivateSessions = 0;
+        }
+      } else if (package.type === 'bonus') {
+        const packageBonus = package.PackageBonus;
+        if (packageBonus) {
+          totalGroupSessions = packageBonus.group_session || 0;
+          totalPrivateSessions = packageBonus.private_session || 0;
+          totalSemiPrivateSessions = 0;
+        }
+      }
+    } else {
+      // Gunakan total dari MemberPackage yang sudah ada
+      totalGroupSessions = currentTotalGroup;
+      totalPrivateSessions = currentTotalPrivate;
+      totalSemiPrivateSessions = currentTotalSemiPrivate;
+    }
 
-    console.log(`📉 Calculated remaining sessions: group=${remainingGroupSessions}, semi_private=${remainingSemiPrivateSessions}, private=${remainingPrivateSessions}`);
+
+
+    // Get all active bookings for this member and package
+    const bookings = await Booking.findAll({
+      where: {
+        member_id: memberId,
+        package_id: packageId,
+        status: 'signup' // Only count active bookings
+      },
+      include: [
+        {
+          model: Schedule,
+          attributes: ['id', 'type']
+        }
+      ]
+    });
+
+
+
+    // Calculate used sessions
+    let usedGroupSessions = 0;
+    let usedPrivateSessions = 0;
+    let usedSemiPrivateSessions = 0;
+
+    for (const booking of bookings) {
+      const scheduleType = booking.Schedule?.type || 'group';
+      
+      if (scheduleType === 'group') {
+        usedGroupSessions++;
+      } else if (scheduleType === 'private') {
+        usedPrivateSessions++;
+      } else if (scheduleType === 'semi_private') {
+        usedSemiPrivateSessions++;
+      }
+    }
+
+    // Add new booking if provided
+    if (newBookingId) {
+      const isNewBookingIncluded = bookings.some(b => b.id === newBookingId);
+      if (!isNewBookingIncluded) {
+        if (sessionType === 'group') {
+          usedGroupSessions++;
+        } else if (sessionType === 'private') {
+          usedPrivateSessions++;
+        } else if (sessionType === 'semi_private') {
+          usedSemiPrivateSessions++;
+        }
+      }
+    }
+
+
+
+    // Calculate remaining sessions
+    const remainingGroupSessions = Math.max(0, totalGroupSessions - usedGroupSessions);
+    const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
+    const remainingSemiPrivateSessions = Math.max(0, totalSemiPrivateSessions - usedSemiPrivateSessions);
 
     // Update member package
-    await MemberPackage.update({
+    await memberPackage.update({
       used_group_session: usedGroupSessions,
       used_semi_private_session: usedSemiPrivateSessions,
       used_private_session: usedPrivateSessions,
       remaining_group_session: remainingGroupSessions,
       remaining_semi_private_session: remainingSemiPrivateSessions,
       remaining_private_session: remainingPrivateSessions
-    }, {
-      where: { id: memberPackageId }
     });
 
-    console.log(`✅ Updated MemberPackage ${memberPackageId} with new session values`);
-
-    // Ambil data member package yang sudah diupdate untuk return value yang akurat
-    const updatedMemberPackage = await MemberPackage.findByPk(memberPackageId);
-    
     return {
       total_group: totalGroupSessions,
       total_semi_private: totalSemiPrivateSessions,
@@ -429,13 +501,13 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       used_group: usedGroupSessions,
       used_semi_private: usedSemiPrivateSessions,
       used_private: usedPrivateSessions,
-      remaining_group: updatedMemberPackage.remaining_group_session,
-      remaining_semi_private: updatedMemberPackage.remaining_semi_private_session,
-      remaining_private: updatedMemberPackage.remaining_private_session
+      remaining_group: remainingGroupSessions,
+      remaining_semi_private: remainingSemiPrivateSessions,
+      remaining_private: remainingPrivateSessions
     };
 
   } catch (error) {
-    console.error('Error updating session usage:', error);
+    console.error('Error in updateSessionUsage:', error);
     throw error;
   }
 };

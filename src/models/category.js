@@ -23,6 +23,11 @@ module.exports = (sequelize, DataTypes) => {
     category_name: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    is_deleted: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   }, {
     sequelize,

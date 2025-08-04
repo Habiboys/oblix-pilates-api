@@ -271,7 +271,7 @@ const sendH1Reminders = async () => {
 
                 if (result.success) {
                     successCount++;
-                    logger.info(`✅ H-1 reminder sent successfully to ${booking.Member.full_name}`);
+                    logger.info(`✅ H-1 reminder sent successfully to ${booking.Member.full_name} - WhatsApp: ${result.whatsapp?.success || false}, Email: ${result.email?.success || false}`);
                 } else {
                     failedCount++;
                     logger.error(`❌ Failed to send H-1 reminder to ${booking.Member.full_name}: ${result.error}`);

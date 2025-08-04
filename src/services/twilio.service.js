@@ -1,5 +1,6 @@
 const twilio = require('twilio');
 const logger = require('../config/logger');
+const emailService = require('./email.service');
 
 // Initialize Twilio client
 const client = twilio(
@@ -126,7 +127,17 @@ Terima kasih! 🙏
 
 *Oblix Pilates*`;
 
-        return await sendWhatsAppMessage(member.phone_number, message);
+        // Send WhatsApp message
+        const whatsappResult = await sendWhatsAppMessage(member.phone_number, message);
+        
+        // Send email reminder
+        const emailResult = await emailService.sendBookingReminderEmail(booking);
+        
+        return {
+            success: whatsappResult.success && emailResult.success,
+            whatsapp: whatsappResult,
+            email: emailResult
+        };
 
     } catch (error) {
         logger.error('Error sending booking reminder:', error);
@@ -487,7 +498,17 @@ Untuk informasi lebih lanjut, silakan hubungi admin.
 Terima kasih,
 *Oblix Pilates*`;
 
-        return await sendWhatsAppMessage(phone_number, message);
+        // Send WhatsApp message
+        const whatsappResult = await sendWhatsAppMessage(phone_number, message);
+        
+        // Send email reminder
+        const emailResult = await emailService.sendLowSessionReminderEmail(reminderData);
+        
+        return {
+            success: whatsappResult.success && emailResult.success,
+            whatsapp: whatsappResult,
+            email: emailResult
+        };
 
     } catch (error) {
         logger.error('Error sending low session reminder:', error);
@@ -531,7 +552,17 @@ Untuk informasi lebih lanjut, silakan hubungi admin.
 Terima kasih,
 *Oblix Pilates*`;
 
-        return await sendWhatsAppMessage(phone_number, message);
+        // Send WhatsApp message
+        const whatsappResult = await sendWhatsAppMessage(phone_number, message);
+        
+        // Send email reminder
+        const emailResult = await emailService.sendExpiryReminderEmail(reminderData);
+        
+        return {
+            success: whatsappResult.success && emailResult.success,
+            whatsapp: whatsappResult,
+            email: emailResult
+        };
 
     } catch (error) {
         logger.error('Error sending expiry reminder:', error);

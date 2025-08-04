@@ -180,7 +180,7 @@ class ScheduleService {
         // Tambahkan informasi khusus berdasarkan tipe
         if (schedule.type === 'group') {
             scheduleData.booking_deadline_hour = schedule.booking_deadline_hour || 24;
-            scheduleData.waitlist_lock_minutes = schedule.waitlist_lock_minutes || 30;
+
         }
         
         if (schedule.type === 'private' && schedule.assignedMember) {

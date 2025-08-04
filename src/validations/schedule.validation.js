@@ -47,14 +47,13 @@ const createGroupScheduleSchema = Joi.object({
         }),
         otherwise: Joi.array().items(Joi.number().integer().min(0).max(6)).optional()
     }),
-    schedule_until: Joi.when('repeat_type', {
-        is: 'weekly',
-        then: Joi.date().iso().required().messages({
-            'date.base': 'Schedule until must be a valid date',
-            'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)',
-            'any.required': 'Schedule until is required for weekly repeat'
-        }),
-        otherwise: Joi.date().iso().optional()
+    schedule_until: Joi.alternatives().try(
+        Joi.date().iso(),
+        Joi.string().allow('', null),
+        Joi.allow(null)
+    ).optional().messages({
+        'date.base': 'Schedule until must be a valid date',
+        'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(0).max(72).required().messages({
         'number.base': 'Booking deadline hour must be a number',
@@ -63,13 +62,7 @@ const createGroupScheduleSchema = Joi.object({
         'number.max': 'Booking deadline hour cannot exceed 72',
         'any.required': 'Booking deadline hour is required'
     }),
-    waitlist_lock_minutes: Joi.number().integer().min(0).max(480).required().messages({
-        'number.base': 'Waitlist lock minutes must be a number',
-        'number.integer': 'Waitlist lock minutes must be an integer',
-        'number.min': 'Waitlist lock minutes must be at least 0',
-        'number.max': 'Waitlist lock minutes cannot exceed 480',
-        'any.required': 'Waitlist lock minutes is required'
-    }),
+
     min_signup: Joi.number().integer().min(1).required().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',
@@ -138,7 +131,11 @@ const updateGroupScheduleSchema = Joi.object({
         'array.min': 'At least one day must be selected for weekly repeat',
         'array.max': 'Maximum 7 days can be selected'
     }),
-    schedule_until: Joi.date().iso().optional().messages({
+    schedule_until: Joi.alternatives().try(
+        Joi.date().iso(),
+        Joi.string().allow('', null),
+        Joi.allow(null)
+    ).optional().messages({
         'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
@@ -148,12 +145,7 @@ const updateGroupScheduleSchema = Joi.object({
         'number.min': 'Booking deadline hour must be at least 0',
         'number.max': 'Booking deadline hour cannot exceed 72'
     }),
-    waitlist_lock_minutes: Joi.number().integer().min(0).max(480).optional().messages({
-        'number.base': 'Waitlist lock minutes must be a number',
-        'number.integer': 'Waitlist lock minutes must be an integer',
-        'number.min': 'Waitlist lock minutes must be at least 0',
-        'number.max': 'Waitlist lock minutes cannot exceed 480'
-    }),
+
     min_signup: Joi.number().integer().min(1).optional().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',
@@ -255,15 +247,13 @@ const createSemiPrivateScheduleSchema = Joi.object({
         }),
         otherwise: Joi.array().items(Joi.number().integer().min(0).max(6)).optional()
     }),
-    schedule_until: Joi.when('repeat_type', {
-        is: 'weekly',
-        then: Joi.date().iso().min(Joi.ref('date_start')).required().messages({
-            'date.base': 'Schedule until must be a valid date',
-            'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)',
-            'date.min': 'Schedule until must be after date start',
-            'any.required': 'Schedule until is required for weekly repeat'
-        }),
-        otherwise: Joi.optional()
+    schedule_until: Joi.alternatives().try(
+        Joi.date().iso(),
+        Joi.string().allow('', null),
+        Joi.allow(null)
+    ).optional().messages({
+        'date.base': 'Schedule until must be a valid date',
+        'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).required().messages({
         'number.base': 'Booking deadline hour must be a number',
@@ -272,13 +262,7 @@ const createSemiPrivateScheduleSchema = Joi.object({
         'number.max': 'Booking deadline hour cannot exceed 72',
         'any.required': 'Booking deadline hour is required'
     }),
-    waitlist_lock_minutes: Joi.number().integer().min(30).max(480).required().messages({
-        'number.base': 'Waitlist lock minutes must be a number',
-        'number.integer': 'Waitlist lock minutes must be an integer',
-        'number.min': 'Waitlist lock minutes must be at least 30',
-        'number.max': 'Waitlist lock minutes cannot exceed 480',
-        'any.required': 'Waitlist lock minutes is required'
-    }),
+
     min_signup: Joi.number().integer().min(1).max(Joi.ref('pax')).required().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',
@@ -344,15 +328,13 @@ const updateSemiPrivateScheduleSchema = Joi.object({
     repeat_type: Joi.string().valid('none', 'weekly').optional().messages({
         'any.only': 'Repeat type must be either "none" or "weekly"'
     }),
-    schedule_until: Joi.when('repeat_type', {
-        is: 'weekly',
-        then: Joi.date().iso().min(Joi.ref('date_start')).required().messages({
-            'date.base': 'Schedule until must be a valid date',
-            'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)',
-            'date.min': 'Schedule until must be after date start',
-            'any.required': 'Schedule until is required for weekly repeat'
-        }),
-        otherwise: Joi.optional()
+    schedule_until: Joi.alternatives().try(
+        Joi.date().iso(),
+        Joi.string().allow('', null),
+        Joi.allow(null)
+    ).optional().messages({
+        'date.base': 'Schedule until must be a valid date',
+        'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).optional().messages({
         'number.base': 'Booking deadline hour must be a number',
@@ -360,12 +342,7 @@ const updateSemiPrivateScheduleSchema = Joi.object({
         'number.min': 'Booking deadline hour must be at least 1',
         'number.max': 'Booking deadline hour cannot exceed 72'
     }),
-    waitlist_lock_minutes: Joi.number().integer().min(30).max(480).optional().messages({
-        'number.base': 'Waitlist lock minutes must be a number',
-        'number.integer': 'Waitlist lock minutes must be an integer',
-        'number.min': 'Waitlist lock minutes must be at least 30',
-        'number.max': 'Waitlist lock minutes cannot exceed 480'
-    }),
+
     min_signup: Joi.number().integer().min(1).max(Joi.ref('pax')).optional().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',
@@ -465,15 +442,13 @@ const createPrivateScheduleSchema = Joi.object({
         }),
         otherwise: Joi.array().items(Joi.number().integer().min(0).max(6)).optional()
     }),
-    schedule_until: Joi.when('repeat_type', {
-        is: 'weekly',
-        then: Joi.date().iso().min(Joi.ref('date_start')).required().messages({
-            'date.base': 'Schedule until must be a valid date',
-            'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)',
-            'date.min': 'Schedule until must be after date start',
-            'any.required': 'Schedule until is required for weekly repeat'
-        }),
-        otherwise: Joi.optional()
+    schedule_until: Joi.alternatives().try(
+        Joi.date().iso(),
+        Joi.string().allow('', null),
+        Joi.allow(null)
+    ).optional().messages({
+        'date.base': 'Schedule until must be a valid date',
+        'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).required().messages({
         'number.base': 'Booking deadline hour must be a number',
@@ -482,13 +457,7 @@ const createPrivateScheduleSchema = Joi.object({
         'number.max': 'Booking deadline hour cannot exceed 72',
         'any.required': 'Booking deadline hour is required'
     }),
-    waitlist_lock_minutes: Joi.number().integer().min(30).max(480).required().messages({
-        'number.base': 'Waitlist lock minutes must be a number',
-        'number.integer': 'Waitlist lock minutes must be an integer',
-        'number.min': 'Waitlist lock minutes must be at least 30',
-        'number.max': 'Waitlist lock minutes cannot exceed 480',
-        'any.required': 'Waitlist lock minutes is required'
-    }),
+
     min_signup: Joi.number().integer().min(1).max(2).required().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',
@@ -551,15 +520,13 @@ const updatePrivateScheduleSchema = Joi.object({
     repeat_type: Joi.string().valid('none', 'weekly').optional().messages({
         'any.only': 'Repeat type must be either "none" or "weekly"'
     }),
-    schedule_until: Joi.when('repeat_type', {
-        is: 'weekly',
-        then: Joi.date().iso().min(Joi.ref('date_start')).required().messages({
-            'date.base': 'Schedule until must be a valid date',
-            'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)',
-            'date.min': 'Schedule until must be after date start',
-            'any.required': 'Schedule until is required for weekly repeat'
-        }),
-        otherwise: Joi.optional()
+    schedule_until: Joi.alternatives().try(
+        Joi.date().iso(),
+        Joi.string().allow('', null),
+        Joi.allow(null)
+    ).optional().messages({
+        'date.base': 'Schedule until must be a valid date',
+        'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).optional().messages({
         'number.base': 'Booking deadline hour must be a number',
@@ -567,12 +534,7 @@ const updatePrivateScheduleSchema = Joi.object({
         'number.min': 'Booking deadline hour must be at least 1',
         'number.max': 'Booking deadline hour cannot exceed 72'
     }),
-    waitlist_lock_minutes: Joi.number().integer().min(30).max(480).optional().messages({
-        'number.base': 'Waitlist lock minutes must be a number',
-        'number.integer': 'Waitlist lock minutes must be an integer',
-        'number.min': 'Waitlist lock minutes must be at least 30',
-        'number.max': 'Waitlist lock minutes cannot exceed 480'
-    }),
+
     min_signup: Joi.number().integer().min(1).max(2).optional().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',

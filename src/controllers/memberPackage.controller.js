@@ -56,6 +56,8 @@ const getMyPackages = async (req, res) => {
       order: [['end_date', 'DESC']]
     });
 
+
+
     // Get total available sessions from all packages
     const totalAvailableSessions = await getTotalAvailableSessions(member_id);
     
@@ -146,7 +148,13 @@ const getMyPackages = async (req, res) => {
           const hasValidOrder = memberPackage.Order?.payment_status === 'paid';
           const isBonusPackage = memberPackage.Package?.type === 'bonus';
           
-          return isNotExpired && (hasValidOrder || isBonusPackage);
+          // Untuk bonus package, selalu aktif jika belum expired
+          if (isBonusPackage) {
+            return isNotExpired;
+          }
+          
+          // Untuk package lain, aktif jika belum expired dan sudah dibayar
+          return isNotExpired && hasValidOrder;
         })(),
         order: {
           id: memberPackage.Order?.id,
@@ -169,21 +177,10 @@ const getMyPackages = async (req, res) => {
         const endDate = new Date(memberPackage.end_date);
         const isNotExpired = endDate >= currentDate;
         
-        // Untuk bonus package, selalu tampilkan jika belum expired
-        if (memberPackage.Package?.type === 'bonus') {
-          return isNotExpired;
-        }
+
         
-        // Untuk package lain, cek apakah ada session yang tersisa atau total session
-        const hasRemainingSessions = (memberPackage.remaining_group_session || 0) > 0 || 
-                                   (memberPackage.remaining_private_session || 0) > 0 || 
-                                   (memberPackage.remaining_semi_private_session || 0) > 0;
-        
-        const hasTotalSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.used_group_session || 0) > 0 ||
-                               (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0) > 0 ||
-                               (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0) > 0;
-        
-        return isNotExpired && (hasRemainingSessions || hasTotalSessions);
+        // Tampilkan semua paket yang belum expired, tidak peduli session tersisa atau tidak
+        return isNotExpired;
       })
       .map((memberPackage, index) => {
         // Use session data from MemberPackage (remaining + used)

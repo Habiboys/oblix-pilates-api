@@ -869,14 +869,15 @@ const paymentNotification = async (req, res) => {
     try {
       status = await MidtransService.handleNotification(notification);
     } catch (error) {
-      console.log('Error details:', {
+      const safeErrorDetails = {
         httpStatusCode: error.httpStatusCode,
         apiResponse: error.ApiResponse,
         message: error.message,
         has404: error.httpStatusCode === '404' || 
                 (error.ApiResponse && error.ApiResponse.status_code === '404') ||
                 (error.message && error.message.includes("Transaction doesn't exist"))
-      });
+      };
+      console.log('Error details:', safeErrorDetails);
       
       // Handle specific Midtrans errors - check multiple possible error structures
       const is404Error = 
@@ -897,7 +898,13 @@ const paymentNotification = async (req, res) => {
       }
       
       // For other Midtrans errors, log and return 500
-      console.error('Midtrans API error:', error);
+      const safeErrorData = {
+        message: error.message,
+        httpStatusCode: error.httpStatusCode,
+        apiResponse: error.ApiResponse,
+        has404: is404Error
+      };
+      console.error('Midtrans API error:', safeErrorData);
       return res.status(500).json({
         success: false,
         message: 'Midtrans API error'
@@ -1014,14 +1021,9 @@ const paymentNotification = async (req, res) => {
           // Update session usage untuk member package baru dengan session type yang benar
           try {
             await updateSessionUsage(memberPackage.id, order.member_id, order.package_id, null, sessionType);
-            console.log(`Session usage updated for new member package ${memberPackage.id} with session type: ${sessionType}`);
           } catch (error) {
             console.error('Error updating session usage for new member package:', error);
           }
-
-          console.log(`MemberPackage created successfully for order ${order.order_number} with session type: ${sessionType}`);
-        } else {
-          console.log(`MemberPackage already exists for order ${order.order_number}`);
         }
       } catch (error) {
         console.error('Error creating MemberPackage:', error);

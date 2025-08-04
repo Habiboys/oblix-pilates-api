@@ -91,10 +91,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false
     },
-    waitlist_lock_minutes: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
+
     min_signup: {
       type: DataTypes.INTEGER,
       allowNull: false

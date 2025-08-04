@@ -51,7 +51,7 @@ module.exports = {
             repeat_type: 'none',
             schedule_until: null,
             booking_deadline_hour: 2,
-            waitlist_lock_minutes: 30,
+            
             min_signup: 3,
             cancel_buffer_minutes: 60,
             parent_schedule_id: null,
@@ -74,7 +74,7 @@ module.exports = {
             repeat_type: 'none',
             schedule_until: null,
             booking_deadline_hour: 2,
-            waitlist_lock_minutes: 30,
+            
             min_signup: 3,
             cancel_buffer_minutes: 60,
             parent_schedule_id: null,
@@ -99,7 +99,7 @@ module.exports = {
             repeat_type: 'none',
             schedule_until: null,
             booking_deadline_hour: 4,
-            waitlist_lock_minutes: 60,
+            
             min_signup: 2,
             cancel_buffer_minutes: 120,
             parent_schedule_id: null,
@@ -124,7 +124,7 @@ module.exports = {
             repeat_type: 'none',
             schedule_until: null,
             booking_deadline_hour: 6,
-            waitlist_lock_minutes: 120,
+            
             min_signup: 1,
             cancel_buffer_minutes: 180,
             parent_schedule_id: null,

@@ -9,13 +9,16 @@ const getAllBonusPackages = async (req, res) => {
     const { page = 1, limit = 10, search = '' } = req.query;
     const offset = (page - 1) * limit;
 
+    // Clean search input - remove leading/trailing spaces
+    const cleanSearch = search.trim();
+
     const whereClause = {
       type: 'bonus'
     };
     
-    if (search) {
+    if (cleanSearch) {
       whereClause.name = {
-        [Op.like]: `%${search}%`
+        [Op.like]: `%${cleanSearch}%`
       };
     }
 
@@ -237,6 +240,8 @@ const createBonusPackage = async (req, res) => {
       name: packageName,
       duration_value: parseInt(duration_value),
       duration_unit,
+      reminder_day: 1,      // Default: 1 hari sebelum expiry
+      reminder_session: 1   // Default: 1 sesi tersisa
     }, { transaction: t });
 
     // Create package bonus
@@ -329,7 +334,12 @@ const updateBonusPackage = async (req, res) => {
         id,
         type: 'bonus',
         is_deleted: false
-      }
+      },
+      include: [
+        {
+          model: PackageBonus
+        }
+      ]
     });
     
     if (!package) {
@@ -340,7 +350,7 @@ const updateBonusPackage = async (req, res) => {
     }
 
     // Check if package with same name exists (excluding current package)
-    if (group_session && group_session !== package.PackageBonus.group_session) {
+    if (group_session && package.PackageBonus && group_session !== package.PackageBonus.group_session) {
       const existingPackage = await Package.findOne({
         where: { 
           type: 'bonus',
@@ -534,10 +544,13 @@ const searchMembers = async (req, res) => {
   try {
     const { search = '' } = req.query;
 
+    // Clean search input - remove leading/trailing spaces
+    const cleanSearch = search.trim();
+
     const whereClause = {};
-    if (search) {
+    if (cleanSearch) {
       whereClause.full_name = {
-        [Op.like]: `%${search}%`
+        [Op.like]: `%${cleanSearch}%`
       };
     }
 

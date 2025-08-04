@@ -152,16 +152,30 @@ class MidtransService {
       const status = await core.transaction.notification(notification);
       return status;
     } catch (error) {
-      logger.error('Midtrans notification error:', error);
-      
       // Handle specific 404 error from Midtrans
       if (error.httpStatusCode === '404' || 
           (error.ApiResponse && error.ApiResponse.status_code === '404') ||
           (error.message && error.message.includes("Transaction doesn't exist"))) {
         
+        logger.warn('Midtrans transaction not found (404):', {
+          message: error.message,
+          statusCode: error.httpStatusCode,
+          apiResponse: error.ApiResponse
+        });
+        
         // Re-throw the original error so controller can handle it specifically
         throw error;
       }
+      
+      // Log error dengan data yang aman (tanpa circular reference)
+      const safeErrorData = {
+        message: error.message,
+        httpStatusCode: error.httpStatusCode,
+        apiResponse: error.ApiResponse,
+        stack: error.stack
+      };
+      
+      logger.error('Midtrans notification error:', safeErrorData);
       
       // For other errors, throw generic error
       throw new Error('Failed to process payment notification');

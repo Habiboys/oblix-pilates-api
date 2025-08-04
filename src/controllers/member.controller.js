@@ -24,14 +24,18 @@ const getAllMembers = async (req, res) => {
     const { page = 1, limit = 10, search = '', status = '' } = req.query;
     const offset = (page - 1) * limit;
 
+    // Clean search input - remove leading/trailing spaces
+    const cleanSearch = search.trim();
+
     const whereClause = {};
     
-    if (search) {
+    if (cleanSearch) {
       whereClause[Op.or] = [
-        { full_name: { [Op.like]: `%${search}%` } },
-        { username: { [Op.like]: `%${search}%` } },
-        { member_code: { [Op.like]: `%${search}%` } },
-        { phone_number: { [Op.like]: `%${search}%` } }
+        { full_name: { [Op.like]: `%${cleanSearch}%` } },
+        { username: { [Op.like]: `%${cleanSearch}%` } },
+        { member_code: { [Op.like]: `%${cleanSearch}%` } },
+        { phone_number: { [Op.like]: `%${cleanSearch}%` } },
+       
       ];
     }
 
