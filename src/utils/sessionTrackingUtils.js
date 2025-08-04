@@ -334,15 +334,14 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     let totalSemiPrivateSessions = (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0);
     let totalPrivateSessions = (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0);
 
-    console.log(`📊 Current MemberPackage sessions: remaining_group=${memberPackage.remaining_group_session}, used_group=${memberPackage.used_group_session}, total_group=${totalGroupSessions}`);
+    console.log(`📊 Current MemberPackage session totals: group=${totalGroupSessions}, semi_private=${totalSemiPrivateSessions}, private=${totalPrivateSessions}`);
 
     // Hitung used sessions dari booking yang aktif (status = 'signup')
     const bookings = await Booking.findAll({
       where: {
         member_id: memberId,
         package_id: packageId,
-        status: 'signup' // Hanya booking yang aktif (signup)
-        // Booking dengan status 'cancelled' tidak dihitung sebagai used session
+        status: 'signup' // Hanya booking yang aktif
       },
       attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt'],
       include: [
@@ -353,7 +352,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       ]
     });
 
-    console.log(`📋 Found ${bookings.length} active bookings with status 'signup'`);
+    console.log(`📋 Found ${bookings.length} active bookings (status='signup') for this package`);
 
     let usedGroupSessions = 0;
     let usedSemiPrivateSessions = 0;
@@ -395,7 +394,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
         } else if (newBooking.Schedule.type === 'private') {
           usedPrivateSessions++;
         }
-        console.log(`➕ Added new booking ${newBookingId} (${newBooking.Schedule.type}): used_group=${usedGroupSessions}`);
+        console.log(`➕ Added new booking ${newBookingId} (${newBooking.Schedule.type}): group=${usedGroupSessions}, semi_private=${usedSemiPrivateSessions}, private=${usedPrivateSessions}`);
       }
     }
 
@@ -404,7 +403,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     const remainingSemiPrivateSessions = Math.max(0, totalSemiPrivateSessions - usedSemiPrivateSessions);
     const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
 
-    console.log(`📊 Final calculation: total_group=${totalGroupSessions}, used_group=${usedGroupSessions}, remaining_group=${remainingGroupSessions}`);
+    console.log(`📉 Calculated remaining sessions: group=${remainingGroupSessions}, semi_private=${remainingSemiPrivateSessions}, private=${remainingPrivateSessions}`);
 
     // Update member package
     await MemberPackage.update({
@@ -418,7 +417,7 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       where: { id: memberPackageId }
     });
 
-    console.log(`✅ Updated MemberPackage ${memberPackageId}: used_group=${usedGroupSessions}, remaining_group=${remainingGroupSessions}`);
+    console.log(`✅ Updated MemberPackage ${memberPackageId} with new session values`);
 
     // Ambil data member package yang sudah diupdate untuk return value yang akurat
     const updatedMemberPackage = await MemberPackage.findByPk(memberPackageId);

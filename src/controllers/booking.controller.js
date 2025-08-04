@@ -523,9 +523,6 @@ const cancelBooking = async (req, res) => {
             cancelled_by: 'user' // User yang melakukan cancel
         });
 
-        // PERBAIKAN: Refresh booking data untuk memastikan status sudah terupdate
-        await booking.reload();
-
         // Send WhatsApp cancellation notification (async)
         try {
             twilioService.sendBookingCancellation(booking, cancelReason)
@@ -544,8 +541,11 @@ const cancelBooking = async (req, res) => {
         }
 
         // PERBAIKAN: Update session usage setelah cancel untuk mengembalikan quota
-        // Pastikan booking status sudah 'cancelled' sebelum update session
         try {
+            // Refresh booking data untuk memastikan status terbaru
+            await booking.reload();
+            logger.info(`🔄 Booking status after cancel: ${booking.status}`);
+            
             const memberPackage = await require('../models').MemberPackage.findOne({
                 where: {
                     member_id: booking.member_id,
@@ -554,12 +554,15 @@ const cancelBooking = async (req, res) => {
             });
             
             if (memberPackage) {
-                logger.info(`🔄 Updating session usage after cancel. Booking status: ${booking.status}`);
-                await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
-                logger.info(`✅ Session usage updated after canceling booking for member ${booking.member_id}`);
+                logger.info(`📦 Found member package: ${memberPackage.id}`);
+                const updateResult = await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
+                logger.info(`✅ Session usage updated after canceling booking for member ${booking.member_id}:`, updateResult);
+            } else {
+                logger.error(`❌ Member package not found for member_id=${booking.member_id}, package_id=${booking.package_id}`);
             }
         } catch (error) {
             logger.error(`❌ Failed to update session usage after cancel: ${error.message}`);
+            logger.error(`❌ Error stack: ${error.stack}`);
         }
 
         // Process waitlist promotion jika booking yang di-cancel adalah signup
@@ -659,9 +662,6 @@ const adminCancelBooking = async (req, res) => {
             cancelled_by: 'admin' // Admin yang melakukan cancel
         });
 
-        // PERBAIKAN: Refresh booking data untuk memastikan status sudah terupdate
-        await booking.reload();
-
         // Send WhatsApp cancellation notification (async)
         try {
             twilioService.sendAdminCancellation(
@@ -685,8 +685,11 @@ const adminCancelBooking = async (req, res) => {
         }
 
         // PERBAIKAN: Update session usage setelah admin cancel untuk mengembalikan quota
-        // Pastikan booking status sudah 'cancelled' sebelum update session
         try {
+            // Refresh booking data untuk memastikan status terbaru
+            await booking.reload();
+            logger.info(`🔄 Booking status after admin cancel: ${booking.status}`);
+            
             const memberPackage = await require('../models').MemberPackage.findOne({
                 where: {
                     member_id: booking.member_id,
@@ -695,12 +698,15 @@ const adminCancelBooking = async (req, res) => {
             });
             
             if (memberPackage) {
-                logger.info(`🔄 Updating session usage after admin cancel. Booking status: ${booking.status}`);
-                await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
-                logger.info(`✅ Session usage updated after admin canceling booking for member ${booking.member_id}`);
+                logger.info(`📦 Found member package: ${memberPackage.id}`);
+                const updateResult = await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
+                logger.info(`✅ Session usage updated after admin canceling booking for member ${booking.member_id}:`, updateResult);
+            } else {
+                logger.error(`❌ Member package not found for member_id=${booking.member_id}, package_id=${booking.package_id}`);
             }
         } catch (error) {
             logger.error(`❌ Failed to update session usage after admin cancel: ${error.message}`);
+            logger.error(`❌ Error stack: ${error.stack}`);
         }
 
         // Process waitlist promotion jika booking yang di-cancel adalah signup
