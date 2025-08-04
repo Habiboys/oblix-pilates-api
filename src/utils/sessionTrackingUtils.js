@@ -342,8 +342,22 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       totalGroupSessions = package.PackagePromo.group_session || 0;
       totalPrivateSessions = package.PackagePromo.private_session || 0;
     } else if (package.type === 'bonus' && package.PackageBonus) {
-      totalGroupSessions = package.PackageBonus.group_session || 0;
-      totalPrivateSessions = package.PackageBonus.private_session || 0;
+      // Untuk bonus package, total session diambil dari MemberPackage yang sudah diisi manual
+      const memberPackage = await MemberPackage.findByPk(memberPackageId);
+      if (memberPackage) {
+        // Total = remaining + used (dari MemberPackage)
+        const currentUsedGroup = memberPackage.used_group_session || 0;
+        const currentUsedPrivate = memberPackage.used_private_session || 0;
+        const currentRemainingGroup = memberPackage.remaining_group_session || 0;
+        const currentRemainingPrivate = memberPackage.remaining_private_session || 0;
+        
+        totalGroupSessions = currentRemainingGroup + currentUsedGroup;
+        totalPrivateSessions = currentRemainingPrivate + currentUsedPrivate;
+      } else {
+        // Fallback ke package definition jika MemberPackage tidak ditemukan
+        totalGroupSessions = package.PackageBonus.group_session || 0;
+        totalPrivateSessions = package.PackageBonus.private_session || 0;
+      }
     }
 
     // Hitung used sessions dari booking
@@ -411,32 +425,18 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       include: [{ model: Package }]
     });
     
-    if (memberPackage && memberPackage.Package && memberPackage.Package.type === 'bonus') {
-      // Untuk bonus package, hanya update used sessions, jangan overwrite remaining sessions
-      await MemberPackage.update({
-        used_group_session: usedGroupSessions,
-        used_semi_private_session: usedSemiPrivateSessions,
-        used_private_session: usedPrivateSessions,
-        // Jangan update remaining sessions untuk bonus package
-        // remaining_group_session: remainingGroupSessions,
-        // remaining_semi_private_session: remainingSemiPrivateSessions,
-        // remaining_private_session: remainingPrivateSessions
-      }, {
-        where: { id: memberPackageId }
-      });
-    } else {
-      // Untuk package lain, update semua fields seperti biasa
-      await MemberPackage.update({
-        used_group_session: usedGroupSessions,
-        used_semi_private_session: usedSemiPrivateSessions,
-        used_private_session: usedPrivateSessions,
-        remaining_group_session: remainingGroupSessions,
-        remaining_semi_private_session: remainingSemiPrivateSessions,
-        remaining_private_session: remainingPrivateSessions
-      }, {
-        where: { id: memberPackageId }
-      });
-    }
+    // Untuk semua package types, update used sessions dan remaining sessions
+    // Remaining sessions dihitung dari total - used
+    await MemberPackage.update({
+      used_group_session: usedGroupSessions,
+      used_semi_private_session: usedSemiPrivateSessions,
+      used_private_session: usedPrivateSessions,
+      remaining_group_session: remainingGroupSessions,
+      remaining_semi_private_session: remainingSemiPrivateSessions,
+      remaining_private_session: remainingPrivateSessions
+    }, {
+      where: { id: memberPackageId }
+    });
 
     // Ambil data member package yang sudah diupdate untuk return value yang akurat
     const updatedMemberPackage = await MemberPackage.findByPk(memberPackageId);
