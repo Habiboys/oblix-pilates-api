@@ -40,8 +40,8 @@ const getAvailableClasses = async (req, res) => {
 
     const memberId = member.id;
 
-    // Update session usage untuk semua member packages terlebih dahulu
-    await updateAllMemberPackagesSessionUsage(memberId);
+    // Tidak perlu update session usage di sini karena akan meng-overwrite bonus package
+    // Session usage akan diupdate saat ada booking baru
 
     // Get member's active packages with priority
     const memberPackages = await MemberPackage.findAll({

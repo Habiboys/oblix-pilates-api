@@ -52,11 +52,8 @@ const getAllMembers = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
-    // Update session usage untuk semua member yang ditemukan
-    const memberIds = members.map(member => member.id);
-    for (const memberId of memberIds) {
-      await updateAllMemberPackagesSessionUsage(memberId);
-    }
+    // Tidak perlu update session usage di sini karena akan meng-overwrite bonus package
+    // Session usage akan diupdate saat ada booking baru
 
     // Get member packages untuk menghitung detail sesi
     const membersWithSessions = await Promise.all(members.map(async (member) => {
@@ -224,8 +221,8 @@ const getMemberById = async (req, res) => {
       });
     }
 
-    // Update session usage untuk member ini
-    await updateAllMemberPackagesSessionUsage(id);
+    // Tidak perlu update session usage di sini karena akan meng-overwrite bonus package
+    // Session usage akan diupdate saat ada booking baru
 
     // Get member packages untuk menghitung detail sesi
     const memberPackages = await MemberPackage.findAll({

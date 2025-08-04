@@ -342,22 +342,10 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       totalGroupSessions = package.PackagePromo.group_session || 0;
       totalPrivateSessions = package.PackagePromo.private_session || 0;
     } else if (package.type === 'bonus' && package.PackageBonus) {
-      // Untuk bonus package, total session diambil dari MemberPackage yang sudah diisi manual
-      const memberPackage = await MemberPackage.findByPk(memberPackageId);
-      if (memberPackage) {
-        // Total = remaining + used (dari MemberPackage)
-        const currentUsedGroup = memberPackage.used_group_session || 0;
-        const currentUsedPrivate = memberPackage.used_private_session || 0;
-        const currentRemainingGroup = memberPackage.remaining_group_session || 0;
-        const currentRemainingPrivate = memberPackage.remaining_private_session || 0;
-        
-        totalGroupSessions = currentRemainingGroup + currentUsedGroup;
-        totalPrivateSessions = currentRemainingPrivate + currentUsedPrivate;
-      } else {
-        // Fallback ke package definition jika MemberPackage tidak ditemukan
-        totalGroupSessions = package.PackageBonus.group_session || 0;
-        totalPrivateSessions = package.PackageBonus.private_session || 0;
-      }
+      // Untuk bonus package, total session diambil dari package definition
+      // karena ini adalah total awal yang diberikan
+      totalGroupSessions = package.PackageBonus.group_session || 0;
+      totalPrivateSessions = package.PackageBonus.private_session || 0;
     }
 
     // Hitung used sessions dari booking
