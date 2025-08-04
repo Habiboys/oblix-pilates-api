@@ -620,31 +620,41 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
           }
         }
 
-        if (!bestPackage || available > bestAvailable) {
-          // If this is the first package or has more sessions, make it the best
-          if (bestPackage) {
-            fallbackPackages.push(bestPackage);
-          }
-          bestPackage = {
-            member_package_id: memberPackage.id,
-            package_id: memberPackage.package_id,
-            package_name: memberPackage.Package?.name || 'Unknown Package',
-            package_type: memberPackage.Package?.type || 'unknown',
-            available_sessions: available,
-            session_type_used: sessionTypeUsed,
-            priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
-          };
+        const currentPackage = {
+          member_package_id: memberPackage.id,
+          package_id: memberPackage.package_id,
+          package_name: memberPackage.Package?.name || 'Unknown Package',
+          package_type: memberPackage.Package?.type || 'unknown',
+          available_sessions: available,
+          session_type_used: sessionTypeUsed,
+          priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
+        };
+
+        // PERBAIKAN: Pilih berdasarkan prioritas tipe terlebih dahulu, bukan jumlah session
+        if (!bestPackage) {
+          // Paket pertama yang bisa handle schedule type
+          bestPackage = currentPackage;
           bestAvailable = available;
         } else {
-          fallbackPackages.push({
-            member_package_id: memberPackage.id,
-            package_id: memberPackage.package_id,
-            package_name: memberPackage.Package?.name || 'Unknown Package',
-            package_type: memberPackage.Package?.type || 'unknown',
-            available_sessions: available,
-            session_type_used: sessionTypeUsed,
-            priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
-          });
+          // Bandingkan berdasarkan prioritas score (descending - tertinggi dulu)
+          if (currentPackage.priority_score > bestPackage.priority_score) {
+            // Paket baru memiliki prioritas lebih tinggi
+            fallbackPackages.push(bestPackage);
+            bestPackage = currentPackage;
+            bestAvailable = available;
+          } else if (currentPackage.priority_score === bestPackage.priority_score) {
+            // Prioritas sama, pilih yang memiliki session lebih banyak
+            if (available > bestAvailable) {
+              fallbackPackages.push(bestPackage);
+              bestPackage = currentPackage;
+              bestAvailable = available;
+            } else {
+              fallbackPackages.push(currentPackage);
+            }
+          } else {
+            // Paket baru memiliki prioritas lebih rendah
+            fallbackPackages.push(currentPackage);
+          }
         }
       }
     }
