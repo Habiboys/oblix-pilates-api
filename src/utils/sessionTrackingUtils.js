@@ -317,6 +317,15 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       throw new Error('Package not found');
     }
 
+    // Ambil member package untuk mendapatkan session yang sudah diisi manual
+    const memberPackage = await MemberPackage.findByPk(memberPackageId, {
+      include: [{ model: Package }]
+    });
+
+    if (!memberPackage) {
+      throw new Error('Member package not found');
+    }
+
     // Hitung total session berdasarkan tipe package
     let totalGroupSessions = 0;
     let totalSemiPrivateSessions = 0;
@@ -342,10 +351,11 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       totalGroupSessions = package.PackagePromo.group_session || 0;
       totalPrivateSessions = package.PackagePromo.private_session || 0;
     } else if (package.type === 'bonus' && package.PackageBonus) {
-      // Untuk bonus package, total session diambil dari package definition
-      // karena ini adalah total awal yang diberikan
-      totalGroupSessions = package.PackageBonus.group_session || 0;
-      totalPrivateSessions = package.PackageBonus.private_session || 0;
+      // PERBAIKAN: Untuk bonus package, total session diambil dari MemberPackage
+      // (remaining + used) bukan dari PackageBonus definition untuk menghindari overwrite
+      totalGroupSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.used_group_session || 0);
+      totalPrivateSessions = (memberPackage.remaining_private_session || 0) + (memberPackage.used_private_session || 0);
+      totalSemiPrivateSessions = (memberPackage.remaining_semi_private_session || 0) + (memberPackage.used_semi_private_session || 0);
     }
 
     // Hitung used sessions dari booking
@@ -408,11 +418,6 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
     const remainingPrivateSessions = Math.max(0, totalPrivateSessions - usedPrivateSessions);
 
     // Update member package
-    // Untuk bonus package, jangan overwrite session fields yang sudah diisi manual
-    const memberPackage = await MemberPackage.findByPk(memberPackageId, {
-      include: [{ model: Package }]
-    });
-    
     // Untuk semua package types, update used sessions dan remaining sessions
     // Remaining sessions dihitung dari total - used
     await MemberPackage.update({
