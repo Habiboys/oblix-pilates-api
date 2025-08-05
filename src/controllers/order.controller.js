@@ -121,13 +121,11 @@ const createOrder = async (req, res) => {
         success: true,
         message: 'Anda masih memiliki order yang sedang diproses untuk paket ini',
         data: {
-          pending_order_id: pendingOrder.id,
-          redirect_to_payment: true,
+          order_id: pendingOrder.id,
+          order_number: pendingOrder.order_number,
+          total_amount: pendingOrder.total_amount,
           payment_url: pendingOrder.midtrans_redirect_url || pendingOrder.payment_url || null,
-          midtrans_token: pendingOrder.midtrans_token || null,
-          order_status: pendingOrder.status,
-          order_amount: pendingOrder.total_amount,
-          created_at: pendingOrder.createdAt
+          token: pendingOrder.midtrans_token || null
         }
       });
     }
@@ -148,16 +146,11 @@ const createOrder = async (req, res) => {
         success: true,
         message: 'Anda memiliki order yang sudah expired untuk paket ini',
         data: {
-          expired_order_id: expiredOrder.id,
-          redirect_to_payment: true,
+          order_id: expiredOrder.id,
+          order_number: expiredOrder.order_number,
+          total_amount: expiredOrder.total_amount,
           payment_url: expiredOrder.midtrans_redirect_url || expiredOrder.payment_url || null,
-          midtrans_token: expiredOrder.midtrans_token || null,
-          order_status: expiredOrder.status,
-          order_amount: expiredOrder.total_amount,
-          created_at: expiredOrder.createdAt,
-          expired_at: expiredOrder.expired_at,
-          is_expired: true,
-          message: 'Order ini sudah expired, tetapi Anda masih bisa melanjutkan pembayaran'
+          token: expiredOrder.midtrans_token || null
         }
       });
     }
