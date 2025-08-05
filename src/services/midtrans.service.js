@@ -53,10 +53,13 @@ class MidtransService {
           name: item.package_name
         })),
         callbacks: {
-          finish: `${config.app.baseUrl}/api/order/payment/finish`,
-          error: `${config.app.baseUrl}/api/order/payment/error`,
-          pending: `${config.app.baseUrl}/api/order/payment/pending`
+          finish: `${config.app.baseURL}/api/order/payment/finish`,
+          error: `${config.app.baseURL}/api/order/payment/error`,
+          pending: `${config.app.baseURL}/api/order/payment/pending`
         },
+        // Add notification URL for payment notifications (including re-payment)
+        // This URL will receive HTTP notifications from Midtrans for payment status changes
+        notification_url: `${config.app.baseURL}/api/order/payment/notification`,
         // Add expired time configuration
         expiry: {
           start_time: startTime,

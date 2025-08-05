@@ -106,7 +106,7 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Check if member has pending order for this package
+    // Check if member has pending/processing order for this package
     const pendingOrder = await Order.findOne({
       where: {
         member_id,
@@ -130,30 +130,8 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Check if member has expired order for this package
-    const expiredOrder = await Order.findOne({
-      where: {
-        member_id,
-        package_id,
-        status: { [Op.in]: ['pending', 'processing'] },
-        expired_at: { [Op.lt]: new Date() } // Order yang sudah expired
-      }
-    });
-
-    if (expiredOrder) {
-      await transaction.rollback();
-      return res.status(200).json({
-        success: true,
-        message: 'Anda memiliki order yang sudah expired untuk paket ini',
-        data: {
-          order_id: expiredOrder.id,
-          order_number: expiredOrder.order_number,
-          total_amount: expiredOrder.total_amount,
-          payment_url: expiredOrder.midtrans_redirect_url || expiredOrder.payment_url || null,
-          token: expiredOrder.midtrans_token || null
-        }
-      });
-    }
+    // Note: Expired orders are now handled via separate re-pay endpoint
+    // User can use POST /api/order/:order_id/repay to re-pay expired orders
 
     
 
@@ -189,142 +167,142 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Check if member already has active package of the same type
-    if (package.type === 'membership') {
-      // Untuk membership, cek berdasarkan kategori yang sama
-      const activeMembership = await MemberPackage.findOne({
-        where: {
-          member_id,
-          '$Package.type$': 'membership',
-          end_date: { [Op.gte]: new Date() } // Hanya yang masih aktif
-        },
-        include: [
-          {
-            model: Package,
-            where: { type: 'membership' },
-            include: [
-              {
-                model: PackageMembership,
-                include: [
-                  {
-                    model: Category
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      });
+    // // Check if member already has active package of the same type
+    // if (package.type === 'membership') {
+    //   // Untuk membership, cek berdasarkan kategori yang sama
+    //   const activeMembership = await MemberPackage.findOne({
+    //     where: {
+    //       member_id,
+    //       '$Package.type$': 'membership',
+    //       end_date: { [Op.gte]: new Date() } // Hanya yang masih aktif
+    //     },
+    //     include: [
+    //       {
+    //         model: Package,
+    //         where: { type: 'membership' },
+    //         include: [
+    //           {
+    //             model: PackageMembership,
+    //             include: [
+    //               {
+    //                 model: Category
+    //               }
+    //             ]
+    //           }
+    //         ]
+    //       }
+    //     ]
+    //   });
 
-      if (activeMembership) {
-        // Cek apakah kategori membership yang akan dibeli sama dengan yang aktif
-        const packageToBuy = await Package.findByPk(package_id, {
-          include: [
-            {
-              model: PackageMembership,
-              include: [
-                {
-                  model: Category
-                }
-              ]
-            }
-          ]
-        });
+    //   if (activeMembership) {
+    //     // Cek apakah kategori membership yang akan dibeli sama dengan yang aktif
+    //     const packageToBuy = await Package.findByPk(package_id, {
+    //       include: [
+    //         {
+    //           model: PackageMembership,
+    //           include: [
+    //             {
+    //               model: Category
+    //             }
+    //           ]
+    //         }
+    //       ]
+    //     });
 
-        if (packageToBuy && packageToBuy.PackageMembership && activeMembership.Package.PackageMembership) {
-          const activeCategoryId = activeMembership.Package.PackageMembership.category_id;
-          const newCategoryId = packageToBuy.PackageMembership.category_id;
+    //     if (packageToBuy && packageToBuy.PackageMembership && activeMembership.Package.PackageMembership) {
+    //       const activeCategoryId = activeMembership.Package.PackageMembership.category_id;
+    //       const newCategoryId = packageToBuy.PackageMembership.category_id;
 
-          if (activeCategoryId === newCategoryId) {
-            await transaction.rollback();
-            return res.status(400).json({
-              success: false,
-              message: `Anda masih memiliki membership aktif untuk kategori ${activeMembership.Package.PackageMembership.Category.category_name}. Silakan gunakan membership yang ada terlebih dahulu.`
-            });
-          }
-        }
-      }
-    }
+    //       if (activeCategoryId === newCategoryId) {
+    //         await transaction.rollback();
+    //         return res.status(400).json({
+    //           success: false,
+    //           message: `Anda masih memiliki membership aktif untuk kategori ${activeMembership.Package.PackageMembership.Category.category_name}. Silakan gunakan membership yang ada terlebih dahulu.`
+    //         });
+    //       }
+    //     }
+    //   }
+    // }
 
     // Check if member already has this specific package (for all package types)
-    const existingPackage = await MemberPackage.findOne({
-      where: {
-        member_id,
-        package_id
-      }
-    });
+    // const existingPackage = await MemberPackage.findOne({
+    //   where: {
+    //     member_id,
+    //     package_id
+    //   }
+    // });
 
-    if (existingPackage) {
-      await transaction.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'Anda sudah memiliki paket ini. Silakan gunakan paket yang ada terlebih dahulu.'
-      });
-    }
+    // if (existingPackage) {
+    //   await transaction.rollback();
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Anda sudah memiliki paket ini. Silakan gunakan paket yang ada terlebih dahulu.'
+    //   });
+    // }
 
     // Check if member has unused packages of the same type
-    const unusedPackages = await MemberPackage.findAll({
-      where: {
-        member_id,
-        '$Package.type$': package.type,
-        end_date: { [Op.gte]: new Date() } // Hanya yang masih aktif
-      },
-      include: [
-        {
-          model: Package,
-          where: { type: package.type }
-        }
-      ]
-    });
+    // const unusedPackages = await MemberPackage.findAll({
+    //   where: {
+    //     member_id,
+    //     '$Package.type$': package.type,
+    //     end_date: { [Op.gte]: new Date() } // Hanya yang masih aktif
+    //   },
+    //   include: [
+    //     {
+    //       model: Package,
+    //       where: { type: package.type }
+    //     }
+    //   ]
+    // });
 
     // Check if any package still has unused sessions
-    for (const memberPackage of unusedPackages) {
-      const usedSessions = await Booking.count({
-        where: {
-          member_id,
-          package_id: memberPackage.package_id
-        }
-      });
+    // for (const memberPackage of unusedPackages) {
+    //   const usedSessions = await Booking.count({
+    //     where: {
+    //       member_id,
+    //       package_id: memberPackage.package_id
+    //     }
+    //   });
 
-      if (usedSessions < memberPackage.total_session) {
-        // Untuk membership, cek apakah kategori sama
-        if (package.type === 'membership') {
-          const currentPackage = await Package.findByPk(memberPackage.package_id, {
-            include: [
-              {
-                model: PackageMembership
-              }
-            ]
-          });
+    //   if (usedSessions < memberPackage.total_session) {
+    //     // Untuk membership, cek apakah kategori sama
+    //     if (package.type === 'membership') {
+    //       const currentPackage = await Package.findByPk(memberPackage.package_id, {
+    //         include: [
+    //           {
+    //             model: PackageMembership
+    //           }
+    //         ]
+    //       });
 
-          const packageToBuy = await Package.findByPk(package_id, {
-            include: [
-              {
-                model: PackageMembership
-              }
-            ]
-          });
+    //       const packageToBuy = await Package.findByPk(package_id, {
+    //         include: [
+    //           {
+    //             model: PackageMembership
+    //           }
+    //         ]
+    //       });
 
-          // Jika kategori sama, tolak pembelian
-          if (currentPackage && packageToBuy && 
-              currentPackage.PackageMembership && packageToBuy.PackageMembership &&
-              currentPackage.PackageMembership.category_id === packageToBuy.PackageMembership.category_id) {
-            await transaction.rollback();
-            return res.status(400).json({
-              success: false,
-              message: `Anda masih memiliki paket ${package.type} yang belum digunakan sepenuhnya untuk kategori yang sama. Silakan gunakan paket yang ada terlebih dahulu.`
-            });
-          }
-        } else {
-          // Untuk paket non-membership, tetap tolak jika ada yang belum digunakan
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: `Anda masih memiliki paket ${package.type} yang belum digunakan sepenuhnya. Silakan gunakan paket yang ada terlebih dahulu.`
-          });
-        }
-      }
-    }
+    //       // Jika kategori sama, tolak pembelian
+    //       if (currentPackage && packageToBuy && 
+    //           currentPackage.PackageMembership && packageToBuy.PackageMembership &&
+    //           currentPackage.PackageMembership.category_id === packageToBuy.PackageMembership.category_id) {
+    //         await transaction.rollback();
+    //         return res.status(400).json({
+    //           success: false,
+    //           message: `Anda masih memiliki paket ${package.type} yang belum digunakan sepenuhnya untuk kategori yang sama. Silakan gunakan paket yang ada terlebih dahulu.`
+    //         });
+    //       }
+    //     } else {
+    //       // Untuk paket non-membership, tetap tolak jika ada yang belum digunakan
+    //       await transaction.rollback();
+    //       return res.status(400).json({
+    //         success: false,
+    //         message: `Anda masih memiliki paket ${package.type} yang belum digunakan sepenuhnya. Silakan gunakan paket yang ada terlebih dahulu.`
+    //       });
+    //     }
+    //   }
+    // }
 
     // Calculate total amount
     const total_amount = package.price * quantity;
@@ -1350,6 +1328,177 @@ const getPendingOrderDetails = async (req, res) => {
   }
 };
 
+// Re-pay expired order
+const repayExpiredOrder = async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { order_id } = req.params;
+    const user_id = req.user.id;
+
+    console.log('Re-paying expired order:', { order_id, user_id });
+
+    // Get member ID from user
+    const member = await Member.findOne({
+      where: { user_id },
+      include: [{ model: User }]
+    });
+
+    if (!member) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Member not found'
+      });
+    }
+
+    const member_id = member.id;
+
+    // Find the expired order
+    const order = await Order.findOne({
+      where: {
+        id: order_id,
+        member_id,
+        status: 'cancelled',
+        payment_status: 'expired'
+      },
+      include: [
+        {
+          model: Package,
+          attributes: ['id', 'name', 'type', 'price', 'duration_value', 'duration_unit']
+        }
+      ]
+    });
+
+    if (!order) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Order expired tidak ditemukan'
+      });
+    }
+
+    console.log('Expired order found:', order.order_number);
+
+    // Check if package is still available
+    if (order.Package.is_deleted) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Paket tidak tersedia lagi'
+      });
+    }
+
+    // Check if promo package is still valid (if applicable)
+    if (order.Package.type === 'promo') {
+      const packagePromo = await PackagePromo.findOne({
+        where: { package_id: order.Package.id }
+      });
+
+      if (packagePromo) {
+        const currentTime = new Date();
+        const startTime = new Date(packagePromo.start_time);
+        const endTime = new Date(packagePromo.end_time);
+
+        if (currentTime < startTime) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'Paket promo belum tersedia untuk dibeli'
+          });
+        }
+
+        if (currentTime > endTime) {
+          await transaction.rollback();
+          return res.status(400).json({
+            success: false,
+            message: 'Paket promo sudah berakhir'
+          });
+        }
+      }
+    }
+
+    // Generate new order number for re-payment
+    const newOrderNumber = MidtransService.generateOrderNumber();
+
+    // Create new order with same details but new order number
+    const newOrder = await Order.create({
+      order_number: newOrderNumber,
+      member_id: member_id,
+      package_id: order.package_id,
+      package_name: order.package_name,
+      package_type: order.package_type,
+      quantity: order.quantity,
+      unit_price: order.unit_price,
+      total_amount: order.total_amount,
+      session_count: order.session_count,
+      duration_value: order.duration_value,
+      duration_unit: order.duration_unit,
+      payment_status: 'pending',
+      status: 'pending',
+      notes: `Re-payment for expired order: ${order.order_number}`
+    }, { transaction });
+
+    console.log('New order created for re-payment:', newOrder.order_number);
+
+    // Prepare order data for Midtrans
+    const orderData = {
+      order_number: newOrder.order_number,
+      total_amount: newOrder.total_amount,
+      member: {
+        full_name: member.full_name,
+        email: member.User.email,
+        phone_number: member.phone_number
+      },
+      items: [
+        {
+          package_id: order.Package.id,
+          unit_price: order.unit_price,
+          quantity: order.quantity,
+          package_name: order.Package.name,
+          package_type: order.Package.type
+        }
+      ]
+    };
+
+    console.log('Order data prepared for Midtrans:', orderData);
+
+    // Create Midtrans transaction
+    const midtransResponse = await MidtransService.createTransaction(orderData);
+
+    // Update order with Midtrans data
+    await newOrder.update({
+      midtrans_order_id: newOrder.order_number,
+      midtrans_token: midtransResponse.token,
+      midtrans_redirect_url: midtransResponse.redirect_url
+    }, { transaction });
+
+    await transaction.commit();
+
+    console.log('Re-payment order created successfully:', newOrder.order_number);
+
+    res.status(201).json({
+      success: true,
+      message: 'Order re-payment berhasil dibuat',
+      data: {
+        order_id: newOrder.id,
+        order_number: newOrder.order_number,
+        total_amount: newOrder.total_amount,
+        payment_url: midtransResponse.redirect_url,
+        token: midtransResponse.token
+      }
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error creating re-payment order:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan pada server'
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getUserOrders,
@@ -1361,5 +1510,6 @@ module.exports = {
   paymentPending,
   getMyOrders,
   getMyOrderById,
-  getPendingOrderDetails
+  getPendingOrderDetails,
+  repayExpiredOrder
 }; 

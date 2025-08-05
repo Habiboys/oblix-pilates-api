@@ -152,8 +152,8 @@ const createMembershipPackage = async (req, res) => {
     } = req.body;
 
     // Check if package with same name exists
-        const existingPackage = await Package.findOne({
-      where: {
+    const existingPackage = await Package.findOne({
+      where: { 
         name,
         type: 'membership',
         is_deleted: false
