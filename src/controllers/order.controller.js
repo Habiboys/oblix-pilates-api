@@ -4,6 +4,7 @@ const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');
 const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
 const logger = require('../config/logger');
+const config = require('../config/config');
 // Create new order
 const createOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -106,7 +107,7 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Check if member has pending/processing order for this package
+    // Check if member has pending order for this package
     const pendingOrder = await Order.findOne({
       where: {
         member_id,
@@ -130,8 +131,21 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Note: Expired orders are now handled via separate re-pay endpoint
-    // User can use POST /api/order/:order_id/repay to re-pay expired orders
+    // Check if member has expired order for this package
+    const expiredOrder = await Order.findOne({
+      where: {
+        member_id,
+        package_id,
+        status: { [Op.in]: ['pending', 'processing'] },
+        expired_at: { [Op.lt]: new Date() } // Order yang sudah expired
+      }
+    });
+
+    if (expiredOrder) {
+      // Update expired order status to 'expired' dan lanjutkan dengan order baru
+      await expiredOrder.update({ status: 'expired' }, { transaction });
+      logger.info(`Order ${expiredOrder.order_number} marked as expired, creating new order`);
+    }
 
     
 
@@ -326,7 +340,7 @@ const createOrder = async (req, res) => {
       payment_status: 'pending',
       status: 'pending',
       notes,
-      expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+      expired_at: new Date(Date.now() + config.midtrans.expiredTime * 60 * 1000) // Use MIDTRANS_EXPIRED_TIME from config
     }, { transaction });
 
     // Prepare data for Midtrans
@@ -920,13 +934,23 @@ const paymentNotification = async (req, res) => {
     console.log('🔍 Looking for order with midtrans_order_id:', status.order_id);
     logger.info('Looking for order with midtrans_order_id:', { midtrans_order_id: status.order_id });
     
-    const order = await Order.findOne({
+    let order = await Order.findOne({
       where: { midtrans_order_id: status.order_id }
     });
 
+    // Jika tidak ditemukan dengan midtrans_order_id, coba dengan order_number
     if (!order) {
-      console.log(`❌ Order not found for Midtrans order ID: ${status.order_id}`);
-      logger.warn('Order not found for Midtrans order ID:', { midtrans_order_id: status.order_id });
+      console.log(`🔍 Order not found with midtrans_order_id, trying order_number: ${status.order_id}`);
+      logger.info('Order not found with midtrans_order_id, trying order_number:', { order_number: status.order_id });
+      
+      order = await Order.findOne({
+        where: { order_number: status.order_id }
+      });
+    }
+
+    if (!order) {
+      console.log(`❌ Order not found for Midtrans order ID/order_number: ${status.order_id}`);
+      logger.warn('Order not found for Midtrans order ID/order_number:', { order_id: status.order_id });
       return res.status(200).json({
         success: false,
         message: 'Order not found in database - notification ignored'
@@ -1159,9 +1183,9 @@ const paymentNotification = async (req, res) => {
 // Payment callback handlers (for user redirects)
 const paymentFinish = async (req, res) => {
   try {
-    const { order_id, transaction_status, transaction_id } = req.query;
+    const { order_id, transaction_status, transaction_id, status_code, status_message } = req.query;
     
-    console.log('Payment finish callback:', { order_id, transaction_status, transaction_id });
+    console.log('✅ Payment finish callback:', { order_id });
     
     // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
     const order = await Order.findOne({
@@ -1169,19 +1193,35 @@ const paymentFinish = async (req, res) => {
     });
     
     if (!order) {
-      console.log(`Order not found for order_number: ${order_id}`);
+      console.log(`❌ Order not found for order_number: ${order_id}`);
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const redirectUrl = `${frontendUrl}/my-orders`;
       return res.redirect(redirectUrl);
     }
     
+    // Check if order has expired based on expired_at timestamp
+    const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+    
+    if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+      console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+      
+      await order.update({
+        status: 'cancelled',
+        payment_status: 'expired',
+        cancelled_at: new Date(),
+        cancelled_by: null,
+        cancel_reason: 'Payment expired via time check'
+      });
+      console.log(`✅ Order ${order.order_number} marked as expired`);
+    }
+    
     // Redirect to frontend with success status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
-    console.log('Redirecting to:', redirectUrl);
+    console.log('🔄 Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
-    console.error('Payment finish callback error:', error);
+    console.error('❌ Payment finish callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders`;
     res.redirect(redirectUrl);
@@ -1190,9 +1230,9 @@ const paymentFinish = async (req, res) => {
 
 const paymentError = async (req, res) => {
   try {
-    const { order_id, transaction_status, transaction_id } = req.query;
+      const { order_id, transaction_status, transaction_id, status_code, status_message } = req.query;
     
-    console.log('Payment error callback:', { order_id, transaction_status, transaction_id });
+    console.log('🔴 Payment error callback:', { order_id });
 
     // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
     const order = await Order.findOne({
@@ -1200,19 +1240,35 @@ const paymentError = async (req, res) => {
     });
     
     if (!order) {
-      console.log(`Order not found for order_number: ${order_id}`);
+      console.log(`❌ Order not found for order_number: ${order_id}`);
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const redirectUrl = `${frontendUrl}/my-orders`;
       return res.redirect(redirectUrl);
     }
     
+    // Check if order has expired based on expired_at timestamp
+    const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+    
+    if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+      console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+      
+      await order.update({
+        status: 'cancelled',
+        payment_status: 'expired',
+        cancelled_at: new Date(),
+        cancelled_by: null,
+        cancel_reason: 'Payment expired via time check'
+      });
+      console.log(`✅ Order ${order.order_number} marked as expired`);
+    }
+    
     // Redirect to frontend with error status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
-    console.log('Redirecting to:', redirectUrl);
+    console.log('🔄 Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
-    console.error('Payment error callback error:', error);
+    console.error('❌ Payment error callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders`;
     res.redirect(redirectUrl);
@@ -1221,9 +1277,9 @@ const paymentError = async (req, res) => {
 
 const paymentPending = async (req, res) => {
   try {
-    const { order_id, transaction_status, transaction_id } = req.query;
+    const { order_id, transaction_status, transaction_id, status_code, status_message } = req.query;
 
-    console.log('Payment pending callback:', { order_id, transaction_status, transaction_id });
+    console.log('⏳ Payment pending callback:', { order_id });
 
     // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
     const order = await Order.findOne({
@@ -1231,19 +1287,35 @@ const paymentPending = async (req, res) => {
     });
     
     if (!order) {
-      console.log(`Order not found for order_number: ${order_id}`);
+      console.log(`❌ Order not found for order_number: ${order_id}`);
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const redirectUrl = `${frontendUrl}/my-orders`;
       return res.redirect(redirectUrl);
     }
     
+    // Check if order has expired based on expired_at timestamp
+    const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+    
+    if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+      console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+      
+      await order.update({
+        status: 'cancelled',
+        payment_status: 'expired',
+        cancelled_at: new Date(),
+        cancelled_by: null,
+        cancel_reason: 'Payment expired via time check'
+      });
+      console.log(`✅ Order ${order.order_number} marked as expired`);
+    }
+    
     // Redirect to frontend with pending status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
-    console.log('Redirecting to:', redirectUrl);
+    console.log('🔄 Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
-    console.error('Payment pending callback error:', error);
+    console.error('❌ Payment pending callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders`;
     res.redirect(redirectUrl);
@@ -1328,177 +1400,6 @@ const getPendingOrderDetails = async (req, res) => {
   }
 };
 
-// Re-pay expired order
-const repayExpiredOrder = async (req, res) => {
-  const transaction = await sequelize.transaction();
-  
-  try {
-    const { order_id } = req.params;
-    const user_id = req.user.id;
-
-    console.log('Re-paying expired order:', { order_id, user_id });
-
-    // Get member ID from user
-    const member = await Member.findOne({
-      where: { user_id },
-      include: [{ model: User }]
-    });
-
-    if (!member) {
-      await transaction.rollback();
-      return res.status(404).json({
-        success: false,
-        message: 'Member not found'
-      });
-    }
-
-    const member_id = member.id;
-
-    // Find the expired order
-    const order = await Order.findOne({
-      where: {
-        id: order_id,
-        member_id,
-        status: 'cancelled',
-        payment_status: 'expired'
-      },
-      include: [
-        {
-          model: Package,
-          attributes: ['id', 'name', 'type', 'price', 'duration_value', 'duration_unit']
-        }
-      ]
-    });
-
-    if (!order) {
-      await transaction.rollback();
-      return res.status(404).json({
-        success: false,
-        message: 'Order expired tidak ditemukan'
-      });
-    }
-
-    console.log('Expired order found:', order.order_number);
-
-    // Check if package is still available
-    if (order.Package.is_deleted) {
-      await transaction.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'Paket tidak tersedia lagi'
-      });
-    }
-
-    // Check if promo package is still valid (if applicable)
-    if (order.Package.type === 'promo') {
-      const packagePromo = await PackagePromo.findOne({
-        where: { package_id: order.Package.id }
-      });
-
-      if (packagePromo) {
-        const currentTime = new Date();
-        const startTime = new Date(packagePromo.start_time);
-        const endTime = new Date(packagePromo.end_time);
-
-        if (currentTime < startTime) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: 'Paket promo belum tersedia untuk dibeli'
-          });
-        }
-
-        if (currentTime > endTime) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: 'Paket promo sudah berakhir'
-          });
-        }
-      }
-    }
-
-    // Generate new order number for re-payment
-    const newOrderNumber = MidtransService.generateOrderNumber();
-
-    // Create new order with same details but new order number
-    const newOrder = await Order.create({
-      order_number: newOrderNumber,
-      member_id: member_id,
-      package_id: order.package_id,
-      package_name: order.package_name,
-      package_type: order.package_type,
-      quantity: order.quantity,
-      unit_price: order.unit_price,
-      total_amount: order.total_amount,
-      session_count: order.session_count,
-      duration_value: order.duration_value,
-      duration_unit: order.duration_unit,
-      payment_status: 'pending',
-      status: 'pending',
-      notes: `Re-payment for expired order: ${order.order_number}`
-    }, { transaction });
-
-    console.log('New order created for re-payment:', newOrder.order_number);
-
-    // Prepare order data for Midtrans
-    const orderData = {
-      order_number: newOrder.order_number,
-      total_amount: newOrder.total_amount,
-      member: {
-        full_name: member.full_name,
-        email: member.User.email,
-        phone_number: member.phone_number
-      },
-      items: [
-        {
-          package_id: order.Package.id,
-          unit_price: order.unit_price,
-          quantity: order.quantity,
-          package_name: order.Package.name,
-          package_type: order.Package.type
-        }
-      ]
-    };
-
-    console.log('Order data prepared for Midtrans:', orderData);
-
-    // Create Midtrans transaction
-    const midtransResponse = await MidtransService.createTransaction(orderData);
-
-    // Update order with Midtrans data
-    await newOrder.update({
-      midtrans_order_id: newOrder.order_number,
-      midtrans_token: midtransResponse.token,
-      midtrans_redirect_url: midtransResponse.redirect_url
-    }, { transaction });
-
-    await transaction.commit();
-
-    console.log('Re-payment order created successfully:', newOrder.order_number);
-
-    res.status(201).json({
-      success: true,
-      message: 'Order re-payment berhasil dibuat',
-      data: {
-        order_id: newOrder.id,
-        order_number: newOrder.order_number,
-        total_amount: newOrder.total_amount,
-        payment_url: midtransResponse.redirect_url,
-        token: midtransResponse.token
-      }
-    });
-
-  } catch (error) {
-    await transaction.rollback();
-    console.error('Error creating re-payment order:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Terjadi kesalahan pada server'
-    });
-  }
-};
-
 module.exports = {
   createOrder,
   getUserOrders,
@@ -1510,6 +1411,5 @@ module.exports = {
   paymentPending,
   getMyOrders,
   getMyOrderById,
-  getPendingOrderDetails,
-  repayExpiredOrder
+  getPendingOrderDetails
 }; 

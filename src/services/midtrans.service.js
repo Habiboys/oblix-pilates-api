@@ -53,13 +53,12 @@ class MidtransService {
           name: item.package_name
         })),
         callbacks: {
-          finish: `${config.app.baseURL}/api/order/payment/finish`,
-          error: `${config.app.baseURL}/api/order/payment/error`,
-          pending: `${config.app.baseURL}/api/order/payment/pending`
+          finish: `${config.app.baseUrl}/api/order/payment/finish`,
+          error: `${config.app.baseUrl}/api/order/payment/error`,
+          pending: `${config.app.baseUrl}/api/order/payment/pending`
         },
-        // Add notification URL for payment notifications (including re-payment)
-        // This URL will receive HTTP notifications from Midtrans for payment status changes
-        notification_url: `${config.app.baseURL}/api/order/payment/notification`,
+        // Add notification URL for webhook notifications (including expire status)
+        notification_url: `${config.app.baseUrl}/api/order/payment/notification`,
         // Add expired time configuration
         expiry: {
           start_time: startTime,
@@ -152,6 +151,22 @@ class MidtransService {
    */
   static async handleNotification(notification) {
     try {
+      // Untuk notification 'expire', return data langsung tanpa verifikasi API
+      if (notification.transaction_status === 'expire') {
+        return {
+          order_id: notification.order_id,
+          transaction_status: notification.transaction_status,
+          transaction_id: notification.transaction_id,
+          fraud_status: notification.fraud_status,
+          payment_type: notification.payment_type,
+          va_numbers: notification.va_numbers,
+          pdf_url: notification.pdf_url,
+          transaction_time: notification.transaction_time,
+          settlement_time: notification.settlement_time
+        };
+      }
+      
+      // Untuk status lain, verifikasi dengan API Midtrans
       const status = await core.transaction.notification(notification);
       return status;
     } catch (error) {
@@ -159,28 +174,14 @@ class MidtransService {
       if (error.httpStatusCode === '404' || 
           (error.ApiResponse && error.ApiResponse.status_code === '404') ||
           (error.message && error.message.includes("Transaction doesn't exist"))) {
-        
-        logger.warn('Midtrans transaction not found (404):', {
-          message: error.message,
-          statusCode: error.httpStatusCode,
-          apiResponse: error.ApiResponse
-        });
-        
-        // Re-throw the original error so controller can handle it specifically
         throw error;
       }
       
-      // Log error dengan data yang aman (tanpa circular reference)
-      const safeErrorData = {
+      logger.error('Midtrans notification error:', {
         message: error.message,
-        httpStatusCode: error.httpStatusCode,
-        apiResponse: error.ApiResponse,
-        stack: error.stack
-      };
+        httpStatusCode: error.httpStatusCode
+      });
       
-      logger.error('Midtrans notification error:', safeErrorData);
-      
-      // For other errors, throw generic error
       throw new Error('Failed to process payment notification');
     }
   }

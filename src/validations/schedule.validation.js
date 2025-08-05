@@ -52,7 +52,7 @@ const createGroupScheduleSchema = Joi.object({
         Joi.string().allow('', null),
         Joi.allow(null)
     ).optional().messages({
-        'date.base': 'Schedule until must be a valid date',
+            'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(0).max(72).required().messages({
@@ -208,7 +208,7 @@ const createSemiPrivateScheduleSchema = Joi.object({
         Joi.string().allow('', null),
         Joi.allow(null)
     ).optional().messages({
-        'date.base': 'Schedule until must be a valid date',
+            'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).required().messages({
@@ -301,7 +301,7 @@ const updateSemiPrivateScheduleSchema = Joi.object({
         Joi.string().allow('', null),
         Joi.allow(null)
     ).optional().messages({
-        'date.base': 'Schedule until must be a valid date',
+            'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).optional().messages({
@@ -393,7 +393,7 @@ const createPrivateScheduleSchema = Joi.object({
         Joi.string().allow('', null),
         Joi.allow(null)
     ).optional().messages({
-        'date.base': 'Schedule until must be a valid date',
+            'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).required().messages({
@@ -442,7 +442,7 @@ const updatePrivateScheduleSchema = Joi.object({
         Joi.string().allow('', null),
         Joi.allow(null)
     ).optional().messages({
-        'date.base': 'Schedule until must be a valid date',
+            'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
     booking_deadline_hour: Joi.number().integer().min(1).max(72).optional().messages({

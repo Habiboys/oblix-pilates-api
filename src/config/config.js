@@ -38,7 +38,7 @@ module.exports = {
     },
     // App configuration
     app: {
-        baseURL: process.env.APP_BASE_URL || 'http://localhost:3000',
+        baseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
         port: process.env.PORT || 3000
     }
 }

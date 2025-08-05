@@ -259,27 +259,27 @@ class ScheduleService {
                 });
             
             scheduleData.waitlist_bookings = waitlistBookingsWithSessions.map((item, index) => ({
-                id: item.booking.id,
-                member_id: item.booking.Member.id,
-                member_name: item.booking.Member.full_name,
-                member_phone: item.booking.Member.phone_number,
-                member_email: item.booking.Member.User?.email || '',
-                status: item.booking.status,
-                attendance: item.booking.attendance,
-                notes: item.booking.notes,
-                created_at: item.booking.createdAt,
+                    id: item.booking.id,
+                    member_id: item.booking.Member.id,
+                    member_name: item.booking.Member.full_name,
+                    member_phone: item.booking.Member.phone_number,
+                    member_email: item.booking.Member.User?.email || '',
+                    status: item.booking.status,
+                    attendance: item.booking.attendance,
+                    notes: item.booking.notes,
+                    created_at: item.booking.createdAt,
                 waitlist_joined_at: item.booking.waitlist_joined_at,
                 waitlist_position: index + 1, // ✅ Tambahkan posisi waitlist
-                // Tambahkan session left info
-                session_left: item.sessionSummary ? {
-                    total_available_sessions: item.sessionSummary.total_available_sessions,
-                    packages: item.sessionSummary.packages
-                } : null,
-                package_info: item.booking.Package ? {
-                    package_name: item.booking.Package.name,
-                    package_type: item.booking.Package.type
-                } : null
-            }));
+                    // Tambahkan session left info
+                    session_left: item.sessionSummary ? {
+                        total_available_sessions: item.sessionSummary.total_available_sessions,
+                        packages: item.sessionSummary.packages
+                    } : null,
+                    package_info: item.booking.Package ? {
+                        package_name: item.booking.Package.name,
+                        package_type: item.booking.Package.type
+                    } : null
+                }));
             
             scheduleData.cancelled_bookings = bookingsWithSessions
                 .filter(item => item.booking.status === 'cancelled')

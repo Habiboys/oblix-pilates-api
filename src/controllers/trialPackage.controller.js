@@ -136,8 +136,8 @@ const createTrialPackage = async (req, res) => {
     } = req.body;
 
     // Check if package with same name exists
-        const existingPackage = await Package.findOne({
-      where: {
+    const existingPackage = await Package.findOne({
+      where: { 
         name,
         type: 'first_trial',
         is_deleted: false

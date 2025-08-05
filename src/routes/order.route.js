@@ -23,9 +23,6 @@ router.delete('/:order_id/cancel', validateToken, validate(cancelOrderSchema, 'p
 // Pending order payment redirect
 router.get('/pending/:order_id/details', validateToken, orderController.getPendingOrderDetails);
 
-// Re-pay expired order
-router.post('/:order_id/repay', validateToken, orderController.repayExpiredOrder);
-
 // Payment callback routes (no authentication required)
 router.post('/payment/notification', validate(paymentNotificationSchema), orderController.paymentNotification);
 router.get('/payment/finish', orderController.paymentFinish);
