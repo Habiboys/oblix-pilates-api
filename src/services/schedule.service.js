@@ -150,6 +150,20 @@ class ScheduleService {
             time_start: schedule.time_start,
             time_end: schedule.time_end,
             
+            // ✅ Tambahkan object class dan trainer
+            class: {
+                id: schedule.Class?.id || null,
+                name: schedule.Class?.class_name || '',
+                color: schedule.Class?.color_sign || '#000000',
+                type: schedule.type || 'group' // Gunakan type dari schedule, bukan dari class
+            },
+            trainer: {
+                id: schedule.Trainer?.id || null,
+                name: schedule.Trainer?.title || '',
+                picture: schedule.Trainer?.picture || '',
+                description: schedule.Trainer?.description || ''
+            },
+            
             // Informasi booking dan slot
             max_capacity: statusInfo.maxCapacity,
             current_signups: signupBookings.length,
@@ -307,7 +321,7 @@ class ScheduleService {
             },
             {
                 model: Trainer,
-                attributes: ['id', 'title', 'picture']
+                attributes: ['id', 'title', 'picture', 'description']
             }
         ];
 

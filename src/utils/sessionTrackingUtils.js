@@ -383,15 +383,15 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
               if (packageMembership) {
         // Untuk membership, session type tergantung pada category
         const categoryName = packageMembership.Category?.category_name;
-        if (categoryName === 'Semi-Private Class') {
+      if (categoryName === 'Semi-Private Class') {
           totalGroupSessions = 0;
           totalPrivateSessions = 0;
           totalSemiPrivateSessions = packageMembership.session || 0;
-        } else if (categoryName === 'Private Class') {
+      } else if (categoryName === 'Private Class') {
           totalGroupSessions = 0;
           totalPrivateSessions = packageMembership.session || 0;
           totalSemiPrivateSessions = 0;
-        } else {
+      } else {
           // Group Class (default)
           totalGroupSessions = packageMembership.session || 0;
           totalPrivateSessions = 0;
@@ -455,13 +455,13 @@ const updateSessionUsage = async (memberPackageId, memberId, packageId, newBooki
       const scheduleType = booking.Schedule?.type || 'group';
       
       if (scheduleType === 'group') {
-        usedGroupSessions++;
+          usedGroupSessions++;
       } else if (scheduleType === 'private') {
-        usedPrivateSessions++;
+          usedPrivateSessions++;
       } else if (scheduleType === 'semi_private') {
         usedSemiPrivateSessions++;
+        }
       }
-    }
 
     // Add new booking if provided
     if (newBookingId) {
@@ -663,7 +663,7 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
           const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
           if (categoryName === 'Semi-Private Class') {
             available = memberPackage.remaining_semi_private_session || 0;
-            canHandleScheduleType = available > 0;
+          canHandleScheduleType = available > 0;
           } else {
             // Membership dengan category lain tidak bisa handle semi-private
             canHandleScheduleType = false;
@@ -679,18 +679,18 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
         let sessionTypeUsed = scheduleType;
         if (scheduleType === 'semi_private') {
           // Semi-private hanya bisa dari membership dengan category Semi-Private Class
-          sessionTypeUsed = 'semi_private';
+            sessionTypeUsed = 'semi_private';
         }
 
         const currentPackage = {
-          member_package_id: memberPackage.id,
-          package_id: memberPackage.package_id,
-          package_name: memberPackage.Package?.name || 'Unknown Package',
-          package_type: memberPackage.Package?.type || 'unknown',
-          available_sessions: available,
-          session_type_used: sessionTypeUsed,
-          priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
-        };
+            member_package_id: memberPackage.id,
+            package_id: memberPackage.package_id,
+            package_name: memberPackage.Package?.name || 'Unknown Package',
+            package_type: memberPackage.Package?.type || 'unknown',
+            available_sessions: available,
+            session_type_used: sessionTypeUsed,
+            priority_score: getPackagePriorityScore(memberPackage.Package?.type, memberPackage.end_date)
+          };
 
         // PERBAIKAN: Pilih berdasarkan prioritas tipe terlebih dahulu, bukan jumlah session
         if (!bestPackage) {

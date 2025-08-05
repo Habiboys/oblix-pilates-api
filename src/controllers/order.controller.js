@@ -887,6 +887,10 @@ const paymentNotification = async (req, res) => {
   try {
     const notification = req.body;
     
+    // ✅ Tambah logging untuk raw notification
+    console.log('🔔 Raw Midtrans notification received:', JSON.stringify(notification, null, 2));
+    logger.info('Raw Midtrans notification received:', { notification });
+    
     // Verify notification from Midtrans
     let status;
     try {
@@ -935,34 +939,113 @@ const paymentNotification = async (req, res) => {
     }
     
     // Find order by Midtrans order ID
+    console.log('🔍 Looking for order with midtrans_order_id:', status.order_id);
+    logger.info('Looking for order with midtrans_order_id:', { midtrans_order_id: status.order_id });
+    
     const order = await Order.findOne({
       where: { midtrans_order_id: status.order_id }
     });
 
     if (!order) {
-      console.log(`Order not found for Midtrans order ID: ${status.order_id}`);
+      console.log(`❌ Order not found for Midtrans order ID: ${status.order_id}`);
+      logger.warn('Order not found for Midtrans order ID:', { midtrans_order_id: status.order_id });
       return res.status(200).json({
         success: false,
         message: 'Order not found in database - notification ignored'
       });
     }
+    
+    console.log('✅ Order found:', {
+      order_id: order.id,
+      order_number: order.order_number,
+      current_status: order.status,
+      current_payment_status: order.payment_status,
+      expired_at: order.expired_at
+    });
+    logger.info('Order found for notification:', {
+      order_id: order.id,
+      order_number: order.order_number,
+      current_status: order.status,
+      current_payment_status: order.payment_status,
+      expired_at: order.expired_at
+    });
 
-    // Check if order is expired
-    if (order.expired_at && new Date() > order.expired_at) {
-      console.log(`Order expired: ${order.order_number}`);
+    // Check if order is expired - HANYA jika ini bukan notification expired dari Midtrans
+    // Tapi untuk notification 'expire', kita HARUS process meskipun order sudah expired
+    if (order.expired_at && new Date() > order.expired_at && status.transaction_status !== 'expire') {
+      console.log(`Order expired: ${order.order_number} - notification ignored (not expire notification)`);
       return res.status(200).json({
         success: false,
         message: 'Order expired - notification ignored'
       });
     }
+    
+    // Log untuk debugging
+    console.log(`🔄 Processing notification for order ${order.order_number}:`, {
+      order_expired_at: order.expired_at,
+      current_time: new Date(),
+      is_expired: order.expired_at && new Date() > order.expired_at,
+      transaction_status: status.transaction_status,
+      will_process: status.transaction_status === 'expire' || !(order.expired_at && new Date() > order.expired_at)
+    });
+    logger.info('Processing notification for order:', {
+      order_number: order.order_number,
+      order_expired_at: order.expired_at,
+      current_time: new Date(),
+      is_expired: order.expired_at && new Date() > order.expired_at,
+      transaction_status: status.transaction_status,
+      will_process: status.transaction_status === 'expire' || !(order.expired_at && new Date() > order.expired_at)
+    });
 
     // Map Midtrans status to our status
     const newStatus = MidtransService.mapPaymentStatus(status.transaction_status);
+    
+    console.log(`📊 Processing Midtrans notification:`, {
+      order_id: status.order_id,
+      transaction_status: status.transaction_status,
+      mapped_status: newStatus
+    });
+    logger.info('Processing Midtrans notification:', {
+      order_id: status.order_id,
+      transaction_status: status.transaction_status,
+      mapped_status: newStatus
+    });
+
+    // Map status untuk kolom 'status' (handle expired case)
+    let orderStatus;
+    if (newStatus === 'paid') {
+      orderStatus = 'completed';
+    } else if (newStatus === 'expired') {
+      orderStatus = 'cancelled'; // Gunakan 'cancelled' untuk expired orders
+    } else {
+      orderStatus = newStatus;
+    }
+    
+    console.log(`🎯 Status mapping:`, {
+      payment_status: newStatus,
+      order_status: orderStatus
+    });
+    logger.info('Status mapping:', {
+      payment_status: newStatus,
+      order_status: orderStatus
+    });
 
     // Update order
+    console.log(`💾 Updating order ${order.order_number}:`, {
+      payment_status: newStatus,
+      status: orderStatus,
+      transaction_status: status.transaction_status
+    });
+    logger.info('Updating order:', {
+      order_number: order.order_number,
+      payment_status: newStatus,
+      status: orderStatus,
+      transaction_status: status.transaction_status
+    });
+    
     await order.update({
       payment_status: newStatus,
-      status: newStatus === 'paid' ? 'completed' : newStatus, // Update status column too
+      status: orderStatus, // Gunakan mapping yang benar
       midtrans_transaction_id: status.transaction_id,
       midtrans_transaction_status: status.transaction_status,
       midtrans_fraud_status: status.fraud_status,
@@ -971,7 +1054,32 @@ const paymentNotification = async (req, res) => {
       midtrans_pdf_url: status.pdf_url,
       paid_at: newStatus === 'paid' ? new Date() : null
     });
+    
+    console.log(`✅ Order ${order.order_number} updated successfully`);
+    logger.info('Order updated successfully:', {
+      order_number: order.order_number,
+      new_payment_status: newStatus,
+      new_status: orderStatus
+    });
 
+    // Special logging for expired notifications
+    if (status.transaction_status === 'expire') {
+      console.log(`🔴 EXPIRED NOTIFICATION DETECTED for order ${order.order_number}:`, {
+        transaction_status: status.transaction_status,
+        mapped_status: newStatus,
+        order_status: orderStatus,
+        order_id: order.id,
+        order_number: order.order_number
+      });
+      logger.warn('EXPIRED NOTIFICATION DETECTED:', {
+        order_number: order.order_number,
+        transaction_status: status.transaction_status,
+        mapped_status: newStatus,
+        order_status: orderStatus,
+        order_id: order.id
+      });
+    }
+    
     // If payment is successful, activate member package
     if (newStatus === 'paid') {
       try {
@@ -1077,15 +1185,27 @@ const paymentFinish = async (req, res) => {
     
     console.log('Payment finish callback:', { order_id, transaction_status, transaction_id });
     
+    // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
+    const order = await Order.findOne({
+      where: { order_number: order_id }
+    });
+    
+    if (!order) {
+      console.log(`Order not found for order_number: ${order_id}`);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const redirectUrl = `${frontendUrl}/my-orders`;
+      return res.redirect(redirectUrl);
+    }
+    
     // Redirect to frontend with success status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/my-package`;
+    const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
     console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Payment finish callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/payment/error`;
+    const redirectUrl = `${frontendUrl}/my-orders`;
     res.redirect(redirectUrl);
   }
 };
@@ -1095,16 +1215,28 @@ const paymentError = async (req, res) => {
     const { order_id, transaction_status, transaction_id } = req.query;
     
     console.log('Payment error callback:', { order_id, transaction_status, transaction_id });
+
+    // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
+    const order = await Order.findOne({
+      where: { order_number: order_id }
+    });
+    
+    if (!order) {
+      console.log(`Order not found for order_number: ${order_id}`);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const redirectUrl = `${frontendUrl}/my-orders`;
+      return res.redirect(redirectUrl);
+    }
     
     // Redirect to frontend with error status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/payment/error?order_id=${order_id}`;
+    const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
     console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Payment error callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/payment/error`;
+    const redirectUrl = `${frontendUrl}/my-orders`;
     res.redirect(redirectUrl);
   }
 };
@@ -1112,18 +1244,30 @@ const paymentError = async (req, res) => {
 const paymentPending = async (req, res) => {
   try {
     const { order_id, transaction_status, transaction_id } = req.query;
-    
+
     console.log('Payment pending callback:', { order_id, transaction_status, transaction_id });
+
+    // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
+    const order = await Order.findOne({
+      where: { order_number: order_id }
+    });
+    
+    if (!order) {
+      console.log(`Order not found for order_number: ${order_id}`);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const redirectUrl = `${frontendUrl}/my-orders`;
+      return res.redirect(redirectUrl);
+    }
     
     // Redirect to frontend with pending status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/payment/pending?order_id=${order_id}`;
+    const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
     console.log('Redirecting to:', redirectUrl);
     res.redirect(redirectUrl);
   } catch (error) {
     console.error('Payment pending callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/payment/error`;
+    const redirectUrl = `${frontendUrl}/my-orders`;
     res.redirect(redirectUrl);
   }
 };
