@@ -56,6 +56,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
       comment: 'user atau admin'
+    },
+    waitlist_joined_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Timestamp when booking entered waitlist status'
     }
   }, {
     sequelize,

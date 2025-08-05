@@ -171,9 +171,15 @@ const createUserBooking = async (req, res) => {
         let bookingStatus = 'signup';
         let bookingNotes = `User booking - MemberPackageID: ${selectedMemberPackageId}`;
 
+        logger.info(`📊 Booking capacity check: currentSignups=${currentSignups}, maxCapacity=${maxCapacity}, schedule_id=${schedule_id}`);
+        logger.info(`📊 Existing booking status: ${existingBooking ? existingBooking.status : 'none'}`);
+
         if (currentSignups >= maxCapacity) {
             bookingStatus = 'waiting_list';
             bookingNotes = `Booking masuk waitlist karena kelas penuh - MemberPackageID: ${selectedMemberPackageId}`;
+            logger.info(`⏳ Booking will be waitlist: currentSignups (${currentSignups}) >= maxCapacity (${maxCapacity})`);
+        } else {
+            logger.info(`✅ Booking will be signup: currentSignups (${currentSignups}) < maxCapacity (${maxCapacity})`);
         }
 
         let booking;
@@ -181,26 +187,79 @@ const createUserBooking = async (req, res) => {
 
         // Jika ada existing booking dengan status cancelled, gunakan itu
         if (existingBooking && existingBooking.status === 'cancelled') {
-            // Update existing booking
-            await existingBooking.update({
-                status: bookingStatus,
-                booking_date: new Date(),
-                notes: bookingNotes,
-                cancelled_by: null // Reset cancelled_by
+            // PERBAIKAN: Cek ulang kapasitas saat ini sebelum reuse booking
+            const currentSignupsAfterCancel = await Booking.count({
+                where: {
+                    schedule_id: schedule_id,
+                    status: 'signup'
+                }
             });
+            
+            logger.info(`📊 Rechecking capacity after cancel: currentSignupsAfterCancel=${currentSignupsAfterCancel}, maxCapacity=${maxCapacity}`);
+            
+            // PERBAIKAN: Cek apakah ada member di waitlist yang harus diprioritaskan
+            const waitlistCount = await Booking.count({
+                where: {
+                    schedule_id: schedule_id,
+                    status: 'waiting_list'
+                }
+            });
+            
+            logger.info(`📊 Waitlist check before reuse: ${waitlistCount} members in waitlist`);
+            
+            // Update booking status berdasarkan kapasitas saat ini
+            let finalBookingStatus = 'signup';
+            let finalBookingNotes = `User booking (reused) - MemberPackageID: ${selectedMemberPackageId}`;
+            
+            if (currentSignupsAfterCancel >= maxCapacity) {
+                finalBookingStatus = 'waiting_list';
+                finalBookingNotes = `Booking masuk waitlist karena kelas penuh (reused) - MemberPackageID: ${selectedMemberPackageId}`;
+                logger.info(`⏳ Reused booking will be waitlist: currentSignupsAfterCancel (${currentSignupsAfterCancel}) >= maxCapacity (${maxCapacity})`);
+            } else if (waitlistCount > 0) {
+                // PERBAIKAN: Jika ada member di waitlist, booking baru harus masuk waitlist
+                finalBookingStatus = 'waiting_list';
+                finalBookingNotes = `Booking masuk waitlist karena ada member lain di waitlist (reused) - MemberPackageID: ${selectedMemberPackageId}`;
+                logger.info(`⏳ Reused booking will be waitlist: ada ${waitlistCount} member di waitlist yang harus diprioritaskan`);
+            } else {
+                logger.info(`✅ Reused booking will be signup: currentSignupsAfterCancel (${currentSignupsAfterCancel}) < maxCapacity (${maxCapacity}) dan tidak ada waitlist`);
+            }
+            
+            // Update existing booking
+            const updateData = {
+                status: finalBookingStatus,
+                booking_date: new Date(),
+                notes: finalBookingNotes,
+                cancelled_by: null // Reset cancelled_by
+            };
+            
+            // Set waitlist_joined_at jika masuk waitlist
+            if (finalBookingStatus === 'waiting_list') {
+                updateData.waitlist_joined_at = new Date();
+                logger.info(`⏰ Set waitlist_joined_at for reused booking ${existingBooking.id}`);
+            }
+            
+            await existingBooking.update(updateData);
             booking = existingBooking;
             isReusedBooking = true;
-            logger.info(`♻️ Reusing cancelled booking ${existingBooking.id} for member ${member_id}`);
+            logger.info(`♻️ Reusing cancelled booking ${existingBooking.id} for member ${member_id} with status: ${finalBookingStatus}`);
         } else {
             // Buat booking baru
-            booking = await Booking.create({
+            const bookingData = {
                 schedule_id,
                 member_id,
                 package_id: selectedPackageId,
                 status: bookingStatus,
                 booking_date: new Date(),
                 notes: bookingNotes
-            });
+            };
+            
+            // Set waitlist_joined_at jika masuk waitlist
+            if (bookingStatus === 'waiting_list') {
+                bookingData.waitlist_joined_at = new Date();
+                logger.info(`⏰ Set waitlist_joined_at for new booking`);
+            }
+            
+            booking = await Booking.create(bookingData);
             logger.info(`🆕 Created new booking ${booking.id} for member ${member_id}`);
         }
 
@@ -286,6 +345,7 @@ const createUserBooking = async (req, res) => {
             data: {
                 booking_id: createdBooking.id,
                 status: createdBooking.status,
+                is_waitlist: createdBooking.status === 'waiting_list',
                 schedule: {
                     id: createdBooking.Schedule.id,
                     date: createdBooking.Schedule.date_start,
@@ -622,19 +682,31 @@ const cancelBooking = async (req, res) => {
             console.error(`❌ Failed to update session usage after cancel: ${error.message}`);
         }
 
-        // Process waitlist promotion jika booking yang di-cancel adalah signup
+        // Process waitlist promotion untuk SEMUA cancel booking (tidak peduli status)
         let promotionResult = null;
-        if (booking.status === 'signup') {
-            try {
+        try {
+            // Cek dulu apakah ada member di waitlist
+            const waitlistCount = await Booking.count({
+                where: {
+                    schedule_id: booking.schedule_id,
+                    status: 'waiting_list'
+                }
+            });
+            
+            logger.info(`📊 Waitlist check for schedule ${booking.schedule_id}: ${waitlistCount} members in waitlist`);
+            
+            if (waitlistCount > 0) {
                 promotionResult = await processWaitlistPromotion(booking.schedule_id);
                 if (promotionResult) {
                     logger.info(`✅ Waitlist promotion successful for schedule ${booking.schedule_id}. Promoted: ${promotionResult.Member?.full_name}`);
                 } else {
-                    logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id}`);
+                    logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (promotion failed)`);
                 }
-            } catch (error) {
-                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+            } else {
+                logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (waitlist empty)`);
             }
+        } catch (error) {
+            logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
         }
 
         res.json({
@@ -799,19 +871,31 @@ const adminCancelBooking = async (req, res) => {
             console.error(`❌ Failed to update session usage after admin cancel: ${error.message}`);
         }
 
-        // Process waitlist promotion jika booking yang di-cancel adalah signup
+        // Process waitlist promotion untuk SEMUA cancel booking (tidak peduli status)
         let promotionResult = null;
-        if (booking.status === 'signup') {
-            try {
+        try {
+            // Cek dulu apakah ada member di waitlist
+            const waitlistCount = await Booking.count({
+                where: {
+                    schedule_id: booking.schedule_id,
+                    status: 'waiting_list'
+                }
+            });
+            
+            logger.info(`📊 Waitlist check for schedule ${booking.schedule_id}: ${waitlistCount} members in waitlist`);
+            
+            if (waitlistCount > 0) {
                 promotionResult = await processWaitlistPromotion(booking.schedule_id);
                 if (promotionResult) {
                     logger.info(`✅ Waitlist promotion successful for schedule ${booking.schedule_id}. Promoted: ${promotionResult.Member?.full_name}`);
                 } else {
-                    logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id}`);
+                    logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (promotion failed)`);
                 }
-            } catch (error) {
-                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+            } else {
+                logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (waitlist empty)`);
             }
+        } catch (error) {
+            logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
         }
 
         res.json({

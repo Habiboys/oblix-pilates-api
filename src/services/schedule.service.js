@@ -230,28 +230,42 @@ class ScheduleService {
                     } : null
                 }));
             
-            scheduleData.waitlist_bookings = bookingsWithSessions
+            // PERBAIKAN: Sort waitlist bookings berdasarkan waitlist_joined_at
+            const waitlistBookingsWithSessions = bookingsWithSessions
                 .filter(item => item.booking.status === 'waiting_list')
-                .map(item => ({
-                    id: item.booking.id,
-                    member_id: item.booking.Member.id,
-                    member_name: item.booking.Member.full_name,
-                    member_phone: item.booking.Member.phone_number,
-                    member_email: item.booking.Member.User?.email || '',
-                    status: item.booking.status,
-                    attendance: item.booking.attendance,
-                    notes: item.booking.notes,
-                    created_at: item.booking.createdAt,
-                    // Tambahkan session left info
-                    session_left: item.sessionSummary ? {
-                        total_available_sessions: item.sessionSummary.total_available_sessions,
-                        packages: item.sessionSummary.packages
-                    } : null,
-                    package_info: item.booking.Package ? {
-                        package_name: item.booking.Package.name,
-                        package_type: item.booking.Package.type
-                    } : null
-                }));
+                .sort((a, b) => {
+                    // Gunakan waitlist_joined_at jika ada, fallback ke createdAt
+                    const aTime = a.booking.waitlist_joined_at ? a.booking.waitlist_joined_at.getTime() : a.booking.createdAt.getTime();
+                    const bTime = b.booking.waitlist_joined_at ? b.booking.waitlist_joined_at.getTime() : b.booking.createdAt.getTime();
+                    
+                    if (aTime !== bTime) {
+                        return aTime - bTime; // First come, first served
+                    }
+                    return a.booking.id.localeCompare(b.booking.id);
+                });
+            
+            scheduleData.waitlist_bookings = waitlistBookingsWithSessions.map((item, index) => ({
+                id: item.booking.id,
+                member_id: item.booking.Member.id,
+                member_name: item.booking.Member.full_name,
+                member_phone: item.booking.Member.phone_number,
+                member_email: item.booking.Member.User?.email || '',
+                status: item.booking.status,
+                attendance: item.booking.attendance,
+                notes: item.booking.notes,
+                created_at: item.booking.createdAt,
+                waitlist_joined_at: item.booking.waitlist_joined_at,
+                waitlist_position: index + 1, // ✅ Tambahkan posisi waitlist
+                // Tambahkan session left info
+                session_left: item.sessionSummary ? {
+                    total_available_sessions: item.sessionSummary.total_available_sessions,
+                    packages: item.sessionSummary.packages
+                } : null,
+                package_info: item.booking.Package ? {
+                    package_name: item.booking.Package.name,
+                    package_type: item.booking.Package.type
+                } : null
+            }));
             
             scheduleData.cancelled_bookings = bookingsWithSessions
                 .filter(item => item.booking.status === 'cancelled')
@@ -316,7 +330,7 @@ class ScheduleService {
         if (includeBookings) {
             includes.push({
                 model: Booking,
-                attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt', 'cancelled_by'],
+                attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt', 'cancelled_by', 'waitlist_joined_at'],
                 include: [
                     {
                         model: Member,

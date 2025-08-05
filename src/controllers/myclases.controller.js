@@ -37,12 +37,12 @@ const getMyClasses = async (req, res) => {
                 whereClause.status = {
                     [Op.in]: ['signup', 'waiting_list']
                 };
-                orderClause = [['createdAt', 'ASC']];
+                orderClause = [['createdAt', 'ASC'], ['id', 'ASC']];
                 break;
 
             case 'waitlist':
                 whereClause.status = 'waiting_list';
-                orderClause = [['createdAt', 'ASC']];
+                orderClause = [['createdAt', 'ASC'], ['id', 'ASC']];
                 break;
 
             case 'post':
@@ -134,6 +134,59 @@ const getMyClasses = async (req, res) => {
         });
 
         logger.info(`Found ${filteredBookings.length} bookings after filtering`);
+        logger.info(`Waitlist bookings: ${filteredBookings.filter(b => b.status === 'waiting_list').length}`);
+
+        // Calculate waitlist positions for all waitlist bookings
+        const waitlistPositions = new Map();
+        const waitlistBookings = filteredBookings.filter(b => b.status === 'waiting_list');
+        
+        // Group waitlist bookings by schedule
+        const scheduleGroups = new Map();
+        for (const booking of waitlistBookings) {
+            const scheduleId = booking.Schedule.id;
+            if (!scheduleGroups.has(scheduleId)) {
+                scheduleGroups.set(scheduleId, []);
+            }
+            scheduleGroups.get(scheduleId).push(booking);
+        }
+        
+        // Calculate position for each booking in each schedule
+        for (const [scheduleId, bookings] of scheduleGroups) {
+            // PERBAIKAN: Ambil SEMUA booking untuk schedule ini (termasuk yang cancelled)
+            // untuk menghitung posisi waitlist yang akurat
+            const allScheduleBookings = await require('../models').Booking.findAll({
+                where: { schedule_id: scheduleId },
+                order: [['createdAt', 'ASC'], ['id', 'ASC']]
+            });
+            
+            // Filter hanya booking yang pernah masuk waitlist (termasuk yang sekarang cancelled)
+            const waitlistHistory = allScheduleBookings.filter(b => 
+                b.status === 'waiting_list' || 
+                (b.status === 'cancelled' && b.notes && b.notes.includes('waitlist'))
+            );
+            
+            // Sort berdasarkan waitlist_joined_at untuk mendapatkan urutan waitlist yang fair
+            const sortedWaitlistHistory = waitlistHistory.sort((a, b) => {
+                // Gunakan waitlist_joined_at jika ada, fallback ke createdAt
+                const aTime = a.waitlist_joined_at ? a.waitlist_joined_at.getTime() : a.createdAt.getTime();
+                const bTime = b.waitlist_joined_at ? b.waitlist_joined_at.getTime() : b.createdAt.getTime();
+                
+                if (aTime !== bTime) {
+                    return aTime - bTime;
+                }
+                return a.id.localeCompare(b.id);
+            });
+            
+            // Assign positions berdasarkan urutan asli
+            sortedWaitlistHistory.forEach((booking, index) => {
+                waitlistPositions.set(booking.id, index + 1);
+            });
+            
+            logger.info(`📊 Waitlist history for schedule ${scheduleId}: ${sortedWaitlistHistory.length} bookings`);
+            sortedWaitlistHistory.forEach((booking, index) => {
+                logger.info(`   ${index + 1}. ${booking.id} - Status: ${booking.status} - Created: ${booking.createdAt}`);
+            });
+        }
 
         // Format response data
         const formattedBookings = filteredBookings.map((booking, index) => {
@@ -153,8 +206,8 @@ const getMyClasses = async (req, res) => {
                 // For waitlist, show waitlist position instead of spot
                 let spotInfo = `${bookedCount}/${totalSpots}`;
                 if (booking.status === 'waiting_list') {
-                    // Get waitlist position (this is simplified, you might want to calculate actual position)
-                    spotInfo = `Waitlist #${index + 1}`;
+                    const waitlistPosition = waitlistPositions.get(booking.id) || 1;
+                    spotInfo = `Waitlist #${waitlistPosition}`;
                 }
 
                 return {

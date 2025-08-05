@@ -217,14 +217,16 @@ const processWaitlistPromotion = async (scheduleId) => {
         });
 
         const maxCapacity = schedule.pax || 20;
+        
+        logger.info(`🔄 ProcessWaitlistPromotion: scheduleId=${scheduleId}, currentSignups=${currentSignups}, maxCapacity=${maxCapacity}`);
 
         // If we have space, promote from waitlist
         if (currentSignups < maxCapacity) {
-            const nextWaitlistBooking = await Booking.findOne({
-                where: {
-                    schedule_id: scheduleId,
-                    status: 'waiting_list'
-                },
+            logger.info(`🔄 Checking for waitlist promotion: currentSignups=${currentSignups}, maxCapacity=${maxCapacity}`);
+            
+            // PERBAIKAN: Ambil SEMUA booking untuk schedule ini untuk mendapatkan urutan waitlist yang akurat
+            const allScheduleBookings = await Booking.findAll({
+                where: { schedule_id: scheduleId },
                 include: [
                     {
                         model: Member,
@@ -240,8 +242,39 @@ const processWaitlistPromotion = async (scheduleId) => {
                         ]
                     }
                 ],
-                order: [['createdAt', 'ASC']] // First come, first served
+                order: [['createdAt', 'ASC'], ['id', 'ASC']]
             });
+            
+            // Filter booking yang pernah masuk waitlist (termasuk yang sekarang cancelled)
+            const waitlistHistory = allScheduleBookings.filter(b => 
+                b.status === 'waiting_list' || 
+                (b.status === 'cancelled' && b.notes && b.notes.includes('waitlist'))
+            );
+            
+            // Sort berdasarkan waitlist_joined_at untuk mendapatkan urutan waitlist yang fair
+            const sortedWaitlistHistory = waitlistHistory.sort((a, b) => {
+                // Gunakan waitlist_joined_at jika ada, fallback ke createdAt
+                const aTime = a.waitlist_joined_at ? a.waitlist_joined_at.getTime() : a.createdAt.getTime();
+                const bTime = b.waitlist_joined_at ? b.waitlist_joined_at.getTime() : b.createdAt.getTime();
+                
+                if (aTime !== bTime) {
+                    return aTime - bTime;
+                }
+                return a.id.localeCompare(b.id);
+            });
+            
+            // Ambil booking pertama yang masih di waitlist
+            const nextWaitlistBooking = sortedWaitlistHistory.find(b => b.status === 'waiting_list');
+            
+            logger.info(`📊 Waitlist history for promotion: ${sortedWaitlistHistory.length} bookings`);
+            sortedWaitlistHistory.forEach((booking, index) => {
+                logger.info(`   ${index + 1}. ${booking.Member.full_name} - Status: ${booking.status} - Created: ${booking.createdAt}`);
+            });
+
+            logger.info(`🔍 Looking for waitlist booking: found ${nextWaitlistBooking ? 'YES' : 'NO'}`);
+            if (nextWaitlistBooking) {
+                logger.info(`🔍 Found waitlist booking: ${nextWaitlistBooking.Member.full_name} (ID: ${nextWaitlistBooking.id})`);
+            }
 
             if (nextWaitlistBooking) {
                 await nextWaitlistBooking.update({
