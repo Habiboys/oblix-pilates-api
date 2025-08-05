@@ -40,7 +40,7 @@ const scheduleDynamicCancelJobs = async () => {
 
         for (const schedule of schedules) {
             const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
-            const cancelBufferMinutes = schedule.cancel_buffer_minutes || 120;
+            const cancelBufferMinutes = schedule.cancel_buffer_minutes ?? 120;
             const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
 
             // Only schedule if cancel deadline is in the future

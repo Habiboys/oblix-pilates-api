@@ -33,7 +33,7 @@ const autoCancelExpiredBookings = async () => {
 
         for (const schedule of schedules) {
             const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
-            const cancelBufferMinutes = schedule.cancel_buffer_minutes || 120; // Default 2 jam
+            const cancelBufferMinutes = schedule.cancel_buffer_minutes ?? 120; // Default 2 jam jika null/undefined
             const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
 
             // Check if current time is within cancel buffer period

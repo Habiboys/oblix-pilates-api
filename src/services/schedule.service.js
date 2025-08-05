@@ -82,7 +82,7 @@ class ScheduleService {
     static checkCancelBufferTime(schedule) {
         const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
         const currentDateTime = new Date();
-        const cancelBufferMinutes = schedule.cancel_buffer_minutes || 120;
+        const cancelBufferMinutes = schedule.cancel_buffer_minutes ?? 120;
         const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
         const isPastCancelDeadline = currentDateTime > cancelDeadline;
         

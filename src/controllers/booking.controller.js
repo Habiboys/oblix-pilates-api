@@ -599,7 +599,7 @@ const cancelBooking = async (req, res) => {
         // Cek cancel buffer time
         const scheduleDateTime = new Date(`${booking.Schedule.date_start}T${booking.Schedule.time_start}`);
         const currentDateTime = new Date();
-        const cancelBufferMinutes = booking.Schedule.cancel_buffer_minutes || 120; // Default 2 jam
+        const cancelBufferMinutes = booking.Schedule.cancel_buffer_minutes ?? 120; // Default 2 jam jika null/undefined
         const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
 
         if (currentDateTime > cancelDeadline) {
@@ -668,11 +668,11 @@ const cancelBooking = async (req, res) => {
             // Fallback: cari berdasarkan package_id jika member_package_id tidak ditemukan
             if (!targetMemberPackage) {
                 targetMemberPackage = await require('../models').MemberPackage.findOne({
-                    where: {
-                        member_id: booking.member_id,
-                        package_id: booking.package_id
-                    }
-                });
+                where: {
+                    member_id: booking.member_id,
+                    package_id: booking.package_id
+                }
+            });
             }
             
             if (targetMemberPackage) {
@@ -704,9 +704,9 @@ const cancelBooking = async (req, res) => {
                 }
             } else {
                 logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (waitlist empty)`);
-            }
-        } catch (error) {
-            logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+                }
+            } catch (error) {
+                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
         }
 
         res.json({
@@ -823,9 +823,9 @@ const adminCancelBooking = async (req, res) => {
             if (whatsappResult.success) {
                 logger.info(`✅ Admin cancellation WhatsApp & Email sent to ${booking.Member.full_name}`);
                 logger.info(`📱 WhatsApp: ${whatsappResult.success ? '✅' : '❌'}, 📧 Email: ${emailResult.success ? '✅' : '❌'}`);
-            } else {
+                } else {
                 logger.error(`❌ Failed to send admin cancellation to ${booking.Member.full_name}: ${whatsappResult.error}`);
-            }
+                }
         } catch (error) {
             logger.error('Error initiating admin cancellation:', error);
         }
@@ -857,11 +857,11 @@ const adminCancelBooking = async (req, res) => {
             // Fallback: cari berdasarkan package_id jika member_package_id tidak ditemukan
             if (!targetMemberPackage) {
                 targetMemberPackage = await require('../models').MemberPackage.findOne({
-                    where: {
-                        member_id: booking.member_id,
-                        package_id: booking.package_id
-                    }
-                });
+                where: {
+                    member_id: booking.member_id,
+                    package_id: booking.package_id
+                }
+            });
             }
             
             if (targetMemberPackage) {
@@ -893,9 +893,9 @@ const adminCancelBooking = async (req, res) => {
                 }
             } else {
                 logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (waitlist empty)`);
-            }
-        } catch (error) {
-            logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+                }
+            } catch (error) {
+                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
         }
 
         res.json({

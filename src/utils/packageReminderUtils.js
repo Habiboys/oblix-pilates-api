@@ -193,63 +193,63 @@ const sendExpiryReminder = async () => {
                 
                 // Cek apakah hari tersisa <= reminder_day
                 if (daysRemaining <= reminderDays && daysRemaining > 0) {
-                    let packageName = 'Unknown Package';
-                    let packageDetails = '';
+                let packageName = 'Unknown Package';
+                let packageDetails = '';
 
-                    // Tentukan nama dan detail paket
-                    if (package.PackageMembership) {
-                        packageName = package.PackageMembership.Category?.category_name || 'Membership Package';
-                        packageDetails = `${package.PackageMembership.session} sessions`;
-                    } else if (package.PackageFirstTrial) {
-                        packageName = 'First Trial Package';
-                        const groupSessions = package.PackageFirstTrial.group_session || 0;
-                        const privateSessions = package.PackageFirstTrial.private_session || 0;
-                        packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
-                    } else if (package.PackagePromo) {
-                        packageName = package.name || 'Promo Package';
-                        const groupSessions = package.PackagePromo.group_session || 0;
-                        const privateSessions = package.PackagePromo.private_session || 0;
-                        packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
-                    } else if (package.PackageBonus) {
-                        packageName = package.name || 'Bonus Package';
-                        const groupSessions = package.PackageBonus.group_session || 0;
-                        const privateSessions = package.PackageBonus.private_session || 0;
-                        packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
-                    }
+                // Tentukan nama dan detail paket
+                if (package.PackageMembership) {
+                    packageName = package.PackageMembership.Category?.category_name || 'Membership Package';
+                    packageDetails = `${package.PackageMembership.session} sessions`;
+                } else if (package.PackageFirstTrial) {
+                    packageName = 'First Trial Package';
+                    const groupSessions = package.PackageFirstTrial.group_session || 0;
+                    const privateSessions = package.PackageFirstTrial.private_session || 0;
+                    packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
+                } else if (package.PackagePromo) {
+                    packageName = package.name || 'Promo Package';
+                    const groupSessions = package.PackagePromo.group_session || 0;
+                    const privateSessions = package.PackagePromo.private_session || 0;
+                    packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
+                } else if (package.PackageBonus) {
+                    packageName = package.name || 'Bonus Package';
+                    const groupSessions = package.PackageBonus.group_session || 0;
+                    const privateSessions = package.PackageBonus.private_session || 0;
+                    packageDetails = `${groupSessions} group + ${privateSessions} private sessions`;
+                }
 
-                    const totalRemainingSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.remaining_private_session || 0);
+                const totalRemainingSessions = (memberPackage.remaining_group_session || 0) + (memberPackage.remaining_private_session || 0);
 
                     // Kirim reminder via WhatsApp dan Email
-                    const reminderData = {
+                const reminderData = {
+                    member_name: memberPackage.Member.full_name,
+                    phone_number: memberPackage.Member.phone_number,
+                        email: memberEmail,
+                    package_name: packageName,
+                    package_details: packageDetails,
+                    remaining_sessions: totalRemainingSessions,
+                    end_date: memberPackage.end_date,
+                    days_remaining: daysRemaining
+                };
+
+                const result = await twilioService.sendExpiryReminder(reminderData);
+                
+                if (result.success) {
+                    reminderCount++;
+                    sentReminders.push({
                         member_name: memberPackage.Member.full_name,
                         phone_number: memberPackage.Member.phone_number,
-                        email: memberEmail,
                         package_name: packageName,
-                        package_details: packageDetails,
-                        remaining_sessions: totalRemainingSessions,
-                        end_date: memberPackage.end_date,
-                        days_remaining: daysRemaining
-                    };
-
-                    const result = await twilioService.sendExpiryReminder(reminderData);
-                    
-                    if (result.success) {
-                        reminderCount++;
-                        sentReminders.push({
-                            member_name: memberPackage.Member.full_name,
-                            phone_number: memberPackage.Member.phone_number,
-                            package_name: packageName,
-                            days_remaining: daysRemaining,
+                        days_remaining: daysRemaining,
                             reminder_days: reminderDays,
-                            remaining_sessions: totalRemainingSessions,
+                        remaining_sessions: totalRemainingSessions,
                             sent_at: new Date(),
                             whatsapp: result.whatsapp?.success || false,
                             email: result.email?.success || false
-                        });
-                        
+                    });
+                    
                         logger.info(`✅ Expiry reminder sent to ${memberPackage.Member.full_name} (${daysRemaining}/${reminderDays} days remaining) - WhatsApp: ${result.whatsapp?.success || false}, Email: ${result.email?.success || false}`);
-                    } else {
-                        logger.error(`❌ Failed to send expiry reminder to ${memberPackage.Member.full_name}: ${result.error}`);
+                } else {
+                    logger.error(`❌ Failed to send expiry reminder to ${memberPackage.Member.full_name}: ${result.error}`);
                     }
                 }
             } catch (error) {

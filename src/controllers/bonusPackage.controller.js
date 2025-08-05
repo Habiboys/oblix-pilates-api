@@ -338,7 +338,7 @@ const updateBonusPackage = async (req, res) => {
       include: [
         {
           model: PackageBonus
-        }
+      }
       ]
     });
     

@@ -34,9 +34,7 @@ const getMyClasses = async (req, res) => {
 
         switch (type) {
             case 'upcoming':
-                whereClause.status = {
-                    [Op.in]: ['signup', 'waiting_list']
-                };
+                whereClause.status = 'signup';
                 orderClause = [['createdAt', 'ASC'], ['id', 'ASC']];
                 break;
 

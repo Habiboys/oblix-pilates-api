@@ -1,4 +1,4 @@
-const { Schedule, Class, Trainer, Member, Booking } = require('../models');
+const { Schedule, Class, Trainer, Member, Booking, User } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
 const { validateTrainerScheduleConflict, validateMemberScheduleConflict } = require('../utils/scheduleUtils');
@@ -224,6 +224,50 @@ const createGroupSchedule = async (req, res) => {
             picture = req.file.filename;
         }
 
+        // ✅ Business Logic Validation
+        // Validate pax >= min_signup
+        if (parseInt(pax) < parseInt(min_signup)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Pax must be greater than or equal to minimum signup'
+            });
+        }
+
+        // Validate time_end > time_start
+        const startTime = new Date(`2000-01-01T${time_start}`);
+        const endTime = new Date(`2000-01-01T${time_end}`);
+        if (endTime <= startTime) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Time end must be after time start'
+            });
+        }
+
+        // Validate schedule_until > date_start when repeat_type is weekly
+        if (repeat_type === 'weekly' && schedule_until) {
+            const startDate = new Date(date_start);
+            const untilDate = new Date(schedule_until);
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        }
+
+        // Validate booking_deadline_hour > cancel_buffer_minutes
+        const deadlineHours = parseInt(booking_deadline_hour);
+        const bufferMinutes = parseInt(cancel_buffer_minutes);
+        const bufferHours = bufferMinutes / 60; // Convert minutes to hours
+        
+        // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+        if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Booking deadline hour must be greater than cancel buffer time'
+            });
+        }
+
         // Create schedule data
         const scheduleData = {
             class_id,
@@ -410,6 +454,136 @@ const updateGroupSchedule = async (req, res) => {
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
         if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
+
+        // ✅ Business Logic Validation
+        // Validate pax >= min_signup
+        if (updateData.pax !== undefined && updateData.min_signup !== undefined) {
+            if (updateData.pax < updateData.min_signup) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Pax must be greater than or equal to minimum signup'
+                });
+            }
+        } else if (updateData.pax !== undefined && schedule.min_signup) {
+            if (updateData.pax < schedule.min_signup) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Pax must be greater than or equal to minimum signup'
+                });
+            }
+        } else if (updateData.min_signup !== undefined && schedule.pax) {
+            if (schedule.pax < updateData.min_signup) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Pax must be greater than or equal to minimum signup'
+                });
+            }
+        }
+
+        // Validate booking_deadline_hour > cancel_buffer_minutes
+        if (updateData.booking_deadline_hour !== undefined && updateData.cancel_buffer_minutes !== undefined) {
+            const deadlineHours = updateData.booking_deadline_hour;
+            const bufferMinutes = updateData.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60; // Convert minutes to hours
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        } else if (updateData.booking_deadline_hour !== undefined && schedule.cancel_buffer_minutes) {
+            const deadlineHours = updateData.booking_deadline_hour;
+            const bufferMinutes = schedule.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60;
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        } else if (updateData.cancel_buffer_minutes !== undefined && schedule.booking_deadline_hour) {
+            const deadlineHours = schedule.booking_deadline_hour;
+            const bufferMinutes = updateData.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60;
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        }
+
+        // Validate time_end > time_start
+        if (updateData.time_start !== undefined && updateData.time_end !== undefined) {
+            const startTime = new Date(`2000-01-01T${updateData.time_start}`);
+            const endTime = new Date(`2000-01-01T${updateData.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        } else if (updateData.time_start !== undefined && schedule.time_end) {
+            const startTime = new Date(`2000-01-01T${updateData.time_start}`);
+            const endTime = new Date(`2000-01-01T${schedule.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        } else if (updateData.time_end !== undefined && schedule.time_start) {
+            const startTime = new Date(`2000-01-01T${schedule.time_start}`);
+            const endTime = new Date(`2000-01-01T${updateData.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        }
+
+        // Validate schedule_until > date_start when repeat_type is weekly
+        if (updateData.repeat_type === 'weekly' && updateData.date_start !== undefined && updateData.schedule_until) {
+            const startDate = new Date(updateData.date_start);
+            const untilDate = new Date(updateData.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        } else if (updateData.repeat_type === 'weekly' && updateData.schedule_until && schedule.date_start) {
+            const startDate = new Date(schedule.date_start);
+            const untilDate = new Date(updateData.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        } else if (updateData.repeat_type === 'weekly' && updateData.date_start && schedule.schedule_until) {
+            const startDate = new Date(updateData.date_start);
+            const untilDate = new Date(schedule.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        }
 
         // Handle picture update
         if (req.file) {
@@ -652,6 +826,50 @@ const createSemiPrivateSchedule = async (req, res) => {
             picture = req.file.filename;
         }
 
+        // ✅ Business Logic Validation
+        // Validate pax >= min_signup
+        if (parseInt(pax) < parseInt(min_signup)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Pax must be greater than or equal to minimum signup'
+            });
+        }
+
+        // Validate time_end > time_start
+        const startTime = new Date(`2000-01-01T${time_start}`);
+        const endTime = new Date(`2000-01-01T${time_end}`);
+        if (endTime <= startTime) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Time end must be after time start'
+            });
+        }
+
+        // Validate schedule_until > date_start when repeat_type is weekly
+        if (repeat_type === 'weekly' && schedule_until) {
+            const startDate = new Date(date_start);
+            const untilDate = new Date(schedule_until);
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        }
+
+        // Validate booking_deadline_hour > cancel_buffer_minutes
+        const deadlineHours = parseInt(booking_deadline_hour);
+        const bufferMinutes = parseInt(cancel_buffer_minutes);
+        const bufferHours = bufferMinutes / 60; // Convert minutes to hours
+        
+        // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+        if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Booking deadline hour must be greater than cancel buffer time'
+            });
+        }
+
         // Create schedule data
         const scheduleData = {
             class_id,
@@ -838,6 +1056,136 @@ const updateSemiPrivateSchedule = async (req, res) => {
         if (min_signup !== undefined) updateData.min_signup = parseInt(min_signup);
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
         if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
+
+        // ✅ Business Logic Validation for Semi-Private Schedule Update
+        // Validate pax >= min_signup
+        if (updateData.pax !== undefined && updateData.min_signup !== undefined) {
+            if (updateData.pax < updateData.min_signup) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Pax must be greater than or equal to minimum signup'
+                });
+            }
+        } else if (updateData.pax !== undefined && schedule.min_signup) {
+            if (updateData.pax < schedule.min_signup) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Pax must be greater than or equal to minimum signup'
+                });
+            }
+        } else if (updateData.min_signup !== undefined && schedule.pax) {
+            if (schedule.pax < updateData.min_signup) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Pax must be greater than or equal to minimum signup'
+                });
+            }
+        }
+
+        // Validate booking_deadline_hour > cancel_buffer_minutes
+        if (updateData.booking_deadline_hour !== undefined && updateData.cancel_buffer_minutes !== undefined) {
+            const deadlineHours = updateData.booking_deadline_hour;
+            const bufferMinutes = updateData.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60; // Convert minutes to hours
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        } else if (updateData.booking_deadline_hour !== undefined && schedule.cancel_buffer_minutes) {
+            const deadlineHours = updateData.booking_deadline_hour;
+            const bufferMinutes = schedule.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60;
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        } else if (updateData.cancel_buffer_minutes !== undefined && schedule.booking_deadline_hour) {
+            const deadlineHours = schedule.booking_deadline_hour;
+            const bufferMinutes = updateData.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60;
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        }
+
+        // Validate time_end > time_start
+        if (updateData.time_start !== undefined && updateData.time_end !== undefined) {
+            const startTime = new Date(`2000-01-01T${updateData.time_start}`);
+            const endTime = new Date(`2000-01-01T${updateData.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        } else if (updateData.time_start !== undefined && schedule.time_end) {
+            const startTime = new Date(`2000-01-01T${updateData.time_start}`);
+            const endTime = new Date(`2000-01-01T${schedule.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        } else if (updateData.time_end !== undefined && schedule.time_start) {
+            const startTime = new Date(`2000-01-01T${schedule.time_start}`);
+            const endTime = new Date(`2000-01-01T${updateData.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        }
+
+        // Validate schedule_until > date_start when repeat_type is weekly
+        if (updateData.repeat_type === 'weekly' && updateData.date_start !== undefined && updateData.schedule_until) {
+            const startDate = new Date(updateData.date_start);
+            const untilDate = new Date(updateData.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        } else if (updateData.repeat_type === 'weekly' && updateData.schedule_until && schedule.date_start) {
+            const startDate = new Date(schedule.date_start);
+            const untilDate = new Date(updateData.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        } else if (updateData.repeat_type === 'weekly' && updateData.date_start && schedule.schedule_until) {
+            const startDate = new Date(updateData.date_start);
+            const untilDate = new Date(schedule.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        }
 
         // Handle picture update
         if (req.file) {
@@ -1070,7 +1418,14 @@ const createPrivateSchedule = async (req, res) => {
         logger.info('✅ Trainer validated:', trainer.title);
 
         // Validate member exists
-        const member = await Member.findByPk(member_id);
+        const member = await Member.findByPk(member_id, {
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'email']
+                }
+            ]
+        });
         if (!member) {
             logger.warn('❌ Member not found:', member_id);
             return res.status(400).json({
@@ -1105,6 +1460,50 @@ const createPrivateSchedule = async (req, res) => {
         if (req.file) {
             picture = req.file.filename;
             logger.info('📸 Picture uploaded:', picture);
+        }
+
+        // ✅ Business Logic Validation for Private Schedule
+        // Validate pax >= min_signup (private schedule pax = 1, min_signup = 1 or 2)
+        if (parseInt(min_signup) > 1) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'For private schedule, minimum signup cannot exceed 1 (pax is always 1)'
+            });
+        }
+
+        // Validate time_end > time_start
+        const startTime = new Date(`2000-01-01T${time_start}`);
+        const endTime = new Date(`2000-01-01T${time_end}`);
+        if (endTime <= startTime) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Time end must be after time start'
+            });
+        }
+
+        // Validate schedule_until > date_start when repeat_type is weekly
+        if (repeat_type === 'weekly' && schedule_until) {
+            const startDate = new Date(date_start);
+            const untilDate = new Date(schedule_until);
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        }
+
+        // Validate booking_deadline_hour > cancel_buffer_minutes
+        const deadlineHours = parseInt(booking_deadline_hour);
+        const bufferMinutes = parseInt(cancel_buffer_minutes);
+        const bufferHours = bufferMinutes / 60; // Convert minutes to hours
+        
+        // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+        if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Booking deadline hour must be greater than cancel buffer time'
+            });
         }
 
         // Create schedule data
@@ -1403,6 +1802,120 @@ const updatePrivateSchedule = async (req, res) => {
         if (cancel_buffer_minutes !== undefined) updateData.cancel_buffer_minutes = parseInt(cancel_buffer_minutes);
         if (repeat_days !== undefined) updateData.repeat_days = repeat_type === 'weekly' ? repeat_days : null; // Update repeat_days
 
+        // ✅ Business Logic Validation for Private Schedule Update
+        // Validate min_signup cannot exceed 1 for private schedule (pax is always 1)
+        if (updateData.min_signup !== undefined && updateData.min_signup > 1) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'For private schedule, minimum signup cannot exceed 1 (pax is always 1)'
+            });
+        }
+
+        // Validate booking_deadline_hour > cancel_buffer_minutes
+        if (updateData.booking_deadline_hour !== undefined && updateData.cancel_buffer_minutes !== undefined) {
+            const deadlineHours = updateData.booking_deadline_hour;
+            const bufferMinutes = updateData.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60; // Convert minutes to hours
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        } else if (updateData.booking_deadline_hour !== undefined && schedule.cancel_buffer_minutes) {
+            const deadlineHours = updateData.booking_deadline_hour;
+            const bufferMinutes = schedule.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60;
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        } else if (updateData.cancel_buffer_minutes !== undefined && schedule.booking_deadline_hour) {
+            const deadlineHours = schedule.booking_deadline_hour;
+            const bufferMinutes = updateData.cancel_buffer_minutes;
+            const bufferHours = bufferMinutes / 60;
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
+        }
+
+        // Validate time_end > time_start
+        if (updateData.time_start !== undefined && updateData.time_end !== undefined) {
+            const startTime = new Date(`2000-01-01T${updateData.time_start}`);
+            const endTime = new Date(`2000-01-01T${updateData.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        } else if (updateData.time_start !== undefined && schedule.time_end) {
+            const startTime = new Date(`2000-01-01T${updateData.time_start}`);
+            const endTime = new Date(`2000-01-01T${schedule.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        } else if (updateData.time_end !== undefined && schedule.time_start) {
+            const startTime = new Date(`2000-01-01T${schedule.time_start}`);
+            const endTime = new Date(`2000-01-01T${updateData.time_end}`);
+            
+            if (endTime <= startTime) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Time end must be after time start'
+                });
+            }
+        }
+
+        // Validate schedule_until > date_start when repeat_type is weekly
+        if (updateData.repeat_type === 'weekly' && updateData.date_start !== undefined && updateData.schedule_until) {
+            const startDate = new Date(updateData.date_start);
+            const untilDate = new Date(updateData.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        } else if (updateData.repeat_type === 'weekly' && updateData.schedule_until && schedule.date_start) {
+            const startDate = new Date(schedule.date_start);
+            const untilDate = new Date(updateData.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        } else if (updateData.repeat_type === 'weekly' && updateData.date_start && schedule.schedule_until) {
+            const startDate = new Date(updateData.date_start);
+            const untilDate = new Date(schedule.schedule_until);
+            
+            if (untilDate <= startDate) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Schedule until date must be after date start'
+                });
+            }
+        }
+
         // Handle picture update
         if (req.file) {
             // Delete old picture if exists
@@ -1644,7 +2157,7 @@ whereClause.date_start = {
             // Cek apakah sudah melewati cancel buffer time
             const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
             const currentDateTime = new Date();
-            const cancelBufferMinutes = schedule.cancel_buffer_minutes || 120;
+            const cancelBufferMinutes = schedule.cancel_buffer_minutes ?? 120;
             const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
             const isPastCancelDeadline = currentDateTime > cancelDeadline;
             

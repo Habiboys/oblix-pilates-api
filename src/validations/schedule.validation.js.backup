@@ -76,6 +76,30 @@ const createGroupScheduleSchema = Joi.object({
         'number.max': 'Cancel buffer minutes cannot exceed 480',
         'any.required': 'Cancel buffer minutes is required'
     })
+}).custom((value, helpers) => {
+    // Custom validation for time_end > time_start
+    if (value.time_start && value.time_end) {
+        const startTime = new Date(`2000-01-01T${value.time_start}`);
+        const endTime = new Date(`2000-01-01T${value.time_end}`);
+        
+        if (endTime <= startTime) {
+            return helpers.error('any.invalid', { message: 'Time end must be after time start' });
+        }
+    }
+    
+    // Custom validation for schedule_until > date_start when repeat_type is weekly
+    if (value.repeat_type === 'weekly' && value.date_start && value.schedule_until) {
+        const startDate = new Date(value.date_start);
+        const untilDate = new Date(value.schedule_until);
+        
+        if (untilDate <= startDate) {
+            return helpers.error('any.invalid', { message: 'Schedule until date must be after date start' });
+        }
+    }
+    
+    // Business logic validation moved to controller
+    
+    return value;
 });
 
 const updateGroupScheduleSchema = Joi.object({
@@ -135,6 +159,30 @@ const updateGroupScheduleSchema = Joi.object({
         'number.min': 'Cancel buffer minutes must be at least 0',
         'number.max': 'Cancel buffer minutes cannot exceed 480'
     })
+}).custom((value, helpers) => {
+    // Custom validation for time_end > time_start
+    if (value.time_start && value.time_end) {
+        const startTime = new Date(`2000-01-01T${value.time_start}`);
+        const endTime = new Date(`2000-01-01T${value.time_end}`);
+        
+        if (endTime <= startTime) {
+            return helpers.error('any.invalid', { message: 'Time end must be after time start' });
+        }
+    }
+    
+    // Custom validation for schedule_until > date_start when repeat_type is weekly
+    if (value.repeat_type === 'weekly' && value.date_start && value.schedule_until) {
+        const startDate = new Date(value.date_start);
+        const untilDate = new Date(value.schedule_until);
+        
+        if (untilDate <= startDate) {
+            return helpers.error('any.invalid', { message: 'Schedule until date must be after date start' });
+        }
+    }
+    
+    // Business logic validation moved to controller
+    
+    return value;
 });
 
 // Validation schema for getting group schedules
@@ -176,7 +224,7 @@ const createSemiPrivateScheduleSchema = Joi.object({
         'number.max': 'Pax cannot exceed 20',
         'any.required': 'Pax is required'
     }),
-    date_start: Joi.date().iso().min(new Date().toISOString().split('T')[0]).required().messages({
+    date_start: Joi.date().iso().min('now').required().messages({
         'date.base': 'Date start must be a valid date',
         'date.format': 'Date start must be in ISO format (YYYY-MM-DD)',
         'date.min': 'Date start cannot be in the past',
@@ -226,10 +274,10 @@ const createSemiPrivateScheduleSchema = Joi.object({
         'number.max': 'Minimum signup cannot exceed pax',
         'any.required': 'Minimum signup is required'
     }),
-    cancel_buffer_minutes: Joi.number().integer().min(0).max(1440).required().messages({
+    cancel_buffer_minutes: Joi.number().integer().min(30).max(1440).required().messages({
         'number.base': 'Cancel buffer minutes must be a number',
         'number.integer': 'Cancel buffer minutes must be an integer',
-        'number.min': 'Cancel buffer minutes must be at least 0',
+        'number.min': 'Cancel buffer minutes must be at least 30',
         'number.max': 'Cancel buffer minutes cannot exceed 1440',
         'any.required': 'Cancel buffer minutes is required'
     })
@@ -254,7 +302,12 @@ const createSemiPrivateScheduleSchema = Joi.object({
         }
     }
     
-    
+    // Custom validation for pax > min_signup
+    if (value.pax && value.min_signup) {
+        if (value.pax <= value.min_signup) {
+            return helpers.error('any.invalid', { message: 'Pax must be greater than minimum signup' });
+        }
+    }
     
     // Custom validation for booking_deadline_hour > cancel_buffer_minutes
     if (value.booking_deadline_hour && value.cancel_buffer_minutes) {
@@ -317,12 +370,51 @@ const updateSemiPrivateScheduleSchema = Joi.object({
         'number.min': 'Minimum signup must be at least 1',
         'number.max': 'Minimum signup cannot exceed pax'
     }),
-    cancel_buffer_minutes: Joi.number().integer().min(0).max(1440).optional().messages({
+    cancel_buffer_minutes: Joi.number().integer().min(30).max(1440).optional().messages({
         'number.base': 'Cancel buffer minutes must be a number',
         'number.integer': 'Cancel buffer minutes must be an integer',
-        'number.min': 'Cancel buffer minutes must be at least 0',
+        'number.min': 'Cancel buffer minutes must be at least 30',
         'number.max': 'Cancel buffer minutes cannot exceed 1440'
     })
+}).custom((value, helpers) => {
+    // Custom validation for time_end > time_start
+    if (value.time_start && value.time_end) {
+        const startTime = new Date(`2000-01-01T${value.time_start}`);
+        const endTime = new Date(`2000-01-01T${value.time_end}`);
+        
+        if (endTime <= startTime) {
+            return helpers.error('any.invalid', { message: 'Time end must be after time start' });
+        }
+    }
+    
+    // Custom validation for schedule_until > date_start when repeat_type is weekly
+    if (value.repeat_type === 'weekly' && value.date_start && value.schedule_until) {
+        const startDate = new Date(value.date_start);
+        const untilDate = new Date(value.schedule_until);
+        
+        if (untilDate <= startDate) {
+            return helpers.error('any.invalid', { message: 'Schedule until date must be after date start' });
+        }
+    }
+    
+    // Custom validation for pax > min_signup
+    if (value.pax && value.min_signup) {
+        if (value.pax <= value.min_signup) {
+            return helpers.error('any.invalid', { message: 'Pax must be greater than minimum signup' });
+        }
+    }
+    
+    // Custom validation for booking_deadline_hour > cancel_buffer_minutes
+    if (value.booking_deadline_hour && value.cancel_buffer_minutes) {
+        const deadlineHours = value.booking_deadline_hour;
+        const bufferHours = value.cancel_buffer_minutes / 60; // Convert minutes to hours
+        
+        if (deadlineHours <= bufferHours) {
+            return helpers.error('any.invalid', { message: 'Booking deadline hour must be greater than cancel buffer time' });
+        }
+    }
+    
+    return value;
 });
 
 // Validation schema for getting semi-private schedules
@@ -361,7 +453,7 @@ const createPrivateScheduleSchema = Joi.object({
         'string.uuid': 'Member ID must be a valid UUID',
         'any.required': 'Member ID is required'
     }),
-    date_start: Joi.date().iso().min(new Date().toISOString().split('T')[0]).required().messages({
+    date_start: Joi.date().iso().min('now').required().messages({
         'date.base': 'Date start must be a valid date',
         'date.format': 'Date start must be in ISO format (YYYY-MM-DD)',
         'date.min': 'Date start cannot be in the past',
@@ -403,14 +495,43 @@ const createPrivateScheduleSchema = Joi.object({
         'number.max': 'Booking deadline hour cannot exceed 72',
         'any.required': 'Booking deadline hour is required'
     }),
-    cancel_buffer_minutes: Joi.number().integer().min(0).max(1440).required().messages({
+
+    min_signup: Joi.number().integer().min(1).max(2).required().messages({
+        'number.base': 'Minimum signup must be a number',
+        'number.integer': 'Minimum signup must be an integer',
+        'number.min': 'Minimum signup must be at least 1',
+        'number.max': 'Minimum signup cannot exceed 2 for private schedule',
+        'any.required': 'Minimum signup is required'
+    }),
+    cancel_buffer_minutes: Joi.number().integer().min(30).max(1440).required().messages({
         'number.base': 'Cancel buffer minutes must be a number',
         'number.integer': 'Cancel buffer minutes must be an integer',
-        'number.min': 'Cancel buffer minutes must be at least 0',
+        'number.min': 'Cancel buffer minutes must be at least 30',
         'number.max': 'Cancel buffer minutes cannot exceed 1440',
         'any.required': 'Cancel buffer minutes is required'
     })
-
+}).custom((value, helpers) => {
+    // Custom validation for time_end > time_start
+    if (value.time_start && value.time_end) {
+        const startTime = new Date(`2000-01-01T${value.time_start}`);
+        const endTime = new Date(`2000-01-01T${value.time_end}`);
+        
+        if (endTime <= startTime) {
+            return helpers.error('any.invalid', { message: 'Time end must be after time start' });
+        }
+    }
+    
+    // Custom validation for schedule_until > date_start when repeat_type is weekly
+    if (value.repeat_type === 'weekly' && value.date_start && value.schedule_until) {
+        const startDate = new Date(value.date_start);
+        const untilDate = new Date(value.schedule_until);
+        
+        if (untilDate <= startDate) {
+            return helpers.error('any.invalid', { message: 'Schedule until date must be after date start' });
+        }
+    }
+    
+    return value;
 });
 
 // Validation schema for private schedule update
@@ -452,13 +573,40 @@ const updatePrivateScheduleSchema = Joi.object({
         'number.max': 'Booking deadline hour cannot exceed 72'
     }),
 
- 
-    cancel_buffer_minutes: Joi.number().integer().min(0).max(1440).optional().messages({
+    min_signup: Joi.number().integer().min(1).max(2).optional().messages({
+        'number.base': 'Minimum signup must be a number',
+        'number.integer': 'Minimum signup must be an integer',
+        'number.min': 'Minimum signup must be at least 1',
+        'number.max': 'Minimum signup cannot exceed 2 for private schedule'
+    }),
+    cancel_buffer_minutes: Joi.number().integer().min(30).max(1440).optional().messages({
         'number.base': 'Cancel buffer minutes must be a number',
         'number.integer': 'Cancel buffer minutes must be an integer',
-        'number.min': 'Cancel buffer minutes must be at least 0',
+        'number.min': 'Cancel buffer minutes must be at least 30',
         'number.max': 'Cancel buffer minutes cannot exceed 1440'
     })
+}).custom((value, helpers) => {
+    // Custom validation for time_end > time_start
+    if (value.time_start && value.time_end) {
+        const startTime = new Date(`2000-01-01T${value.time_start}`);
+        const endTime = new Date(`2000-01-01T${value.time_end}`);
+        
+        if (endTime <= startTime) {
+            return helpers.error('any.invalid', { message: 'Time end must be after time start' });
+        }
+    }
+    
+    // Custom validation for schedule_until > date_start when repeat_type is weekly
+    if (value.repeat_type === 'weekly' && value.date_start && value.schedule_until) {
+        const startDate = new Date(value.date_start);
+        const untilDate = new Date(value.schedule_until);
+        
+        if (untilDate <= startDate) {
+            return helpers.error('any.invalid', { message: 'Schedule until date must be after date start' });
+        }
+    }
+    
+    return value;
 });
 
 // Validation schema for getting private schedules
