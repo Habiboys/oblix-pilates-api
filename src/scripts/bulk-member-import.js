@@ -10,6 +10,56 @@ require('dotenv').config();
 
 // Data member yang akan diimport (hard coded dari gambar)
 const membersData = [
+
+
+  {
+    "full_name": "Ms Tuty",
+    "email": "cuanwie@gmail.com",
+    "phone_number": "+6288115300010",
+    "username": "mstuty"
+  },
+  {
+    "full_name": "Juli",
+    "email": "henny.mul@gmail.com",
+    "phone_number": "+6282183836363",
+    "username": "juli"
+  },
+  {
+    "full_name": "Ms Henny mulyadi",
+    "email": "henny3672@gmail.com",
+    "phone_number": "+6287881078130",
+    "username": "mshennymulyadi"
+  },
+  {
+    "full_name": "Ms Chintya",
+    "email": "cynthiaprayitno@icloud.com",
+    "phone_number": "+6281611019999",
+    "username": "mschintya"
+  },
+  {
+    "full_name": "Ms Vivian",
+    "email": "Vivianncen@gmail.com",
+    "phone_number": "+6285159775467",
+    "username": "msvivian"
+  },
+  {
+    "full_name": "Ms Natasya",
+    "email": "Natasyaaaa19@gmail.com",
+    "phone_number": "+6285685350777",
+    "username": "msnatasya"
+  },
+  {
+    "full_name": "Ms Jenifer",
+    "email": "jennismemories@gmail.com",
+    "phone_number": "+6288210651657",
+    "username": "msjenifer"
+  },
+  {
+    "full_name": "Ms Jessica",
+    "email": "jennkezia@gmail.com",
+    "phone_number": "+6288210651656",
+    "username": "msjessica"
+  }
     // {
     //     "full_name": "Khalied Maturino",
     //     "email": "khalidmaturino@gmail.com",
@@ -17,292 +67,292 @@ const membersData = [
     //     "username": "khaliedmaturino"
     // }
       
-            {
-              "full_name": "Ms Yunnie",
-              "email": "juliana627@yahooo.com",
-              "phone_number": "+6281219931122",
-              "username": "msyunnie"
-            },
-            {
-              "full_name": "Ms Evie",
-              "email": "eviespp@gmail.com",
-              "phone_number": "+6281618095449",
-              "username": "msevie"
-            },
-            {
-              "full_name": "Ms Nelly",
-              "email": "nellyathien@gmail.com",
-              "phone_number": "+6281213367789",
-              "username": "msnelly"
-            },
-            {
-              "full_name": "Ms Ale",
-              "email": "alepang447@gmail.com",
-              "phone_number": "+6281210367225",
-              "username": "msale"
-            },
-            {
-              "full_name": "Ms Yuli Widjaya",
-              "email": "juliewid@yahoo.com",
-              "phone_number": "+6281280689688",
-              "username": "msyuliwidjaya"
-            },
-            {
-              "full_name": "Ms Inge",
-              "email": "cnc_sweet@yahoo.com",
-              "phone_number": "+6282123500066",
-              "username": "msinge"
-            },
-            {
-              "full_name": "Ms Anatasia",
-              "email": "chellainte@yahoo.com",
-              "phone_number": "+62818900061",
-              "username": "msanatasia"
-            },
-            {
-              "full_name": "Ms Liana GMS",
-              "email": "Ijuwita66@yahoo.com",
-              "phone_number": "+6281808641888",
-              "username": "mslianagms"
-            },
-            {
-              "full_name": "Ms Goh Wei Ching",
-              "email": "goh_weiching@yahoo.com",
-              "phone_number": "+62818188505",
-              "username": "msgohweiching"
-            },
-            {
-              "full_name": "Mr Rico",
-              "email": "federicofidelsalim2@gmail.com",
-              "phone_number": "+6281211155527",
-              "username": "mrrico"
-            },
-            {
-              "full_name": "Ms Angelina",
-              "email": "nzzzel@yahoo.com",
-              "phone_number": "+62812117770000",
-              "username": "msangelina"
-            },
-            {
-              "full_name": "Ms Cecilia Vania",
-              "email": "cvabigail@gmail.com",
-              "phone_number": "+62816777714",
-              "username": "msceciliavania"
-            },
-            {
-              "full_name": "Ms Veni",
-              "email": "veniliong@gmail.com",
-              "phone_number": "+62818822261",
-              "username": "msveni"
-            },
-            {
-              "full_name": "Ms Sumi",
-              "email": "sumicst8@gmail.com",
-              "phone_number": "+6281288998398",
-              "username": "mssumi"
-            },
-            {
-              "full_name": "Ms Edeline",
-              "email": "edeline.rudy@gmail.com",
-              "phone_number": "+6281398887770",
-              "username": "msedeline"
-            },
-            {
-              "full_name": "Ms Ching Ching",
-              "email": "ching1905@yahoo.com.sg",
-              "phone_number": "+6281908118188",
-              "username": "mschingching"
-            },
-            {
-              "full_name": "Ms Yuri",
-              "email": "yuri.lian@yahoo.com",
-              "phone_number": "+6287878199799",
-              "username": "msyuri"
-            },
-            {
-              "full_name": "Ms Shiu Ching",
-              "email": "chingsiehsiu@gmail.com",
-              "phone_number": "+6287880187457",
-              "username": "msshuching"
-            },
-            {
-              "full_name": "Ms Tania tan",
-              "email": "taniahagy@gmail.com",
-              "phone_number": "+6281290027771",
-              "username": "mstaniatan"
-            },
-            {
-              "full_name": "Ms Jusi Tze",
-              "email": "jusitze83@gmail.com",
-              "phone_number": "+6281364998998",
-              "username": "msjusitze"
-            },
-            {
-              "full_name": "Ms Chink - chink",
-              "email": "ch1nkch1nk789@gmail.com",
-              "phone_number": "+6281574055071",
-              "username": "mschinkchink"
-            },
-            {
-              "full_name": "Ms Siska Wei",
-              "email": "wcy1244167247@gmail.com",
-              "phone_number": "+6281224849996",
-              "username": "mssiskawei"
-            },
-            {
-              "full_name": "Ms Monica benedick",
-              "email": "monicabenedick2@gmail.com",
-              "phone_number": "+6281311538601",
-              "username": "msmonicabenedick"
-            },
-            {
-              "full_name": "Ms Hanny",
-              "email": "hannytaufik@gmail.com",
-              "phone_number": "+6289635993652",
-              "username": "mshanny"
-            },
-            {
-              "full_name": "Ms Claresta",
-              "email": "clarestasia@gmail.com",
-              "phone_number": "+61452211369",
-              "username": "msclaresta"
-            },
-            {
-              "full_name": "Ms Alui",
-              "email": "halimahamin62@gmail.com",
-              "phone_number": "+6282210600028",
-              "username": "msalui"
-            },
-            {
-              "full_name": "Ms Lidia Lyana",
-              "email": "lynakez79@gmail.com",
-              "phone_number": "+628128091009",
-              "username": "mslidialy yana"
-            },
-            {
-              "full_name": "Ms Meilany Tan",
-              "email": "meilanytan10@gmail.com",
-              "phone_number": "+6283871785858",
-              "username": "msmeilanytan"
-            },
-            {
-              "full_name": "Ms Cendy",
-              "email": "csoegandha@yahoo.com",
-              "phone_number": "+62818165566",
-              "username": "mscentdy"
-            },
-            {
-              "full_name": "Ms Monica Vou",
-              "email": "mond81700@gmail.com",
-              "phone_number": "+62811956185858",
-              "username": "msmonicavou"
-            },
+            // {
+            //   "full_name": "Ms Yunnie",
+            //   "email": "juliana627@yahooo.com",
+            //   "phone_number": "+6281219931122",
+            //   "username": "msyunnie"
+            // },
+            // {
+            //   "full_name": "Ms Evie",
+            //   "email": "eviespp@gmail.com",
+            //   "phone_number": "+6281618095449",
+            //   "username": "msevie"
+            // },
+            // {
+            //   "full_name": "Ms Nelly",
+            //   "email": "nellyathien@gmail.com",
+            //   "phone_number": "+6281213367789",
+            //   "username": "msnelly"
+            // },
+            // {
+            //   "full_name": "Ms Ale",
+            //   "email": "alepang447@gmail.com",
+            //   "phone_number": "+6281210367225",
+            //   "username": "msale"
+            // },
+            // {
+            //   "full_name": "Ms Yuli Widjaya",
+            //   "email": "juliewid@yahoo.com",
+            //   "phone_number": "+6281280689688",
+            //   "username": "msyuliwidjaya"
+            // },
+            // {
+            //   "full_name": "Ms Inge",
+            //   "email": "cnc_sweet@yahoo.com",
+            //   "phone_number": "+6282123500066",
+            //   "username": "msinge"
+            // },
+            // {
+            //   "full_name": "Ms Anatasia",
+            //   "email": "chellainte@yahoo.com",
+            //   "phone_number": "+62818900061",
+            //   "username": "msanatasia"
+            // },
+            // {
+            //   "full_name": "Ms Liana GMS",
+            //   "email": "Ijuwita66@yahoo.com",
+            //   "phone_number": "+6281808641888",
+            //   "username": "mslianagms"
+            // },
+            // {
+            //   "full_name": "Ms Goh Wei Ching",
+            //   "email": "goh_weiching@yahoo.com",
+            //   "phone_number": "+62818188505",
+            //   "username": "msgohweiching"
+            // },
+            // {
+            //   "full_name": "Mr Rico",
+            //   "email": "federicofidelsalim2@gmail.com",
+            //   "phone_number": "+6281211155527",
+            //   "username": "mrrico"
+            // },
+            // {
+            //   "full_name": "Ms Angelina",
+            //   "email": "nzzzel@yahoo.com",
+            //   "phone_number": "+62812117770000",
+            //   "username": "msangelina"
+            // },
+            // {
+            //   "full_name": "Ms Cecilia Vania",
+            //   "email": "cvabigail@gmail.com",
+            //   "phone_number": "+62816777714",
+            //   "username": "msceciliavania"
+            // },
+            // {
+            //   "full_name": "Ms Veni",
+            //   "email": "veniliong@gmail.com",
+            //   "phone_number": "+62818822261",
+            //   "username": "msveni"
+            // },
+            // {
+            //   "full_name": "Ms Sumi",
+            //   "email": "sumicst8@gmail.com",
+            //   "phone_number": "+6281288998398",
+            //   "username": "mssumi"
+            // },
+            // {
+            //   "full_name": "Ms Edeline",
+            //   "email": "edeline.rudy@gmail.com",
+            //   "phone_number": "+6281398887770",
+            //   "username": "msedeline"
+            // },
+            // {
+            //   "full_name": "Ms Ching Ching",
+            //   "email": "ching1905@yahoo.com.sg",
+            //   "phone_number": "+6281908118188",
+            //   "username": "mschingching"
+            // },
+            // {
+            //   "full_name": "Ms Yuri",
+            //   "email": "yuri.lian@yahoo.com",
+            //   "phone_number": "+6287878199799",
+            //   "username": "msyuri"
+            // },
+            // {
+            //   "full_name": "Ms Shiu Ching",
+            //   "email": "chingsiehsiu@gmail.com",
+            //   "phone_number": "+6287880187457",
+            //   "username": "msshuching"
+            // },
+            // {
+            //   "full_name": "Ms Tania tan",
+            //   "email": "taniahagy@gmail.com",
+            //   "phone_number": "+6281290027771",
+            //   "username": "mstaniatan"
+            // },
+            // {
+            //   "full_name": "Ms Jusi Tze",
+            //   "email": "jusitze83@gmail.com",
+            //   "phone_number": "+6281364998998",
+            //   "username": "msjusitze"
+            // },
+            // {
+            //   "full_name": "Ms Chink - chink",
+            //   "email": "ch1nkch1nk789@gmail.com",
+            //   "phone_number": "+6281574055071",
+            //   "username": "mschinkchink"
+            // },
+            // {
+            //   "full_name": "Ms Siska Wei",
+            //   "email": "wcy1244167247@gmail.com",
+            //   "phone_number": "+6281224849996",
+            //   "username": "mssiskawei"
+            // },
+            // {
+            //   "full_name": "Ms Monica benedick",
+            //   "email": "monicabenedick2@gmail.com",
+            //   "phone_number": "+6281311538601",
+            //   "username": "msmonicabenedick"
+            // },
+            // {
+            //   "full_name": "Ms Hanny",
+            //   "email": "hannytaufik@gmail.com",
+            //   "phone_number": "+6289635993652",
+            //   "username": "mshanny"
+            // },
+            // {
+            //   "full_name": "Ms Claresta",
+            //   "email": "clarestasia@gmail.com",
+            //   "phone_number": "+61452211369",
+            //   "username": "msclaresta"
+            // },
+            // {
+            //   "full_name": "Ms Alui",
+            //   "email": "halimahamin62@gmail.com",
+            //   "phone_number": "+6282210600028",
+            //   "username": "msalui"
+            // },
+            // {
+            //   "full_name": "Ms Lidia Lyana",
+            //   "email": "lynakez79@gmail.com",
+            //   "phone_number": "+628128091009",
+            //   "username": "mslidialy yana"
+            // },
+            // {
+            //   "full_name": "Ms Meilany Tan",
+            //   "email": "meilanytan10@gmail.com",
+            //   "phone_number": "+6283871785858",
+            //   "username": "msmeilanytan"
+            // },
+            // {
+            //   "full_name": "Ms Cendy",
+            //   "email": "csoegandha@yahoo.com",
+            //   "phone_number": "+62818165566",
+            //   "username": "mscentdy"
+            // },
+            // {
+            //   "full_name": "Ms Monica Vou",
+            //   "email": "mond81700@gmail.com",
+            //   "phone_number": "+62811956185858",
+            //   "username": "msmonicavou"
+            // },
           
-            {
-              "full_name": "Ms Anna Laksmi",
-              "email": "laksmi_anna@hotmail.com",
-              "phone_number": "+6281707022200",
-              "username": "msannalaksmi"
-            },
-            {
-              "full_name": "Mr Benny",
-              "email": "bennydwipurwanta@gmail.com",
-              "phone_number": "+62811851305",
-              "username": "mrbenny"
-            },
-            {
-              "full_name": "Ms Sisca",
-              "email": "sisca.afung@gmail.com",
-              "phone_number": "+6287813041982",
-              "username": "mssisca"
-            },
-            {
-              "full_name": "Ms Sharine",
-              "email": "sharines89@gmail.com",
-              "phone_number": "+6281580679979",
-              "username": "mssharine"
-            },
+            // {
+            //   "full_name": "Ms Anna Laksmi",
+            //   "email": "laksmi_anna@hotmail.com",
+            //   "phone_number": "+6281707022200",
+            //   "username": "msannalaksmi"
+            // },
+            // {
+            //   "full_name": "Mr Benny",
+            //   "email": "bennydwipurwanta@gmail.com",
+            //   "phone_number": "+62811851305",
+            //   "username": "mrbenny"
+            // },
+            // {
+            //   "full_name": "Ms Sisca",
+            //   "email": "sisca.afung@gmail.com",
+            //   "phone_number": "+6287813041982",
+            //   "username": "mssisca"
+            // },
+            // {
+            //   "full_name": "Ms Sharine",
+            //   "email": "sharines89@gmail.com",
+            //   "phone_number": "+6281580679979",
+            //   "username": "mssharine"
+            // },
      
-            {
-              "full_name": "Ms Lusia",
-              "email": "adriel.lusia@gmail.com",
-              "phone_number": "+62816926400",
-              "username": "mslusia"
-            },
-            {
-              "full_name": "Ms Vera",
-              "email": "veraapandi@gmail.com",
-              "phone_number": "+62811922376",
-              "username": "msvera"
-            },
-            {
-              "full_name": "Ms Lily H",
-              "email": "lee_potter178@yahoo.com",
-              "phone_number": "+6287883072990",
-              "username": "mslilyh"
-            },
-            {
-              "full_name": "Ms Christin",
-              "email": "qtin9999@gmail.com",
-              "phone_number": "+6281119211115",
-              "username": "mschristin"
-            },
-            {
-              "full_name": "Ms Yulianti",
-              "email": "yuli_porianto@yahoo.com",
-              "phone_number": "+6285921186582",
-              "username": "msyulianti"
-            },
-            {
-              "full_name": "Mr Rizki",
-              "email": "rizkipurnadi@gmail.com",
-              "phone_number": "+62855983000000",
-              "username": "mrrizki"
-            },
-            {
-              "full_name": "Mr Hexa",
-              "email": "jazzonovas@gmail.com",
-              "phone_number": "+6281280813000",
-              "username": "mrhexa"
-            },
-            {
-              "full_name": "Ms Steffi",
-              "email": "steffirahardjo17@gmail.com",
-              "phone_number": "+6281284588728",
-              "username": "mssteffi"
-            },
-            {
-              "full_name": "Ms Harjati",
-              "email": "h_jachja@hotmail.com",
-              "phone_number": "+6288908891918",
-              "username": "msharjati"
-            },
-            {
-              "full_name": "Ms Linda Kriss",
-              "email": "lindakris931966@gmail.com",
-              "phone_number": "+6287877613777",
-              "username": "mslindakriss"
-            },
-            {
-              "full_name": "Ms Conny",
-              "email": "connyandriani@gmail.com",
-              "phone_number": "+6281187765555",
-              "username": "msconny"
-            },
+            // {
+            //   "full_name": "Ms Lusia",
+            //   "email": "adriel.lusia@gmail.com",
+            //   "phone_number": "+62816926400",
+            //   "username": "mslusia"
+            // },
+            // {
+            //   "full_name": "Ms Vera",
+            //   "email": "veraapandi@gmail.com",
+            //   "phone_number": "+62811922376",
+            //   "username": "msvera"
+            // },
+            // {
+            //   "full_name": "Ms Lily H",
+            //   "email": "lee_potter178@yahoo.com",
+            //   "phone_number": "+6287883072990",
+            //   "username": "mslilyh"
+            // },
+            // {
+            //   "full_name": "Ms Christin",
+            //   "email": "qtin9999@gmail.com",
+            //   "phone_number": "+6281119211115",
+            //   "username": "mschristin"
+            // },
+            // {
+            //   "full_name": "Ms Yulianti",
+            //   "email": "yuli_porianto@yahoo.com",
+            //   "phone_number": "+6285921186582",
+            //   "username": "msyulianti"
+            // },
+            // {
+            //   "full_name": "Mr Rizki",
+            //   "email": "rizkipurnadi@gmail.com",
+            //   "phone_number": "+62855983000000",
+            //   "username": "mrrizki"
+            // },
+            // {
+            //   "full_name": "Mr Hexa",
+            //   "email": "jazzonovas@gmail.com",
+            //   "phone_number": "+6281280813000",
+            //   "username": "mrhexa"
+            // },
+            // {
+            //   "full_name": "Ms Steffi",
+            //   "email": "steffirahardjo17@gmail.com",
+            //   "phone_number": "+6281284588728",
+            //   "username": "mssteffi"
+            // },
+            // {
+            //   "full_name": "Ms Harjati",
+            //   "email": "h_jachja@hotmail.com",
+            //   "phone_number": "+6288908891918",
+            //   "username": "msharjati"
+            // },
+            // {
+            //   "full_name": "Ms Linda Kriss",
+            //   "email": "lindakris931966@gmail.com",
+            //   "phone_number": "+6287877613777",
+            //   "username": "mslindakriss"
+            // },
+            // {
+            //   "full_name": "Ms Conny",
+            //   "email": "connyandriani@gmail.com",
+            //   "phone_number": "+6281187765555",
+            //   "username": "msconny"
+            // },
         
           
-            {
-              "full_name": "Ms Roselina",
-              "email": "roslinamgm@yahoo.com",
-              "phone_number": "+6283892036301",
-              "username": "msroselina"
-            },
-            {
-              "full_name": "Ms Diana Bahari",
-              "email": "diana@rst-indonesia.com",
-              "phone_number": "+6281280166886",
-              "username": "msdianabahari"
-            }
+            // {
+            //   "full_name": "Ms Roselina",
+            //   "email": "roslinamgm@yahoo.com",
+            //   "phone_number": "+6283892036301",
+            //   "username": "msroselina"
+            // },
+            // {
+            //   "full_name": "Ms Diana Bahari",
+            //   "email": "diana@rst-indonesia.com",
+            //   "phone_number": "+6281280166886",
+            //   "username": "msdianabahari"
+            // }
           
       
 ];
