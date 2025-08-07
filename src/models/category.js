@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
       Category.hasMany(models.PackageMembership, {
         foreignKey: 'category_id',
       });
+      
+      // Association dengan Class
+      Category.hasMany(models.Class, {
+        foreignKey: 'category_id'
+      });
     }
   }
   Category.init({

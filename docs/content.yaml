@@ -25,7 +25,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginationResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          banners:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Banner'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
         '500':
           description: Internal server error
           content:
@@ -1177,3 +1189,5 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse' 
+
+# Schema definitions sudah dipindah ke requests.yaml untuk konsistensi 

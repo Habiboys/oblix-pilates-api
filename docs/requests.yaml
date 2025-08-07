@@ -82,16 +82,21 @@ components:
       type: object
       required:
         - title
-        - picture
       properties:
         title:
           type: string
           minLength: 3
           maxLength: 255
-        picture:
+          description: "Banner title"
+        picturePortrait:
           type: string
           format: binary
-          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB)
+          description: "Portrait format image file (optional - at least one picture required)"
+        pictureLandscape:
+          type: string
+          format: binary
+          description: "Landscape format image file (optional - at least one picture required)"
+      description: "At least one picture (portrait or landscape) must be provided"
 
     UpdateBannerRequest:
       type: object
@@ -100,10 +105,48 @@ components:
           type: string
           minLength: 3
           maxLength: 255
-        picture:
+          description: "Banner title"
+        picturePortrait:
           type: string
           format: binary
-          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+          description: "Portrait format image file (optional)"
+        pictureLandscape:
+          type: string
+          format: binary
+          description: "Landscape format image file (optional)"
+
+    # Banner Response Schema
+    Banner:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        title:
+          type: string
+          example: "Promo Special Pilates"
+        picturePortrait:
+          type: string
+          nullable: true
+          example: "banner_portrait_123.webp"
+          description: "Portrait format picture filename"
+        pictureLandscape:
+          type: string
+          nullable: true
+          example: "banner_landscape_123.webp"
+          description: "Landscape format picture filename"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-01-31T12:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-01-31T12:00:00.000Z"
+      required:
+        - id
+        - title
 
     # Blog Request Schemas
     CreateBlogRequest:

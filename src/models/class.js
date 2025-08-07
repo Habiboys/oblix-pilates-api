@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
       Class.hasMany(models.Schedule, {
         foreignKey: 'class_id',
       });
+      
+      // Association dengan Category
+      Class.belongsTo(models.Category, {
+        foreignKey: 'category_id'
+      });
     }
   }
   Class.init({
@@ -26,6 +31,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     color_sign: {
       type: DataTypes.STRING,
+      allowNull: false
+    },
+    category_id: {
+      type: DataTypes.UUID,
       allowNull: false
     }
   }, {

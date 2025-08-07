@@ -33,6 +33,8 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'member_id',
         as: 'assignedMember'
       });
+      
+      // Level sekarang adalah enum field, tidak perlu association
     }
   }
   Schedule.init({
@@ -43,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     class_id: {
       type: DataTypes.UUID,
-      allowNull: false
+      allowNull: true
     },
     picture: {
       type: DataTypes.TEXT,
@@ -106,6 +108,10 @@ module.exports = (sequelize, DataTypes) => {
         },
         member_id: {
           type: DataTypes.UUID,
+          allowNull: true
+        },
+        level: {
+          type: DataTypes.ENUM('Basic', 'Flow'),
           allowNull: true
         }
   }, {

@@ -139,6 +139,8 @@ if (categoryDoc) {
   console.log('✅ Merged category management endpoints');
 }
 
+// Level management removed - level is now enum field in schedule
+
 // Load and merge order management endpoints
 const orderDoc = loadYamlFile(path.join(__dirname, 'order.yaml'));
 if (orderDoc) {
@@ -310,6 +312,7 @@ if (uploadDoc) {
     name: 'Category Management',
     description: 'Category management endpoints'
   },
+
   {
     name: 'Order Management',
     description: 'Order and payment management endpoints'

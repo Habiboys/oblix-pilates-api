@@ -68,40 +68,60 @@ const createBanner = async (req, res) => {
     try {
         const { title } = req.body;
 
-        if (!req.file) {
+        // Validate that at least one picture is uploaded
+        if (!req.files || (!req.files.picturePortrait && !req.files.pictureLandscape)) {
             return res.status(400).json({
-                message: 'Picture is required'
+                message: 'At least one picture (portrait or landscape) is required'
             });
         }
 
         // Check if banner with same title already exists
         const existingBanner = await Banner.findOne({ where: { title } });
         if (existingBanner) {
-            // Delete uploaded file if banner already exists
-            const filePath = path.join(__dirname, '../../uploads/banners/', req.file.filename);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+            // Delete uploaded files if banner already exists
+            if (req.files.picturePortrait) {
+                const portraitPath = path.join(__dirname, '../../uploads/banners/', req.files.picturePortrait[0].filename);
+                if (fs.existsSync(portraitPath)) {
+                    fs.unlinkSync(portraitPath);
+                }
+            }
+            if (req.files.pictureLandscape) {
+                const landscapePath = path.join(__dirname, '../../uploads/banners/', req.files.pictureLandscape[0].filename);
+                if (fs.existsSync(landscapePath)) {
+                    fs.unlinkSync(landscapePath);
+                }
             }
             return res.status(400).json({
                 message: 'Banner with this title already exists'
             });
         }
 
-        const banner = await Banner.create({
+        const bannerData = {
             title,
-            picture: req.file.filename
-        });
+            picturePortrait: req.files.picturePortrait ? req.files.picturePortrait[0].filename : null,
+            pictureLandscape: req.files.pictureLandscape ? req.files.pictureLandscape[0].filename : null
+        };
+
+        const banner = await Banner.create(bannerData);
 
         res.status(201).json({
             message: 'Banner created successfully',
             data: banner
         });
     } catch (error) {
-        // Delete uploaded file if error occurs
-        if (req.file) {
-            const filePath = path.join(__dirname, '../../uploads/banners/', req.file.filename);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+        // Delete uploaded files if error occurs
+        if (req.files) {
+            if (req.files.picturePortrait) {
+                const portraitPath = path.join(__dirname, '../../uploads/banners/', req.files.picturePortrait[0].filename);
+                if (fs.existsSync(portraitPath)) {
+                    fs.unlinkSync(portraitPath);
+                }
+            }
+            if (req.files.pictureLandscape) {
+                const landscapePath = path.join(__dirname, '../../uploads/banners/', req.files.pictureLandscape[0].filename);
+                if (fs.existsSync(landscapePath)) {
+                    fs.unlinkSync(landscapePath);
+                }
             }
         }
         console.error('Create banner error:', error);
@@ -118,11 +138,19 @@ const updateBanner = async (req, res) => {
         const banner = await Banner.findByPk(id);
 
         if (!banner) {
-            // Delete uploaded file if banner not found
-            if (req.file) {
-                const filePath = path.join(__dirname, '../../uploads/banners/', req.file.filename);
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
+            // Delete uploaded files if banner not found
+            if (req.files) {
+                if (req.files.picturePortrait) {
+                    const portraitPath = path.join(__dirname, '../../uploads/banners/', req.files.picturePortrait[0].filename);
+                    if (fs.existsSync(portraitPath)) {
+                        fs.unlinkSync(portraitPath);
+                    }
+                }
+                if (req.files.pictureLandscape) {
+                    const landscapePath = path.join(__dirname, '../../uploads/banners/', req.files.pictureLandscape[0].filename);
+                    if (fs.existsSync(landscapePath)) {
+                        fs.unlinkSync(landscapePath);
+                    }
                 }
             }
             return res.status(404).json({
@@ -139,11 +167,19 @@ const updateBanner = async (req, res) => {
                 }
             });
             if (existingBanner) {
-                // Delete uploaded file if title already exists
-                if (req.file) {
-                    const filePath = path.join(__dirname, '../../uploads/banners/', req.file.filename);
-                    if (fs.existsSync(filePath)) {
-                        fs.unlinkSync(filePath);
+                // Delete uploaded files if title already exists
+                if (req.files) {
+                    if (req.files.picturePortrait) {
+                        const portraitPath = path.join(__dirname, '../../uploads/banners/', req.files.picturePortrait[0].filename);
+                        if (fs.existsSync(portraitPath)) {
+                            fs.unlinkSync(portraitPath);
+                        }
+                    }
+                    if (req.files.pictureLandscape) {
+                        const landscapePath = path.join(__dirname, '../../uploads/banners/', req.files.pictureLandscape[0].filename);
+                        if (fs.existsSync(landscapePath)) {
+                            fs.unlinkSync(landscapePath);
+                        }
                     }
                 }
                 return res.status(400).json({
@@ -155,16 +191,31 @@ const updateBanner = async (req, res) => {
         const updateData = {};
         if (title !== undefined) updateData.title = title;
 
-        // Handle picture update
-        if (req.file) {
-            // Delete old picture if exists
-            if (banner.picture) {
-                const oldPicturePath = path.join(__dirname, '../../uploads/banners/', banner.picture);
-                if (fs.existsSync(oldPicturePath)) {
-                    fs.unlinkSync(oldPicturePath);
+        // Handle picture updates
+        if (req.files) {
+            // Handle portrait picture update
+            if (req.files.picturePortrait) {
+                // Delete old portrait picture if exists
+                if (banner.picturePortrait) {
+                    const oldPortraitPath = path.join(__dirname, '../../uploads/banners/', banner.picturePortrait);
+                    if (fs.existsSync(oldPortraitPath)) {
+                        fs.unlinkSync(oldPortraitPath);
+                    }
                 }
+                updateData.picturePortrait = req.files.picturePortrait[0].filename;
             }
-            updateData.picture = req.file.filename;
+            
+            // Handle landscape picture update
+            if (req.files.pictureLandscape) {
+                // Delete old landscape picture if exists
+                if (banner.pictureLandscape) {
+                    const oldLandscapePath = path.join(__dirname, '../../uploads/banners/', banner.pictureLandscape);
+                    if (fs.existsSync(oldLandscapePath)) {
+                        fs.unlinkSync(oldLandscapePath);
+                    }
+                }
+                updateData.pictureLandscape = req.files.pictureLandscape[0].filename;
+            }
         }
 
         await banner.update(updateData);
@@ -174,11 +225,19 @@ const updateBanner = async (req, res) => {
             data: banner
         });
     } catch (error) {
-        // Delete uploaded file if error occurs
-        if (req.file) {
-            const filePath = path.join(__dirname, '../../uploads/banners/', req.file.filename);
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+        // Delete uploaded files if error occurs
+        if (req.files) {
+            if (req.files.picturePortrait) {
+                const portraitPath = path.join(__dirname, '../../uploads/banners/', req.files.picturePortrait[0].filename);
+                if (fs.existsSync(portraitPath)) {
+                    fs.unlinkSync(portraitPath);
+                }
+            }
+            if (req.files.pictureLandscape) {
+                const landscapePath = path.join(__dirname, '../../uploads/banners/', req.files.pictureLandscape[0].filename);
+                if (fs.existsSync(landscapePath)) {
+                    fs.unlinkSync(landscapePath);
+                }
             }
         }
         console.error('Update banner error:', error);
@@ -199,11 +258,17 @@ const deleteBanner = async (req, res) => {
             });
         }
 
-        // Delete picture file if exists
-        if (banner.picture) {
-            const picturePath = path.join(__dirname, '../../uploads/banners/', banner.picture);
-            if (fs.existsSync(picturePath)) {
-                fs.unlinkSync(picturePath);
+        // Delete picture files if they exist
+        if (banner.picturePortrait) {
+            const portraitPath = path.join(__dirname, '../../uploads/banners/', banner.picturePortrait);
+            if (fs.existsSync(portraitPath)) {
+                fs.unlinkSync(portraitPath);
+            }
+        }
+        if (banner.pictureLandscape) {
+            const landscapePath = path.join(__dirname, '../../uploads/banners/', banner.pictureLandscape);
+            if (fs.existsSync(landscapePath)) {
+                fs.unlinkSync(landscapePath);
             }
         }
 

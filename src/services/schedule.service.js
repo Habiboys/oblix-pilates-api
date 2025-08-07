@@ -1,4 +1,4 @@
-const { Schedule, Class, Trainer, Member, Booking, Package, User } = require('../models');
+const { Schedule, Class, Trainer, Member, Booking, Package, User, Category } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
 const { getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
@@ -155,7 +155,11 @@ class ScheduleService {
                 id: schedule.Class?.id || null,
                 name: schedule.Class?.class_name || '',
                 color: schedule.Class?.color_sign || '#000000',
-                type: schedule.type || 'group' // Gunakan type dari schedule, bukan dari class
+                type: schedule.type || 'group', // Gunakan type dari schedule, bukan dari class
+                category: {
+                    id: schedule.Class?.Category?.id || null,
+                    name: schedule.Class?.Category?.category_name || ''
+                }
             },
             trainer: {
                 id: schedule.Trainer?.id || null,
@@ -163,6 +167,7 @@ class ScheduleService {
                 picture: schedule.Trainer?.picture || '',
                 description: schedule.Trainer?.description || ''
             },
+            level: schedule.level || null,
             
             // Informasi booking dan slot
             max_capacity: statusInfo.maxCapacity,
@@ -317,12 +322,19 @@ class ScheduleService {
         const includes = [
             {
                 model: Class,
-                attributes: ['id', 'class_name', 'color_sign']
+                attributes: ['id', 'class_name', 'color_sign'],
+                include: [
+                    {
+                        model: Category,
+                        attributes: ['id', 'category_name']
+                    }
+                ]
             },
             {
                 model: Trainer,
                 attributes: ['id', 'title', 'picture', 'description']
-            }
+            },
+            // Level is now enum field, no association needed
         ];
 
         // Add assigned member for private schedules

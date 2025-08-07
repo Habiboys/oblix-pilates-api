@@ -1,4 +1,4 @@
-const { Schedule, Class, Trainer, Member, Booking, User } = require('../models');
+const { Schedule, Class, Trainer, Member, Booking, User, Category } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
 const { validateTrainerScheduleConflict, validateMemberScheduleConflict } = require('../utils/scheduleUtils');
@@ -171,6 +171,7 @@ const createGroupSchedule = async (req, res) => {
         const {
             class_id,
             trainer_id,
+            level,
             pax,
             date_start,
             time_start,
@@ -184,13 +185,15 @@ const createGroupSchedule = async (req, res) => {
             repeat_days // Added repeat_days
         } = req.body;
 
-        // Validate class exists
-        const classData = await Class.findByPk(class_id);
-        if (!classData) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Class not found'
-            });
+        // Validate class exists if provided (only required for group schedules)
+        if (class_id) {
+            const classData = await Class.findByPk(class_id);
+            if (!classData) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Class not found'
+                });
+            }
         }
 
         // Validate trainer exists
@@ -199,6 +202,14 @@ const createGroupSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Trainer not found'
+            });
+        }
+
+        // Validate level enum if provided
+        if (level && !['Basic', 'Flow'].includes(level)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Level must be either Basic or Flow'
             });
         }
 
@@ -272,6 +283,7 @@ const createGroupSchedule = async (req, res) => {
         const scheduleData = {
             class_id,
             trainer_id,
+            level,
             pax: parseInt(pax),
             type: 'group',
             date_start,
@@ -320,7 +332,13 @@ const createGroupSchedule = async (req, res) => {
             include: [
                 {
                     model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
+                    attributes: ['id', 'class_name', 'color_sign'],
+                    include: [
+                        {
+                            model: Category,
+                            attributes: ['id', 'category_name']
+                        }
+                    ]
                 },
                 {
                     model: Trainer,
@@ -368,6 +386,7 @@ const updateGroupSchedule = async (req, res) => {
         const {
             class_id,
             trainer_id,
+            level,
             pax,
             date_start,
             time_start,
@@ -424,6 +443,26 @@ const updateGroupSchedule = async (req, res) => {
             }
         }
 
+        // Validate level enum if provided
+
+
+        if (level && !['Basic', 'Flow'].includes(level)) {
+
+
+            return res.status(400).json({
+
+
+                status: 'error',
+
+
+                message: 'Level must be either Basic or Flow'
+
+
+            });
+
+
+        }
+
         // Validate repeat_type
         if (repeat_type === 'weekly' && !schedule_until) {
             return res.status(400).json({
@@ -443,6 +482,7 @@ const updateGroupSchedule = async (req, res) => {
         const updateData = {};
         if (class_id !== undefined) updateData.class_id = class_id;
         if (trainer_id !== undefined) updateData.trainer_id = trainer_id;
+        if (level !== undefined) updateData.level = level;
         if (pax !== undefined) updateData.pax = parseInt(pax);
         if (date_start !== undefined) updateData.date_start = date_start;
         if (time_start !== undefined) updateData.time_start = time_start;
@@ -773,7 +813,8 @@ const createSemiPrivateSchedule = async (req, res) => {
         const {
             class_id,
             trainer_id,
-            pax,
+            level,
+            // pax removed - default to 2 for semi-private
             date_start,
             time_start,
             time_end,
@@ -786,13 +827,18 @@ const createSemiPrivateSchedule = async (req, res) => {
             repeat_days // Added repeat_days
         } = req.body;
 
-        // Validate class exists
-        const classData = await Class.findByPk(class_id);
-        if (!classData) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Class not found'
-            });
+        // Set default pax for semi-private schedule
+        const pax = 2;
+
+        // Validate class exists if provided (only required for group schedules)
+        if (class_id) {
+            const classData = await Class.findByPk(class_id);
+            if (!classData) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Class not found'
+                });
+            }
         }
 
         // Validate trainer exists
@@ -801,6 +847,14 @@ const createSemiPrivateSchedule = async (req, res) => {
             return res.status(400).json({
                 status: 'error',
                 message: 'Trainer not found'
+            });
+        }
+
+        // Validate level enum if provided
+        if (level && !['Basic', 'Flow'].includes(level)) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Level must be either Basic or Flow'
             });
         }
 
@@ -874,6 +928,7 @@ const createSemiPrivateSchedule = async (req, res) => {
         const scheduleData = {
             class_id,
             trainer_id,
+            level,
             pax: parseInt(pax),
             type: 'semi_private',
             date_start,
@@ -970,7 +1025,8 @@ const updateSemiPrivateSchedule = async (req, res) => {
         const {
             class_id,
             trainer_id,
-            pax,
+            level,
+            // pax removed for semi-private - always use 2
             date_start,
             time_start,
             time_end,
@@ -1026,6 +1082,26 @@ const updateSemiPrivateSchedule = async (req, res) => {
             }
         }
 
+        // Validate level enum if provided
+
+
+        if (level && !['Basic', 'Flow'].includes(level)) {
+
+
+            return res.status(400).json({
+
+
+                status: 'error',
+
+
+                message: 'Level must be either Basic or Flow'
+
+
+            });
+
+
+        }
+
         // Validate repeat_type
         if (repeat_type === 'weekly' && !schedule_until) {
             return res.status(400).json({
@@ -1045,7 +1121,8 @@ const updateSemiPrivateSchedule = async (req, res) => {
         const updateData = {};
         if (class_id !== undefined) updateData.class_id = class_id;
         if (trainer_id !== undefined) updateData.trainer_id = trainer_id;
-        if (pax !== undefined) updateData.pax = parseInt(pax);
+        if (level !== undefined) updateData.level = level;
+        // pax is fixed at 2 for semi-private schedules, cannot be updated
         if (date_start !== undefined) updateData.date_start = date_start;
         if (time_start !== undefined) updateData.time_start = time_start;
         if (time_end !== undefined) updateData.time_end = time_end;
@@ -1380,6 +1457,7 @@ const createPrivateSchedule = async (req, res) => {
         const {
             class_id,
             trainer_id,
+            level,
             member_id, // Member yang akan di-assign
             date_start,
             time_start,
@@ -1395,16 +1473,18 @@ const createPrivateSchedule = async (req, res) => {
 
         logger.info('📋 Validating input data...');
 
-        // Validate class exists
-        const classData = await Class.findByPk(class_id);
-        if (!classData) {
-            logger.warn('❌ Class not found:', class_id);
-            return res.status(400).json({
-                status: 'error',
-                message: 'Class not found'
-            });
+        // Validate class exists if provided (only required for group schedules)
+        if (class_id) {
+            const classData = await Class.findByPk(class_id);
+            if (!classData) {
+                logger.warn('❌ Class not found:', class_id);
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Class not found'
+                });
+            }
+            logger.info('✅ Class validated:', classData.class_name);
         }
-        logger.info('✅ Class validated:', classData.class_name);
 
         // Validate trainer exists
         const trainer = await Trainer.findByPk(trainer_id);
@@ -1416,6 +1496,18 @@ const createPrivateSchedule = async (req, res) => {
             });
         }
         logger.info('✅ Trainer validated:', trainer.title);
+
+        // Validate level enum if provided
+        if (level && !['Basic', 'Flow'].includes(level)) {
+            logger.warn('❌ Invalid level:', level);
+            return res.status(400).json({
+                status: 'error',
+                message: 'Level must be either Basic or Flow'
+            });
+        }
+        if (level) {
+            logger.info('✅ Level validated:', level);
+        }
 
         // Validate member exists
         const member = await Member.findByPk(member_id, {
@@ -1510,6 +1602,7 @@ const createPrivateSchedule = async (req, res) => {
         const scheduleData = {
             class_id,
             trainer_id,
+            level,
             member_id, // Assign member langsung
             pax: 1, // Private schedule selalu pax = 1
             type: 'private',
@@ -1704,6 +1797,7 @@ const updatePrivateSchedule = async (req, res) => {
         const {
             class_id,
             trainer_id,
+            level,
             member_id,
             date_start,
             time_start,
@@ -1771,6 +1865,26 @@ const updatePrivateSchedule = async (req, res) => {
             }
         }
 
+        // Validate level enum if provided
+
+
+        if (level && !['Basic', 'Flow'].includes(level)) {
+
+
+            return res.status(400).json({
+
+
+                status: 'error',
+
+
+                message: 'Level must be either Basic or Flow'
+
+
+            });
+
+
+        }
+
         // Validate repeat_type
         if (repeat_type === 'weekly' && !schedule_until) {
             return res.status(400).json({
@@ -1790,6 +1904,7 @@ const updatePrivateSchedule = async (req, res) => {
         const updateData = {};
         if (class_id !== undefined) updateData.class_id = class_id;
         if (trainer_id !== undefined) updateData.trainer_id = trainer_id;
+        if (level !== undefined) updateData.level = level;
         if (member_id !== undefined) updateData.member_id = member_id;
         if (date_start !== undefined) updateData.date_start = date_start;
         if (time_start !== undefined) updateData.time_start = time_start;
@@ -2165,9 +2280,11 @@ whereClause.date_start = {
                 id: schedule.id,
                 class_name: schedule.Class?.class_name || '',
                 class_color: schedule.Class?.color_sign || '#000000',
+                category_name: schedule.Class?.Category?.category_name || '',
                 trainer_name: schedule.Trainer?.title || '',
                 trainer_picture: schedule.Trainer?.picture || '',
                 type: schedule.type,
+                level: schedule.level || null,
                 date: schedule.date_start,
                 time_start: schedule.time_start,
                 time_end: schedule.time_end,

@@ -23,9 +23,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(255),
       allowNull: false
     },
-    picture: {
+    picturePortrait: {
       type: DataTypes.STRING(255),
-      allowNull: false
+      allowNull: true
+    },
+    pictureLandscape: {
+      type: DataTypes.STRING(255),
+      allowNull: true
     },
   }, {
     sequelize,

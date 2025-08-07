@@ -9,7 +9,7 @@ const {
 } = require('../controllers/banner.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
-const { uploadFile, handleUploadError } = require('../middlewares/upload.middleware');
+const { uploadFile, uploadMultipleFiles, handleUploadError } = require('../middlewares/upload.middleware');
 const { 
     createBannerSchema, 
     updateBannerSchema, 
@@ -24,7 +24,10 @@ router.get('/:id', validate(getBannerSchema, 'params'), getBannerById);
 router.post('/', 
     validateToken, 
     checkRole('admin'), 
-    uploadFile('banners', true), // required untuk create
+    uploadMultipleFiles('banners', [
+        { name: 'picturePortrait', maxCount: 1 },
+        { name: 'pictureLandscape', maxCount: 1 }
+    ]),
     handleUploadError,
     validate(createBannerSchema), 
     createBanner
@@ -33,7 +36,10 @@ router.post('/',
 router.put('/:id', 
     validateToken, 
     checkRole('admin'), 
-    uploadFile('banners', false), // optional untuk update
+    uploadMultipleFiles('banners', [
+        { name: 'picturePortrait', maxCount: 1 },
+        { name: 'pictureLandscape', maxCount: 1 }
+    ]),
     handleUploadError,
     validate(getBannerSchema, 'params'),
     validate(updateBannerSchema), 

@@ -77,6 +77,7 @@ paths:
               required:
                 - class_name
                 - color_sign
+                - category_id
               properties:
                 class_name:
                   type: string
@@ -89,6 +90,11 @@ paths:
                   pattern: '^#[0-9A-F]{6}$'
                   description: Warna untuk identifikasi kelas (hex color)
                   example: "#FF6B6B"
+                category_id:
+                  type: string
+                  format: uuid
+                  description: ID kategori untuk kelas ini
+                  example: "550e8400-e29b-41d4-a716-446655440001"
       responses:
         '201':
           description: Class created successfully
@@ -237,6 +243,11 @@ paths:
                   pattern: '^#[0-9A-F]{6}$'
                   description: Warna untuk identifikasi kelas (hex color)
                   example: "#4ECDC4"
+                category_id:
+                  type: string
+                  format: uuid
+                  description: ID kategori untuk kelas ini
+                  example: "550e8400-e29b-41d4-a716-446655440001"
       responses:
         '200':
           description: Class updated successfully
@@ -342,6 +353,12 @@ components:
         color_sign:
           type: string
           example: "#FF6B6B"
+        category_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        Category:
+          $ref: '#/components/schemas/Category'
         createdAt:
           type: string
           format: date-time
@@ -354,8 +371,35 @@ components:
         - id
         - class_name
         - color_sign
+        - category_id
         - createdAt
         - updatedAt
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        category_name:
+          type: string
+          example: "Group Class"
+        is_deleted:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-07-27T12:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-07-27T12:00:00.000Z"
+      required:
+        - id
+        - category_name
+        - is_deleted
 
     Pagination:
       type: object

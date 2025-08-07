@@ -945,11 +945,26 @@ paths:
                             - id: "schedule-uuid-1"
                               class_name: "Chair Basic"
                               class_color: "#4F46E5"
+                              category_name: "Mat Class"
                               trainer_name: "Sarah Johnson"
+                              trainer_picture: "trainers-1753775159818-452365327.webp"
                               type: "group"
+                              level: "Basic"
                               date: "2025-07-15"
                               time_start: "07:10"
                               time_end: "08:10"
+                              max_capacity: 6
+                              current_signups: 0
+                              waitlist_count: 0
+                              available_slots: 6
+                              min_signup: 3
+                              status: "minimum_not_met"
+                              is_full: false
+                              has_waitlist: false
+                              is_past_cancel_deadline: false
+                              cancel_buffer_minutes: 60
+                              can_book: true
+                              can_cancel: true
                       schedules:
                         type: array
                         description: "Flat array of all schedules"
@@ -1262,6 +1277,56 @@ components:
         trainer_description:
           type: string
           example: "Certified pilates instructor with 5 years experience"
+        class:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: "30497dc0-d35c-4f82-bcdc-f5fa3255632c"
+            name:
+              type: string
+              example: "Pilates Basic"
+            color:
+              type: string
+              example: "#4F46E5"
+            type:
+              type: string
+              enum: [group, semi_private, private]
+              example: "group"
+            category:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  example: "550e8400-e29b-41d4-a716-446655440001"
+                name:
+                  type: string
+                  example: "Group Class"
+        trainer:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: "8dbe23b2-a5cf-438e-8187-37192c95d823"
+            name:
+              type: string
+              example: "Sarah Johnson"
+            picture:
+              type: string
+              nullable: true
+              example: "trainer_photo_1.jpg"
+            description:
+              type: string
+              example: "Certified pilates instructor with 5 years experience"
+        level:
+          type: string
+          enum: ['Basic', 'Flow']
+          nullable: true
+          example: "Basic"
+          description: "Level of the schedule"
         type:
           type: string
           enum: [group, semi_private, private]
@@ -2400,12 +2465,12 @@ components:
       required:
         - class_id
         - trainer_id
+        - level
         - pax
         - date_start
         - time_start
         - time_end
         - booking_deadline_hour
-        - waitlist_lock_minutes
         - min_signup
         - cancel_buffer_minutes
       properties:
@@ -2413,10 +2478,16 @@ components:
           type: string
           format: uuid
           example: "class-uuid-123"
+          description: "Class ID (required for Group schedules)"
         trainer_id:
           type: string
           format: uuid
           example: "trainer-uuid-456"
+        level:
+          type: string
+          enum: ['Basic', 'Flow']
+          example: "Basic"
+          description: "Level for this schedule"
         pax:
           type: integer
           minimum: 1
@@ -2458,14 +2529,10 @@ components:
           description: "Days of week to repeat (0=Sunday, 1=Monday, etc.)"
         booking_deadline_hour:
           type: integer
-          minimum: 1
-          maximum: 168
-          example: 24
-        waitlist_lock_minutes:
-          type: integer
           minimum: 0
-          maximum: 1440
-          example: 30
+          maximum: 72
+          example: 24
+          description: "Hours before schedule starts when booking closes"
         min_signup:
           type: integer
           minimum: 1
@@ -2473,8 +2540,9 @@ components:
         cancel_buffer_minutes:
           type: integer
           minimum: 0
-          maximum: 1440
+          maximum: 480
           example: 120
+          description: "Minutes before schedule starts when cancellation is no longer allowed"
         picture:
           type: string
           format: binary
@@ -2483,13 +2551,13 @@ components:
       example:
         class_id: "class-uuid-123"
         trainer_id: "trainer-uuid-456"
+        level: "Basic"
         pax: 20
         date_start: "2025-01-29"
         time_start: "07:00"
         time_end: "08:00"
         repeat_type: "none"
         booking_deadline_hour: 24
-        waitlist_lock_minutes: 30
         min_signup: 5
         cancel_buffer_minutes: 120
 
@@ -2589,14 +2657,12 @@ components:
     CreateSemiPrivateScheduleRequest:
       type: object
       required:
-        - class_id
         - trainer_id
-        - pax
+        - level
         - date_start
         - time_start
         - time_end
         - booking_deadline_hour
-        - waitlist_lock_minutes
         - min_signup
         - cancel_buffer_minutes
       properties:
@@ -2604,16 +2670,16 @@ components:
           type: string
           format: uuid
           example: "class-uuid-123"
+          description: "Class ID (optional for Semi-Private schedules)"
         trainer_id:
           type: string
           format: uuid
           example: "trainer-uuid-456"
-        pax:
-          type: integer
-          minimum: 1
-          maximum: 10
-          example: 4
-          description: "Maximum capacity for semi-private"
+        level:
+          type: string
+          enum: ['Basic', 'Flow']
+          example: "Basic"
+          description: "Level for this schedule"
         date_start:
           type: string
           format: date
@@ -2674,13 +2740,12 @@ components:
       example:
         class_id: "class-uuid-123"
         trainer_id: "trainer-uuid-456"
-        pax: 4
+        level: "Basic"
         date_start: "2025-01-29"
         time_start: "07:00"
         time_end: "08:00"
         repeat_type: "none"
         booking_deadline_hour: 24
-        waitlist_lock_minutes: 30
         min_signup: 2
         cancel_buffer_minutes: 120
 
@@ -2701,12 +2766,11 @@ components:
           type: string
           format: uuid
           example: "trainer-uuid-456"
-        pax:
-          type: integer
-          minimum: 1
-          maximum: 10
-          example: 4
-          description: "Maximum capacity for semi-private"
+        level:
+          type: string
+          enum: ['Basic', 'Flow']
+          example: "Basic"
+          description: "Level for this schedule"
         date_start:
           type: string
           format: date
@@ -2782,12 +2846,12 @@ components:
       required:
         - class_id
         - trainer_id
+        - level
         - member_id
         - date_start
         - time_start
         - time_end
         - booking_deadline_hour
-        - waitlist_lock_minutes
         - min_signup
         - cancel_buffer_minutes
       description: "Private schedule always has pax=1 and requires member assignment with auto booking"
@@ -2796,6 +2860,7 @@ components:
           type: string
           format: uuid
           example: "class-uuid-123"
+          description: "Class ID (required for Private schedules)"
         trainer_id:
           type: string
           format: uuid
@@ -2984,13 +3049,27 @@ components:
           type: string
           description: "Hex color code for calendar display"
           example: "#4F46E5"
+        category_name:
+          type: string
+          example: "Mat Class"
+          description: "Category name of the class"
         trainer_name:
           type: string
           example: "Sarah Johnson"
+        trainer_picture:
+          type: string
+          nullable: true
+          example: "trainers-1753775159818-452365327.webp"
         type:
           type: string
           enum: [group, semi_private, private]
           example: "group"
+        level:
+          type: string
+          enum: ["Basic", "Flow"]
+          nullable: true
+          example: "Basic"
+          description: "Level of the schedule"
         date:
           type: string
           format: date
@@ -3002,4 +3081,53 @@ components:
         time_end:
           type: string
           format: time
-          example: "08:10" 
+          example: "08:10"
+        max_capacity:
+          type: integer
+          example: 6
+          description: "Maximum number of participants"
+        current_signups:
+          type: integer
+          example: 0
+          description: "Current number of confirmed bookings"
+        waitlist_count:
+          type: integer
+          example: 0
+          description: "Number of people on waiting list"
+        available_slots:
+          type: integer
+          example: 6
+          description: "Number of available slots"
+        min_signup:
+          type: integer
+          example: 3
+          description: "Minimum participants required"
+        status:
+          type: string
+          enum: [available, full, full_with_waitlist, minimum_not_met]
+          example: "minimum_not_met"
+          description: "Current status of the schedule"
+        is_full:
+          type: boolean
+          example: false
+          description: "Whether the schedule is at capacity"
+        has_waitlist:
+          type: boolean
+          example: false
+          description: "Whether there are people on waiting list"
+        is_past_cancel_deadline:
+          type: boolean
+          example: false
+          description: "Whether the cancellation deadline has passed"
+        cancel_buffer_minutes:
+          type: integer
+          example: 60
+          description: "Minutes before schedule when cancellation is no longer allowed"
+        can_book:
+          type: boolean
+          example: true
+          description: "Whether new bookings are allowed"
+        can_cancel:
+          type: boolean
+          example: true
+          description: "Whether cancellations are allowed" 

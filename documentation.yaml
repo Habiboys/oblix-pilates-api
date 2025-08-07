@@ -17,6 +17,8 @@ servers:
     description: Testing server
   - url: http://localhost:3000/api
     description: Development server
+  - url: https://sponge-quiet-brightly.ngrok-free.app/api
+    description: Tunnel server
 components:
   securitySchemes:
     BearerAuth:
@@ -273,17 +275,31 @@ components:
         id:
           type: string
           format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
         title:
           type: string
-          maxLength: 255
-        picture:
+          example: Promo Special Pilates
+        picturePortrait:
           type: string
+          nullable: true
+          example: banner_portrait_123.webp
+          description: Portrait format picture filename
+        pictureLandscape:
+          type: string
+          nullable: true
+          example: banner_landscape_123.webp
+          description: Landscape format picture filename
         createdAt:
           type: string
           format: date-time
+          example: '2025-01-31T12:00:00.000Z'
         updatedAt:
           type: string
           format: date-time
+          example: '2025-01-31T12:00:00.000Z'
+      required:
+        - id
+        - title
     Blog:
       type: object
       properties:
@@ -1246,16 +1262,21 @@ components:
       type: object
       required:
         - title
-        - picture
       properties:
         title:
           type: string
           minLength: 3
           maxLength: 255
-        picture:
+          description: Banner title
+        picturePortrait:
           type: string
           format: binary
-          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB)
+          description: Portrait format image file (optional - at least one picture required)
+        pictureLandscape:
+          type: string
+          format: binary
+          description: Landscape format image file (optional - at least one picture required)
+      description: At least one picture (portrait or landscape) must be provided
     UpdateBannerRequest:
       type: object
       properties:
@@ -1263,10 +1284,15 @@ components:
           type: string
           minLength: 3
           maxLength: 255
-        picture:
+          description: Banner title
+        picturePortrait:
           type: string
           format: binary
-          description: Banner picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+          description: Portrait format image file (optional)
+        pictureLandscape:
+          type: string
+          format: binary
+          description: Landscape format image file (optional)
     CreateBlogRequest:
       type: object
       required:
@@ -3017,7 +3043,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginationResponse'
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          banners:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Banner'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationInfo'
         '500':
           description: Internal server error
           content:
@@ -8176,11 +8214,26 @@ paths:
                             - id: schedule-uuid-1
                               class_name: Chair Basic
                               class_color: '#4F46E5'
+                              category_name: Mat Class
                               trainer_name: Sarah Johnson
+                              trainer_picture: trainers-1753775159818-452365327.webp
                               type: group
+                              level: Basic
                               date: '2025-07-15'
                               time_start: '07:10'
                               time_end: '08:10'
+                              max_capacity: 6
+                              current_signups: 0
+                              waitlist_count: 0
+                              available_slots: 6
+                              min_signup: 3
+                              status: minimum_not_met
+                              is_full: false
+                              has_waitlist: false
+                              is_past_cancel_deadline: false
+                              cancel_buffer_minutes: 60
+                              can_book: true
+                              can_cancel: true
                       schedules:
                         type: array
                         description: Flat array of all schedules
@@ -9233,6 +9286,7 @@ paths:
               required:
                 - class_name
                 - color_sign
+                - category_id
               properties:
                 class_name:
                   type: string
@@ -9245,6 +9299,11 @@ paths:
                   pattern: ^#[0-9A-F]{6}$
                   description: Warna untuk identifikasi kelas (hex color)
                   example: '#FF6B6B'
+                category_id:
+                  type: string
+                  format: uuid
+                  description: ID kategori untuk kelas ini
+                  example: 550e8400-e29b-41d4-a716-446655440001
       responses:
         '201':
           description: Class created successfully
@@ -9390,6 +9449,11 @@ paths:
                   pattern: ^#[0-9A-F]{6}$
                   description: Warna untuk identifikasi kelas (hex color)
                   example: '#4ECDC4'
+                category_id:
+                  type: string
+                  format: uuid
+                  description: ID kategori untuk kelas ini
+                  example: 550e8400-e29b-41d4-a716-446655440001
       responses:
         '200':
           description: Class updated successfully

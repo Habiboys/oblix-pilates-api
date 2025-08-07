@@ -155,6 +155,7 @@ const getAvailableClasses = async (req, res) => {
           date: schedule.date_start,
           time_start: schedule.time_start,
           time_end: schedule.time_end,
+          level: schedule.level,
           class: {
             id: schedule.Class?.id,
             name: schedule.Class?.class_name,

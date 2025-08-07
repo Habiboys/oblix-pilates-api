@@ -2,7 +2,6 @@ const Joi = require('joi');
 
 const createGroupScheduleSchema = Joi.object({
     class_id: Joi.string().uuid().required().messages({
-        'string.empty': 'Class ID is required',
         'string.uuid': 'Class ID must be a valid UUID',
         'any.required': 'Class ID is required'
     }),
@@ -10,6 +9,10 @@ const createGroupScheduleSchema = Joi.object({
         'string.empty': 'Trainer ID is required',
         'string.uuid': 'Trainer ID must be a valid UUID',
         'any.required': 'Trainer ID is required'
+    }),
+    level: Joi.string().valid('Basic', 'Flow').required().messages({
+        'any.only': 'Level must be either Basic or Flow',
+        'any.required': 'Level is required'
     }),
     pax: Joi.number().integer().min(1).max(50).required().messages({
         'number.base': 'Pax must be a number',
@@ -84,6 +87,9 @@ const updateGroupScheduleSchema = Joi.object({
     }),
     trainer_id: Joi.string().uuid().optional().messages({
         'string.uuid': 'Trainer ID must be a valid UUID'
+    }),
+    level: Joi.string().valid('Basic', 'Flow').optional().messages({
+        'any.only': 'Level must be either Basic or Flow'
     }),
     pax: Joi.number().integer().min(1).max(50).optional().messages({
         'number.base': 'Pax must be a number',
@@ -161,21 +167,18 @@ const getGroupScheduleSchema = Joi.object({
 
 // Validation schema for semi-private schedule creation
 const createSemiPrivateScheduleSchema = Joi.object({
-    class_id: Joi.string().uuid().required().messages({
-        'string.uuid': 'Class ID must be a valid UUID',
-        'any.required': 'Class ID is required'
+    class_id: Joi.string().uuid().optional().messages({
+        'string.uuid': 'Class ID must be a valid UUID'
     }),
     trainer_id: Joi.string().uuid().required().messages({
         'string.uuid': 'Trainer ID must be a valid UUID',
         'any.required': 'Trainer ID is required'
     }),
-    pax: Joi.number().integer().min(1).max(20).required().messages({
-        'number.base': 'Pax must be a number',
-        'number.integer': 'Pax must be an integer',
-        'number.min': 'Pax must be at least 1',
-        'number.max': 'Pax cannot exceed 20',
-        'any.required': 'Pax is required'
+    level: Joi.string().valid('Basic', 'Flow').required().messages({
+        'any.only': 'Level must be either Basic or Flow',
+        'any.required': 'Level is required'
     }),
+    // pax removed - default to 2 for semi-private schedules
     date_start: Joi.date().iso().min(new Date().toISOString().split('T')[0]).required().messages({
         'date.base': 'Date start must be a valid date',
         'date.format': 'Date start must be in ISO format (YYYY-MM-DD)',
@@ -277,12 +280,10 @@ const updateSemiPrivateScheduleSchema = Joi.object({
     trainer_id: Joi.string().uuid().optional().messages({
         'string.uuid': 'Trainer ID must be a valid UUID'
     }),
-    pax: Joi.number().integer().min(1).max(20).optional().messages({
-        'number.base': 'Pax must be a number',
-        'number.integer': 'Pax must be an integer',
-        'number.min': 'Pax must be at least 1',
-        'number.max': 'Pax cannot exceed 20'
+    level: Joi.string().valid('Basic', 'Flow').optional().messages({
+        'any.only': 'Level must be either Basic or Flow'
     }),
+    // pax removed - fixed at 2 for semi-private schedules, cannot be updated
     date_start: Joi.date().iso().optional().messages({
         'date.base': 'Date start must be a valid date',
         'date.format': 'Date start must be in ISO format (YYYY-MM-DD)'
@@ -357,6 +358,10 @@ const createPrivateScheduleSchema = Joi.object({
         'string.uuid': 'Trainer ID must be a valid UUID',
         'any.required': 'Trainer ID is required'
     }),
+    level: Joi.string().valid('Basic', 'Flow').required().messages({
+        'any.only': 'Level must be either Basic or Flow',
+        'any.required': 'Level is required'
+    }),
     member_id: Joi.string().uuid().required().messages({
         'string.uuid': 'Member ID must be a valid UUID',
         'any.required': 'Member ID is required'
@@ -420,6 +425,9 @@ const updatePrivateScheduleSchema = Joi.object({
     }),
     trainer_id: Joi.string().uuid().optional().messages({
         'string.uuid': 'Trainer ID must be a valid UUID'
+    }),
+    level: Joi.string().valid('Basic', 'Flow').optional().messages({
+        'any.only': 'Level must be either Basic or Flow'
     }),
     member_id: Joi.string().uuid().optional().messages({
         'string.uuid': 'Member ID must be a valid UUID'

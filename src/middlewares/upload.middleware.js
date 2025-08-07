@@ -153,7 +153,58 @@ const handleUploadError = (err, req, res, next) => {
     next();
 };
 
+// Middleware untuk upload multiple files dengan field names tertentu
+const uploadMultipleFiles = (folder, fields) => {
+    const upload = multer({
+        storage: createStorage(folder),
+        limits: {
+            fileSize: 10 * 1024 * 1024 // 10MB limit
+        },
+        fileFilter: (req, file, cb) => {
+            // Check file type
+            const allowedTypes = /jpeg|jpg|png|gif|webp/;
+            const extName = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+            const mimeType = allowedTypes.test(file.mimetype);
+
+            if (mimeType && extName) {
+                return cb(null, true);
+            } else {
+                cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp)'));
+            }
+        }
+    });
+
+    return (req, res, next) => {
+        upload.fields(fields)(req, res, async (err) => {
+            if (err) {
+                return handleUploadError(err, req, res, next);
+            }
+
+            // Process each uploaded file
+            if (req.files) {
+                try {
+                    for (const fieldName in req.files) {
+                        if (req.files[fieldName] && req.files[fieldName].length > 0) {
+                            const file = req.files[fieldName][0];
+                            const filename = await compressAndConvertToWebP(file.buffer, folder);
+                            file.filename = filename;
+                            file.path = `uploads/${folder}/${filename}`;
+                        }
+                    }
+                } catch (error) {
+                    return res.status(400).json({
+                        message: error.message
+                    });
+                }
+            }
+            
+            next();
+        });
+    };
+};
+
 module.exports = {
     uploadFile,
+    uploadMultipleFiles,
     handleUploadError
 }; 

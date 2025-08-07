@@ -17,6 +17,13 @@ const createClassSchema = Joi.object({
         .messages({
             'string.pattern.base': 'Color sign harus dalam format hex color (contoh: #FF0000)',
             'any.required': 'Color sign wajib diisi'
+        }),
+    category_id: Joi.string()
+        .uuid()
+        .required()
+        .messages({
+            'string.uuid': 'Category ID harus berupa UUID yang valid',
+            'any.required': 'Category ID wajib diisi'
         })
 });
 
@@ -35,6 +42,12 @@ const updateClassSchema = Joi.object({
         .optional()
         .messages({
             'string.pattern.base': 'Color sign harus dalam format hex color (contoh: #FF0000)'
+        }),
+    category_id: Joi.string()
+        .uuid()
+        .optional()
+        .messages({
+            'string.uuid': 'Category ID harus berupa UUID yang valid'
         })
 });
 

@@ -1,4 +1,4 @@
-const { Class } = require('../models');
+const { Class, Category } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
 
@@ -20,6 +20,12 @@ const getAllClasses = async (req, res) => {
         
         const classes = await Class.findAndCountAll({
             where: whereClause,
+            include: [
+                {
+                    model: Category,
+                    attributes: ['id', 'category_name']
+                }
+            ],
             order: [['createdAt', 'DESC']],
             limit: parseInt(limit),
             offset: parseInt(offset)
@@ -80,7 +86,18 @@ const getClassById = async (req, res) => {
 // Create new class
 const createClass = async (req, res) => {
     try {
-        const { class_name, color_sign } = req.body;
+        const { class_name, color_sign, category_id } = req.body;
+        
+        // Validate category exists
+        if (category_id) {
+            const category = await Category.findByPk(category_id);
+            if (!category) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Category not found'
+                });
+            }
+        }
         
         // Check if class name already exists
         const existingClass = await Class.findOne({
@@ -96,7 +113,8 @@ const createClass = async (req, res) => {
         
         const newClass = await Class.create({
             class_name,
-            color_sign
+            color_sign,
+            category_id
         });
         
         res.status(201).json({
@@ -117,7 +135,7 @@ const createClass = async (req, res) => {
 const updateClass = async (req, res) => {
     try {
         const { id } = req.params;
-        const { class_name, color_sign } = req.body;
+        const { class_name, color_sign, category_id } = req.body;
         
         const classData = await Class.findByPk(id);
         
@@ -126,6 +144,17 @@ const updateClass = async (req, res) => {
                 status: 'error',
                 message: 'Class not found'
             });
+        }
+        
+        // Validate category exists if being updated
+        if (category_id) {
+            const category = await Category.findByPk(category_id);
+            if (!category) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Category not found'
+                });
+            }
         }
         
         // Check if class name already exists (excluding current class)
@@ -147,7 +176,8 @@ const updateClass = async (req, res) => {
         
         await classData.update({
             class_name: class_name || classData.class_name,
-            color_sign: color_sign || classData.color_sign
+            color_sign: color_sign || classData.color_sign,
+            category_id: category_id || classData.category_id
         });
         
         res.status(200).json({
@@ -208,6 +238,12 @@ const getClassesForSelect = async (req, res) => {
     try {
         const classes = await Class.findAll({
             attributes: ['id', 'class_name', 'color_sign'],
+            include: [
+                {
+                    model: Category,
+                    attributes: ['id', 'category_name']
+                }
+            ],
             order: [['class_name', 'ASC']]
         });
         

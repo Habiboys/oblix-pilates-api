@@ -31,6 +31,7 @@ const myClassesRoutes = require('./routes/myclasses.route');
 const dashboardRoutes = require('./routes/dashboard.route');
 const reportRoutes = require('./routes/report.route');
 const uploadRoutes = require('./routes/upload.route');
+// Level routes removed - level is now enum field in schedule
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
 const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
@@ -93,6 +94,7 @@ app.use('/api/my-classes', myClassesRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/report', reportRoutes);
 app.use('/api/upload', uploadRoutes);
+// app.use('/api/level', levelRoutes); // Removed - level is now enum field
 app.get('/', (req, res) => {
   res.send('Hello World');
 });

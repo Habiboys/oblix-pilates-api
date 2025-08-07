@@ -18,6 +18,8 @@ servers:
     description: Testing server
   - url: http://localhost:3000/api
     description: Development server
+  - url: https://sponge-quiet-brightly.ngrok-free.app/api
+    description: Tunnel server
 
 
 components:
