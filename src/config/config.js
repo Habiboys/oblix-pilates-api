@@ -6,7 +6,7 @@ module.exports = {
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
         host: process.env.DB_HOST,
-        dialect: process.env.DB_DIALECT,
+        dialect: process.env.DB_DIALECT || 'mysql',
         port: process.env.DB_PORT,
         //timezone
         timezone: '+07:00'
@@ -16,7 +16,7 @@ module.exports = {
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
         host: process.env.DB_HOST,
-        dialect: process.env.DB_DIALECT,
+        dialect: process.env.DB_DIALECT || 'mysql',
         port: process.env.DB_PORT,
     },
     production: {
@@ -24,7 +24,7 @@ module.exports = {
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
         host: process.env.DB_HOST,
-        dialect: process.env.DB_DIALECT,
+        dialect: process.env.DB_DIALECT || 'mysql',
         port: process.env.DB_PORT,
     },
     // Midtrans configuration

@@ -17,6 +17,9 @@ const getAllPromoPackages = async (req, res) => {
       };
     }
 
+    // Get current date for promo period filtering
+    const currentDate = new Date();
+
     const { count, rows: packages } = await Package.findAndCountAll({
       where: {
         ...whereClause,
@@ -24,7 +27,16 @@ const getAllPromoPackages = async (req, res) => {
       },
       include: [
         {
-          model: PackagePromo
+          model: PackagePromo,
+          where: {
+            start_time: {
+              [Op.lte]: currentDate
+            },
+            end_time: {
+              [Op.gte]: currentDate
+            }
+          },
+          required: true
         }
       ],
       limit: parseInt(limit),
@@ -75,6 +87,7 @@ const getAllPromoPackages = async (req, res) => {
 const getPromoPackageById = async (req, res) => {
   try {
     const { id } = req.params;
+    const currentDate = new Date();
 
     const package = await Package.findOne({
       where: {
@@ -84,7 +97,16 @@ const getPromoPackageById = async (req, res) => {
       },
       include: [
         {
-          model: PackagePromo
+          model: PackagePromo,
+          where: {
+            start_time: {
+              [Op.lte]: currentDate
+            },
+            end_time: {
+              [Op.gte]: currentDate
+            }
+          },
+          required: true
         }
       ]
     });

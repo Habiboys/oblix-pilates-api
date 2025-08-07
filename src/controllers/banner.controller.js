@@ -212,8 +212,8 @@ const updateBanner = async (req, res) => {
                     const oldLandscapePath = path.join(__dirname, '../../uploads/banners/', banner.pictureLandscape);
                     if (fs.existsSync(oldLandscapePath)) {
                         fs.unlinkSync(oldLandscapePath);
-                    }
                 }
+            }
                 updateData.pictureLandscape = req.files.pictureLandscape[0].filename;
             }
         }

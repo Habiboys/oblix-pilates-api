@@ -3081,7 +3081,7 @@ components:
         time_end:
           type: string
           format: time
-          example: "08:10"
+          example: "08:10" 
         max_capacity:
           type: integer
           example: 6

@@ -187,12 +187,12 @@ const createGroupSchedule = async (req, res) => {
 
         // Validate class exists if provided (only required for group schedules)
         if (class_id) {
-            const classData = await Class.findByPk(class_id);
-            if (!classData) {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'Class not found'
-                });
+        const classData = await Class.findByPk(class_id);
+        if (!classData) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Class not found'
+            });
             }
         }
 
@@ -832,12 +832,12 @@ const createSemiPrivateSchedule = async (req, res) => {
 
         // Validate class exists if provided (only required for group schedules)
         if (class_id) {
-            const classData = await Class.findByPk(class_id);
-            if (!classData) {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'Class not found'
-                });
+        const classData = await Class.findByPk(class_id);
+        if (!classData) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Class not found'
+            });
             }
         }
 
@@ -1475,15 +1475,15 @@ const createPrivateSchedule = async (req, res) => {
 
         // Validate class exists if provided (only required for group schedules)
         if (class_id) {
-            const classData = await Class.findByPk(class_id);
-            if (!classData) {
-                logger.warn('❌ Class not found:', class_id);
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'Class not found'
-                });
-            }
-            logger.info('✅ Class validated:', classData.class_name);
+        const classData = await Class.findByPk(class_id);
+        if (!classData) {
+            logger.warn('❌ Class not found:', class_id);
+            return res.status(400).json({
+                status: 'error',
+                message: 'Class not found'
+            });
+        }
+        logger.info('✅ Class validated:', classData.class_name);
         }
 
         // Validate trainer exists

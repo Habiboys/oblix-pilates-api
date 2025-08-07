@@ -4,8 +4,13 @@ paths:
     get:
       tags:
         - Promo Package Management
-      summary: Get all promo packages
-      description: Retrieve all promo packages with pagination and search functionality
+      summary: Get all active promo packages
+      description: |
+        Retrieve all active promo packages with pagination and search functionality.
+        
+        **Note:** Only promo packages that are currently within their promo period 
+        (between start_time and end_time) will be returned. Expired or future promo 
+        packages will not be included in the results.
       parameters:
         - in: query
           name: page
@@ -115,8 +120,13 @@ paths:
     get:
       tags:
         - Promo Package Management
-      summary: Get promo package by ID
-      description: Retrieve a specific promo package by its ID
+      summary: Get active promo package by ID
+      description: |
+        Retrieve a specific active promo package by its ID.
+        
+        **Note:** Only promo packages that are currently within their promo period 
+        (between start_time and end_time) will be returned. If the promo package 
+        is expired or not yet started, it will return a 404 error.
       parameters:
         - in: path
           name: id
