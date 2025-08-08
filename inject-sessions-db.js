@@ -52,8 +52,16 @@ const sequelize = new Sequelize({
   logging: false
 });
 
-// Initialize models
+// Initialize models dengan sequelize instance yang sama
 const { Package, PackageMembership, MemberPackage, Member, User } = require('./src/models');
+
+// Override sequelize instance di models untuk menggunakan koneksi yang benar
+const models = require('./src/models');
+Object.keys(models).forEach(modelName => {
+  if (models[modelName].sequelize) {
+    models[modelName].sequelize = sequelize;
+  }
+});
 
 // Helper function untuk menghitung end_date berdasarkan start_date dan durasi
 const calculateEndDate = (startDate, durationValue, durationUnit) => {
