@@ -19,22 +19,39 @@ const getPackagePriorityScore = (packageType, endDate) => {
     
     const baseScore = typePriority[packageType] || 0;
     
-    // Tambahkan bonus untuk paket yang akan segera berakhir (prioritas lebih tinggi)
+    // Jika endDate null (package belum dimulai), berikan prioritas sedang
+    if (!endDate) {
+        return baseScore + 40; // Package belum dimulai (ada waktu, tidak urgent)
+    }
+    
+    // Tambahkan bonus berdasarkan urgency deadline
     const today = new Date();
     const daysUntilExpiry = Math.ceil((new Date(endDate) - today) / (1000 * 60 * 60 * 24));
     
-    // Paket yang akan berakhir dalam 30 hari mendapat bonus prioritas
-    // Semakin sedikit hari tersisa, semakin tinggi prioritasnya
-    let expiryBonus = 0;
-    if (daysUntilExpiry <= 7) {
-        expiryBonus = 50; // Prioritas sangat tinggi untuk paket yang akan berakhir dalam 7 hari
-    } else if (daysUntilExpiry <= 14) {
-        expiryBonus = 30; // Prioritas tinggi untuk paket yang akan berakhir dalam 14 hari
-    } else if (daysUntilExpiry <= 30) {
-        expiryBonus = 15; // Prioritas sedang untuk paket yang akan berakhir dalam 30 hari
+    // Jika package sudah expired, berikan skor 0
+    if (daysUntilExpiry < 0) {
+        return 0;
     }
     
-    return baseScore + expiryBonus;
+    // Prioritas berdasarkan Urgency Deadline:
+    // 1. Package expired 1-7 hari: +100 (URGENT!)
+    // 2. Package expired 8-14 hari: +80  
+    // 3. Package expired 15-30 hari: +60
+    // 4. Package belum dimulai: +40 (ada waktu, tidak urgent)
+    // 5. Package expired >30 hari: +20
+    // 6. Package sudah expired: 0
+    let urgencyBonus = 0;
+    if (daysUntilExpiry <= 7) {
+        urgencyBonus = 100; // URGENT! Expired dalam 7 hari
+    } else if (daysUntilExpiry <= 14) {
+        urgencyBonus = 80; // Expired dalam 14 hari
+    } else if (daysUntilExpiry <= 30) {
+        urgencyBonus = 60; // Expired dalam 30 hari
+    } else {
+        urgencyBonus = 20; // Masih punya waktu >30 hari
+    }
+    
+    return baseScore + urgencyBonus;
 };
 
 /**
@@ -52,10 +69,20 @@ const sortPackagesByPriority = (packages) => {
             return bScore - aScore;
         }
         
-        // Jika skor sama, urutkan berdasarkan end_date (yang akan berakhir duluan prioritas lebih tinggi)
-        const aEndDate = new Date(a.end_date);
-        const bEndDate = new Date(b.end_date);
-        return aEndDate - bEndDate;
+        // Jika skor sama, urutkan berdasarkan end_date
+        // Package dengan end_date null (belum dimulai) prioritas lebih tinggi
+        if (!a.end_date && !b.end_date) {
+            return 0; // Keduanya null, urutan tidak berubah
+        } else if (!a.end_date) {
+            return -1; // a null, prioritas lebih tinggi
+        } else if (!b.end_date) {
+            return 1; // b null, prioritas lebih tinggi
+        } else {
+            // Keduanya tidak null, urutkan berdasarkan tanggal (yang akan berakhir duluan prioritas lebih tinggi)
+            const aEndDate = new Date(a.end_date);
+            const bEndDate = new Date(b.end_date);
+            return aEndDate - bEndDate;
+        }
     });
 };
 
@@ -562,8 +589,12 @@ const checkAvailableSessions = async (memberId, scheduleType, packageId = null) 
       include: [
         {
           model: Package,
-          where: { type: { [Op.ne]: 'membership' } }, // Exclude membership packages
-          required: false
+          include: [
+            { model: PackageMembership, include: [{ model: Category }] },
+            { model: PackageFirstTrial },
+            { model: PackagePromo },
+            { model: PackageBonus }
+          ]
         }
       ]
     });
@@ -575,15 +606,23 @@ const checkAvailableSessions = async (memberId, scheduleType, packageId = null) 
       let available = 0;
       
       if (scheduleType === 'group') {
-        available = memberPackage.remaining_group_session;
+        available = memberPackage.remaining_group_session || 0;
       } else if (scheduleType === 'private') {
-        available = memberPackage.remaining_private_session;
+        available = memberPackage.remaining_private_session || 0;
       } else if (scheduleType === 'semi_private') {
-        // Semi-private bisa menggunakan group atau private session
-        available = Math.max(
-          memberPackage.remaining_group_session,
-          memberPackage.remaining_private_session
-        );
+        // Untuk membership package, semi-private ditentukan oleh category
+        if (memberPackage.Package?.type === 'membership' && memberPackage.Package?.PackageMembership) {
+          const categoryName = memberPackage.Package.PackageMembership.Category?.category_name;
+          if (categoryName === 'Semi-Private Class') {
+            available = memberPackage.remaining_semi_private_session || 0;
+          } else {
+            // Membership dengan category lain tidak bisa handle semi-private
+            available = 0;
+          }
+        } else {
+          // Non-membership packages tidak punya semi-private
+          available = 0;
+        }
       }
 
       totalAvailable += available;
@@ -623,9 +662,16 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
     const memberPackages = await MemberPackage.findAll({
       where: { 
         member_id: memberId,
-        end_date: {
-          [Op.gte]: currentDate
-        }
+        [Op.or]: [
+          {
+            end_date: {
+              [Op.gte]: currentDate
+            }
+          },
+          {
+            end_date: null // Include packages with null end_date (not yet started)
+          }
+        ]
       },
       include: [
         {
@@ -650,6 +696,11 @@ const checkAvailableSessionsWithFallback = async (memberId, scheduleType) => {
     for (const memberPackage of sortedPackages) {
       let available = 0;
       let canHandleScheduleType = false;
+      
+      // Check if package is expired (skip if expired)
+      if (memberPackage.end_date && new Date(memberPackage.end_date) < new Date(currentDate)) {
+        continue; // Skip expired packages
+      }
       
       // Check if this package can handle the schedule type
       if (scheduleType === 'group') {

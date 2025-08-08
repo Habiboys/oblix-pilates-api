@@ -16,7 +16,7 @@ const sequelize = new Sequelize({
 });
 
 // Initialize models
-const { Package, MemberPackage, Member, User } = require('./src/models');
+const { Package, PackageMembership, MemberPackage, Member, User } = require('./src/models');
 
 // Helper function untuk menghitung end_date berdasarkan start_date dan durasi
 const calculateEndDate = (startDate, durationValue, durationUnit) => {
@@ -698,6 +698,17 @@ const createPackage = async (packageData) => {
   }
 };
 
+// Helper function untuk membuat package membership
+const createPackageMembership = async (packageMembershipData) => {
+  try {
+    const packageMembership = await PackageMembership.create(packageMembershipData);
+    return packageMembership;
+  } catch (error) {
+    console.error('❌ Create package membership error:', error.message);
+    throw error;
+  }
+};
+
 // Helper function untuk membuat member package
 const createMemberPackage = async (memberPackageData) => {
   try {
@@ -727,6 +738,11 @@ const injectSessionsDB = async () => {
     // Create 3 start packages (hanya sekali)
     console.log('📦 Creating start packages...');
     
+    // Category IDs berdasarkan data yang diberikan
+    const GROUP_CATEGORY_ID = '550e8400-e29b-41d4-a716-446655440001'; // Group Class
+    const SEMI_PRIVATE_CATEGORY_ID = '550e8400-e29b-41d4-a716-446655440002'; // Semi-Private Class
+    const PRIVATE_CATEGORY_ID = '6ce66b01-712e-4211-b385-cf2256ef9bd5'; // Private Class
+    
     // 1. Start Package Group
     const groupPackage = await createPackage({
       name: 'Start Package Group',
@@ -739,6 +755,14 @@ const injectSessionsDB = async () => {
       is_deleted: false
     });
     console.log(`✅ Created: ${groupPackage.name} (ID: ${groupPackage.id})`);
+    
+    // Create package membership untuk Group
+    await createPackageMembership({
+      package_id: groupPackage.id,
+      session: 0, // Session 0 karena kita inject langsung ke member package
+      category_id: GROUP_CATEGORY_ID
+    });
+    console.log(`   📋 Created package membership for Group Class`);
     
     // 2. Start Package Semi-Private
     const semiPrivatePackage = await createPackage({
@@ -753,6 +777,14 @@ const injectSessionsDB = async () => {
     });
     console.log(`✅ Created: ${semiPrivatePackage.name} (ID: ${semiPrivatePackage.id})`);
     
+    // Create package membership untuk Semi-Private
+    await createPackageMembership({
+      package_id: semiPrivatePackage.id,
+      session: 0, // Session 0 karena kita inject langsung ke member package
+      category_id: SEMI_PRIVATE_CATEGORY_ID
+    });
+    console.log(`   📋 Created package membership for Semi-Private Class`);
+    
     // 3. Start Package Private
     const privatePackage = await createPackage({
       name: 'Start Package Private',
@@ -765,6 +797,14 @@ const injectSessionsDB = async () => {
       is_deleted: false
     });
     console.log(`✅ Created: ${privatePackage.name} (ID: ${privatePackage.id})`);
+    
+    // Create package membership untuk Private
+    await createPackageMembership({
+      package_id: privatePackage.id,
+      session: 0, // Session 0 karena kita inject langsung ke member package
+      category_id: PRIVATE_CATEGORY_ID
+    });
+    console.log(`   📋 Created package membership for Private Class`);
     console.log('');
     
     // Process each member
@@ -874,12 +914,14 @@ const injectSessionsDB = async () => {
     console.log(`   Success: ${successCount}`);
     console.log(`   Errors: ${errorCount}`);
     console.log(`   Base packages created: 3 (shared by all members)`);
+    console.log(`   Package memberships created: 3 (one for each package type)`);
     console.log(`   Member packages created: ${totalPackagesCreated} (only for members with sessions)`);
     console.log(`   Active period: Set from validPeriod field (in weeks)`);
     console.log(`   Start date: Individual per member (from startDate field, null if empty)`);
     console.log(`   End date: Calculated when start_date is set (start_date + active_period weeks)`);
     console.log(`   Used sessions: Set according to member data`);
     console.log(`   Empty packages: Skipped (no remaining or used sessions)`);
+    console.log(`   Package membership sessions: Set to 0 (sessions injected directly to member packages)`);
     
   } catch (error) {
     console.error('\n❌ Error during database session injection:', error.message);
