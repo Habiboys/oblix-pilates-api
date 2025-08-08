@@ -3,12 +3,29 @@
 
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
-require('dotenv').config();
+const fs = require('fs');
+
+// Load .env file from root directory
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  require('dotenv').config({ path: envPath });
+} else {
+  console.log('⚠️  .env file not found at root directory');
+}
 
 // Database configuration - menggunakan config yang sama dengan aplikasi
 const config = require('./src/config/config');
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
+
+// Debug: Print database configuration
+console.log('🔧 Database Configuration:');
+console.log(`   Environment: ${env}`);
+console.log(`   Host: ${dbConfig.host}`);
+console.log(`   Database: ${dbConfig.database}`);
+console.log(`   Port: ${dbConfig.port}`);
+console.log(`   Username: ${dbConfig.username}`);
+console.log('');
 
 const sequelize = new Sequelize({
   dialect: dbConfig.dialect,
