@@ -1110,16 +1110,8 @@ const paymentNotification = async (req, res) => {
         });
 
         if (!existingMemberPackage) {
-          // Calculate package duration
-          const startDate = new Date();
-          let endDate = new Date();
-          
-          // Calculate end date based on duration
-          if (order.duration_unit === 'week') {
-            endDate.setDate(endDate.getDate() + (order.duration_value * 7));
-          } else if (order.duration_unit === 'month') {
-            endDate.setMonth(endDate.getMonth() + order.duration_value);
-          }
+          // PERBAIKAN: start_date dan end_date akan di-set saat booking pertama yang berhasil
+          // Tidak perlu menghitung di sini karena akan di-set saat booking berhasil
 
           // Get package details to determine session type based on category
           const package = await Package.findByPk(order.package_id, {
@@ -1142,13 +1134,26 @@ const paymentNotification = async (req, res) => {
             }
           }
 
+          // PERBAIKAN: Konversi duration ke minggu untuk active_period
+          let activePeriodInWeeks = order.duration_value;
+          if (order.duration_unit === 'month') {
+            activePeriodInWeeks = order.duration_value * 4; // 1 bulan = 4 minggu
+          } else if (order.duration_unit === 'day') {
+            activePeriodInWeeks = Math.ceil(order.duration_value / 7); // 1 minggu = 7 hari
+          } else if (order.duration_unit === 'year') {
+            activePeriodInWeeks = order.duration_value * 52; // 1 tahun = 52 minggu
+          }
+          // Jika duration_unit sudah 'week', tidak perlu konversi
+
           // Create MemberPackage record
           const memberPackage = await MemberPackage.create({
             member_id: order.member_id,
             package_id: order.package_id,
             order_id: order.id,
-            start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-            end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
+            // PERBAIKAN: start_date dan end_date akan di-set saat booking pertama yang berhasil
+            // start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+            // end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
+            active_period: activePeriodInWeeks // Copy validity period dalam minggu
           });
 
           // Update session usage untuk member package baru dengan session type yang benar

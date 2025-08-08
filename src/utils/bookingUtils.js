@@ -2,7 +2,7 @@ const { Booking, Schedule, Member, MemberPackage } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
 const twilioService = require('../services/twilio.service');
-const { updateSessionUsage } = require('./sessionTrackingUtils');
+const { updateSessionUsage, setPackageStartDate } = require('./sessionTrackingUtils');
 
 /**
  * Auto-cancel bookings when minimum signup is not met within cancel buffer time
@@ -296,6 +296,15 @@ const processWaitlistPromotion = async (scheduleId) => {
                     if (memberPackage) {
                         await updateSessionUsage(memberPackage.id, nextWaitlistBooking.member_id, nextWaitlistBooking.package_id);
                         logger.info(`✅ Session usage updated for promoted member ${nextWaitlistBooking.Member.full_name}`);
+                        
+                        // PERBAIKAN: Set start_date dan end_date saat booking dipromosikan dari waitlist ke signup
+                        try {
+                            logger.info(`📅 Setting start_date for promoted booking: member_id=${nextWaitlistBooking.member_id}, package_id=${nextWaitlistBooking.package_id}`);
+                            const dateResult = await setPackageStartDate(nextWaitlistBooking.member_id, nextWaitlistBooking.package_id, memberPackage.id);
+                            logger.info(`✅ Start date set successfully for promoted member:`, dateResult);
+                        } catch (dateError) {
+                            logger.error(`❌ Failed to set start_date for promoted member: ${dateError.message}`);
+                        }
                     } else {
                         logger.error(`❌ Member package not found for promoted member ${nextWaitlistBooking.Member.full_name}`);
                     }

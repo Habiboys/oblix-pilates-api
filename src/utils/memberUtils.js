@@ -95,9 +95,9 @@ const calculateMemberSessionStats = async (memberId) => {
       let packagePrivateSessions = 0;
       
       // Check membership package
-      if (package.PackageMembership && package.PackageMembership.Category && package.PackageMembership.Category.name) {
+      if (package.PackageMembership && package.PackageMembership.Category && package.PackageMembership.Category.category_name) {
         const sessionCount = package.PackageMembership.session || 0;
-        const categoryName = package.PackageMembership.Category.name.toLowerCase();
+        const categoryName = package.PackageMembership.Category.category_name.toLowerCase();
         
         totalSessions += sessionCount;
         
@@ -139,9 +139,9 @@ const calculateMemberSessionStats = async (memberId) => {
       }
       
       // Check bonus package
-      if (package.PackageBonu) {
-        const groupSessions = package.PackageBonu.group_session || 0;
-        const privateSessions = package.PackageBonu.private_session || 0;
+      if (package.PackageBonus) {
+        const groupSessions = package.PackageBonus.group_session || 0;
+        const privateSessions = package.PackageBonus.private_session || 0;
         
         totalSessions += groupSessions + privateSessions;
         sessionBreakdown.group.total += groupSessions;

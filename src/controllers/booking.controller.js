@@ -1,5 +1,5 @@
 const { Booking, Schedule, Member, Package, MemberPackage } = require('../models');
-const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary, getBestPackageForBooking } = require('../utils/sessionTrackingUtils');
+const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary, getBestPackageForBooking, setPackageStartDate } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion } = require('../utils/bookingUtils');
 const { validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
@@ -298,23 +298,27 @@ const createUserBooking = async (req, res) => {
 
         // Update session usage untuk member package
         try {
-            // Cari member package ID
-            const memberPackage = await require('../models').MemberPackage.findOne({
-                where: {
-                    member_id,
-                    package_id: selectedPackageId
-                }
-            });
+            logger.info(`🔍 Using selected member package: memberPackageId=${selectedMemberPackageId}`);
             
-            logger.info(`🔍 Looking for member package: member_id=${member_id}, package_id=${selectedPackageId}`);
-            logger.info(`📦 Found member package: ${memberPackage ? memberPackage.id : 'NOT FOUND'}`);
-            
-            if (memberPackage) {
-                logger.info(`🔄 Updating session usage for member package ${memberPackage.id}`);
-                const updateResult = await updateSessionUsage(memberPackage.id, member_id, selectedPackageId, booking.id);
+            if (selectedMemberPackageId) {
+                logger.info(`🔄 Updating session usage for member package ${selectedMemberPackageId}`);
+                const updateResult = await updateSessionUsage(selectedMemberPackageId, member_id, selectedPackageId, booking.id);
                 logger.info(`✅ Session usage updated successfully:`, updateResult);
+                
+                // PERBAIKAN: Set start_date dan end_date saat booking berhasil (status = 'signup')
+                if (booking.status === 'signup') {
+                    try {
+                        logger.info(`📅 Setting start_date for successful booking: member_id=${member_id}, package_id=${selectedPackageId}, memberPackageId=${selectedMemberPackageId}`);
+                        const dateResult = await setPackageStartDate(member_id, selectedPackageId, selectedMemberPackageId);
+                        logger.info(`✅ Start date set successfully:`, dateResult);
+                    } catch (dateError) {
+                        logger.error(`❌ Failed to set start_date: ${dateError.message}`);
+                    }
+                } else {
+                    logger.info(`⏳ Booking status is '${booking.status}', start_date will be set when booking becomes 'signup'`);
+                }
             } else {
-                logger.error(`❌ Member package not found for member_id=${member_id}, package_id=${selectedPackageId}`);
+                logger.error(`❌ Selected member package ID not found for member_id=${member_id}, package_id=${selectedPackageId}`);
             }
         } catch (error) {
             logger.error(`❌ Failed to update session usage: ${error.message}`);

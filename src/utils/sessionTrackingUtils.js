@@ -1,5 +1,6 @@
 const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Booking, Schedule, Category, Order } = require('../models');
 const { Op } = require('sequelize');
+const logger = require('../config/logger');
 
 /**
  * Mendapatkan skor prioritas paket berdasarkan tipe dan masa berlaku
@@ -100,7 +101,7 @@ const calculateAvailableSessions = async (memberId) => {
                 if (package.PackageMembership) {
                     totalSessions = package.PackageMembership.session || 0;
                     // Untuk membership, session type ditentukan oleh category
-                    const categoryName = package.PackageMembership.Category?.category_name;
+                    const categoryName = package.PackageMembership?.Category?.category_name;
                     if (categoryName === 'Semi-Private Class') {
                         sessionType = 'semi_private';
                     } else if (categoryName === 'Private Class') {
@@ -132,12 +133,13 @@ const calculateAvailableSessions = async (memberId) => {
         let availableSessions = 0;
         if (package.type === 'membership') {
           // Untuk membership, gunakan session type berdasarkan category
-          const categoryName = package.PackageMembership.Category?.category_name;
+          const categoryName = package.PackageMembership?.Category?.category_name;
           if (categoryName === 'Semi-Private Class') {
             availableSessions = memberPackage.remaining_semi_private_session || 0;
           } else if (categoryName === 'Private Class') {
             availableSessions = memberPackage.remaining_private_session || 0;
           } else {
+            // Default ke group session jika category tidak ditemukan atau null
             availableSessions = memberPackage.remaining_group_session || 0;
           }
         } else {
@@ -834,9 +836,16 @@ const getTotalAvailableSessions = async (memberId) => {
     const memberPackages = await MemberPackage.findAll({
       where: { 
         member_id: memberId,
-        end_date: {
-          [Op.gte]: currentDate
-        }
+        [Op.or]: [
+          {
+            end_date: {
+              [Op.gte]: currentDate
+            }
+          },
+          {
+            end_date: null // Include packages with null end_date (not yet started)
+          }
+        ]
       },
       include: [
         {
@@ -933,9 +942,16 @@ const getAllMemberPackagesByPriority = async (memberId) => {
     const memberPackages = await MemberPackage.findAll({
       where: { 
         member_id: memberId,
-        end_date: {
-          [Op.gte]: currentDate
-        }
+        [Op.or]: [
+          {
+            end_date: {
+              [Op.gte]: currentDate
+            }
+          },
+          {
+            end_date: null // Include packages with null end_date (not yet started)
+          }
+        ]
       },
       include: [
         {
@@ -963,6 +979,88 @@ const getAllMemberPackagesByPriority = async (memberId) => {
   }
 };
 
+/**
+ * Mengatur start_date dan end_date untuk member package saat booking pertama yang berhasil
+ * @param {string} memberId - ID member
+ * @param {string} packageId - ID package
+ * @param {string} memberPackageId - ID member package
+ * @returns {Promise<Object>} Object berisi start_date dan end_date yang di-set
+ */
+const setPackageStartDate = async (memberId, packageId, memberPackageId) => {
+  try {
+    // Get member package
+    const memberPackageForStartDate = await MemberPackage.findByPk(memberPackageId);
+    if (!memberPackageForStartDate) {
+      throw new Error(`MemberPackage not found: ${memberPackageId}`);
+    }
+
+    // Jika sudah ada start_date, tidak perlu di-set lagi
+    if (memberPackageForStartDate.start_date) {
+      logger.info(`Package ${memberPackageId} already has start_date: ${memberPackageForStartDate.start_date}`);
+      return {
+        start_date: memberPackageForStartDate.start_date,
+        end_date: memberPackageForStartDate.end_date
+      };
+    }
+
+    // Get package details untuk menghitung end_date
+    const package = await Package.findByPk(packageId);
+    if (!package) {
+      throw new Error(`Package not found: ${packageId}`);
+    }
+
+    // Get member package untuk mendapatkan active_period
+    const memberPackageForOrder = await MemberPackage.findByPk(memberPackageId);
+    if (!memberPackageForOrder) {
+      throw new Error(`MemberPackage not found: ${memberPackageId}`);
+    }
+
+    // Set start_date ke hari ini
+    const startDate = new Date();
+    let endDate = new Date();
+
+    // Calculate end date based on active_period dari member package (dalam minggu)
+    if (memberPackageForOrder.active_period) {
+      endDate.setDate(endDate.getDate() + (memberPackageForOrder.active_period * 7));
+    } else {
+      // Fallback ke order duration jika active_period tidak ada
+      const order = await Order.findOne({
+        where: { 
+          id: memberPackageForOrder.order_id
+        }
+      });
+
+      if (order) {
+        if (order.duration_unit === 'week') {
+          endDate.setDate(endDate.getDate() + (order.duration_value * 7));
+        } else if (order.duration_unit === 'month') {
+          endDate.setMonth(endDate.getMonth() + order.duration_value);
+        }
+      } else {
+        // Default ke 12 minggu jika tidak ada data
+        endDate.setDate(endDate.getDate() + (12 * 7));
+      }
+    }
+
+    // Update member package dengan start_date dan end_date
+    await memberPackageForStartDate.update({
+      start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+      end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
+    });
+
+    logger.info(`✅ Set start_date and end_date for package ${memberPackageId}: start_date=${startDate.toISOString().split('T')[0]}, end_date=${endDate.toISOString().split('T')[0]}`);
+
+    return {
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0]
+    };
+
+  } catch (error) {
+    logger.error('Error in setPackageStartDate:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   updateSessionUsage,
   updateAllMemberPackagesSessionUsage,
@@ -978,5 +1076,6 @@ module.exports = {
   getBestPackageForBooking,
   getCurrentActivePackage,
   getTotalAvailableSessions,
-  getAllMemberPackagesByPriority
+  getAllMemberPackagesByPriority,
+  setPackageStartDate
 }; 

@@ -81,6 +81,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0,
       comment: 'Jumlah session private yang tersisa'
+    },
+    active_period: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Jumlah periode aktif paket dalam satuan minggu'
     }
   }, {
     sequelize,

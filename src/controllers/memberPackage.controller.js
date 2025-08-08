@@ -64,29 +64,45 @@ const getMyPackages = async (req, res) => {
     // Get all member packages sorted by priority for history
     const allMemberPackages = await getAllMemberPackagesByPriority(member_id);
     
-    // Calculate total sessions owned by member from MemberPackage (remaining + used)
-    const totalSessionsOwned = allMemberPackages.reduce((total, memberPackage) => {
-      const usedGroupSessions = memberPackage.used_group_session || 0;
-      const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
-      const usedPrivateSessions = memberPackage.used_private_session || 0;
-      const remainingGroupSessions = memberPackage.remaining_group_session || 0;
-      const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
-      const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
-      
-      // Total = remaining + used
-      const groupTotal = remainingGroupSessions + usedGroupSessions;
-      const semiPrivateTotal = remainingSemiPrivateSessions + usedSemiPrivateSessions;
-      const privateTotal = remainingPrivateSessions + usedPrivateSessions;
-      
-      return {
-        group: total.group + groupTotal,
-        semi_private: total.semi_private + semiPrivateTotal,
-        private: total.private + privateTotal,
-        all: total.all + groupTotal + semiPrivateTotal + privateTotal
-      };
-    }, { group: 0, semi_private: 0, private: 0, all: 0 });
+    // Calculate total sessions owned by member from MemberPackage (remaining + used) - Only active packages
+    const totalSessionsOwned = allMemberPackages
+      .filter(memberPackage => {
+        // Hanya hitung paket yang aktif (belum expired) atau belum dipakai
+        const currentDate = new Date();
+        
+        // Jika tidak ada start_date, berarti belum dipakai (hitung)
+        if (!memberPackage.start_date) {
+          return true;
+        }
+        
+        // Jika ada start_date, cek apakah belum expired
+        const endDate = new Date(memberPackage.end_date);
+        const isNotExpired = endDate >= currentDate;
+        
+        return isNotExpired;
+      })
+      .reduce((total, memberPackage) => {
+        const usedGroupSessions = memberPackage.used_group_session || 0;
+        const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
+        const usedPrivateSessions = memberPackage.used_private_session || 0;
+        const remainingGroupSessions = memberPackage.remaining_group_session || 0;
+        const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
+        const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
+        
+        // Total = remaining + used
+        const groupTotal = remainingGroupSessions + usedGroupSessions;
+        const semiPrivateTotal = remainingSemiPrivateSessions + usedSemiPrivateSessions;
+        const privateTotal = remainingPrivateSessions + usedPrivateSessions;
+        
+        return {
+          group: total.group + groupTotal,
+          semi_private: total.semi_private + semiPrivateTotal,
+          private: total.private + privateTotal,
+          all: total.all + groupTotal + semiPrivateTotal + privateTotal
+        };
+      }, { group: 0, semi_private: 0, private: 0, all: 0 });
 
-    // Process packages with updated session data
+    // Process packages with updated session data (for active packages display)
     const packagesWithUsage = memberPackages.map((memberPackage) => {
       // Use session data from MemberPackage (remaining + used)
       const usedGroupSessions = memberPackage.used_group_session || 0;
@@ -129,6 +145,7 @@ const getMyPackages = async (req, res) => {
         package_type: memberPackage.Package?.type || 'unknown',
         start_date: memberPackage.start_date,
         end_date: memberPackage.end_date,
+        active_period: memberPackage.active_period, // Tambahkan active_period
         total_session: totalSessions,
         used_session: totalUsedSessions,
         remaining_session: Math.max(0, totalSessions - totalUsedSessions),
@@ -169,17 +186,22 @@ const getMyPackages = async (req, res) => {
 
     // Remove old package history logic since we're using new approach
 
-    // Process packages for history (sorted by priority)
+    // Process packages for history (sorted by priority) - Active packages
     const packageHistory = allMemberPackages
       .filter(memberPackage => {
-        // Include semua paket yang aktif (belum expired)
+        // Include semua paket yang aktif (belum expired) atau belum dipakai (tidak ada start_date)
         const currentDate = new Date();
+        
+        // Jika tidak ada start_date, berarti belum dipakai (tampilkan)
+        if (!memberPackage.start_date) {
+          return true;
+        }
+        
+        // Jika ada start_date, cek apakah belum expired
         const endDate = new Date(memberPackage.end_date);
         const isNotExpired = endDate >= currentDate;
         
-
-        
-        // Tampilkan semua paket yang belum expired, tidak peduli session tersisa atau tidak
+        // Tampilkan paket yang belum expired
         return isNotExpired;
       })
       .map((memberPackage, index) => {
@@ -208,6 +230,71 @@ const getMyPackages = async (req, res) => {
           package_type: memberPackage.Package?.type || 'unknown',
           start_date: memberPackage.start_date,
           expired_date: memberPackage.end_date,
+          active_period: memberPackage.active_period, // Tambahkan active_period
+          is_unused: !memberPackage.start_date, // Flag untuk paket yang belum dipakai
+          total_session: totalSessions,
+          used_session: usedSessions,
+          remaining_session: remainingSessions,
+          progress_percentage: progressPercentage,
+          group_sessions: {
+            total: groupSessions,
+            used: usedGroupSessions,
+            remaining: remainingGroupSessions
+          },
+          semi_private_sessions: {
+            total: semiPrivateSessions,
+            used: usedSemiPrivateSessions,
+            remaining: remainingSemiPrivateSessions
+          },
+          private_sessions: {
+            total: privateSessions,
+            used: usedPrivateSessions,
+            remaining: remainingPrivateSessions
+          }
+        };
+      });
+
+    // Process expired packages
+    const expiredPackages = allMemberPackages
+      .filter(memberPackage => {
+        // Hanya paket yang sudah dipakai (ada start_date) dan sudah expired
+        if (!memberPackage.start_date) {
+          return false; // Skip paket yang belum dipakai
+        }
+        
+        const currentDate = new Date();
+        const endDate = new Date(memberPackage.end_date);
+        const isExpired = endDate < currentDate;
+        
+        return isExpired;
+      })
+      .map((memberPackage, index) => {
+        // Use session data from MemberPackage (remaining + used)
+        const usedGroupSessions = memberPackage.used_group_session || 0;
+        const usedSemiPrivateSessions = memberPackage.used_semi_private_session || 0;
+        const usedPrivateSessions = memberPackage.used_private_session || 0;
+        const remainingGroupSessions = memberPackage.remaining_group_session || 0;
+        const remainingSemiPrivateSessions = memberPackage.remaining_semi_private_session || 0;
+        const remainingPrivateSessions = memberPackage.remaining_private_session || 0;
+        
+        // Total = remaining + used
+        const groupSessions = remainingGroupSessions + usedGroupSessions;
+        const semiPrivateSessions = remainingSemiPrivateSessions + usedSemiPrivateSessions;
+        const privateSessions = remainingPrivateSessions + usedPrivateSessions;
+        const totalSessions = groupSessions + semiPrivateSessions + privateSessions;
+        
+        const usedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
+        const remainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
+        
+        const progressPercentage = totalSessions > 0 ? Math.round((usedSessions / totalSessions) * 100) : 0;
+
+        return {
+          no: index + 1,
+          package_name: memberPackage.Package?.name || 'Unknown Package',
+          package_type: memberPackage.Package?.type || 'unknown',
+          start_date: memberPackage.start_date,
+          expired_date: memberPackage.end_date,
+          active_period: memberPackage.active_period, // Tambahkan active_period
           total_session: totalSessions,
           used_session: usedSessions,
           remaining_session: remainingSessions,
@@ -235,6 +322,7 @@ const getMyPackages = async (req, res) => {
       success: true,
       message: 'My packages retrieved successfully',
       data: {
+        // Total sessions hanya dari paket aktif (belum expired + belum dipakai)
         total_sessions: {
           total: totalSessionsOwned.all,
           used: totalAvailableSessions.used_all_sessions,
@@ -255,7 +343,10 @@ const getMyPackages = async (req, res) => {
           used: totalAvailableSessions.used_private_sessions,
           remaining: totalAvailableSessions.remaining_private_sessions
         },
-        active_package: packageHistory
+        // Paket aktif: belum expired + belum dipakai (tidak ada start_date)
+        active_package: packageHistory,
+        // Paket expired: sudah dipakai dan sudah expired
+        expired_package: expiredPackages
       }
     };
 
