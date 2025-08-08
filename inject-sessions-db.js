@@ -5,14 +5,19 @@ const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 require('dotenv').config();
 
-// Database configuration
+// Database configuration - menggunakan config yang sama dengan aplikasi
+const config = require('./src/config/config');
+const env = process.env.NODE_ENV || 'development';
+const dbConfig = config[env];
+
 const sequelize = new Sequelize({
-  dialect: 'mysql',
-  host: process.env.DB_HOST || 'localhost',
-  username: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'root',
-  port: process.env.DB_PORT || 8889,
-  database: process.env.DB_NAME || 'oblix',
+  dialect: dbConfig.dialect,
+  host: dbConfig.host,
+  username: dbConfig.username,
+  password: dbConfig.password,
+  port: dbConfig.port,
+  database: dbConfig.database,
+  timezone: dbConfig.timezone,
   logging: false
 });
 
