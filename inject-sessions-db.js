@@ -9,9 +9,19 @@ const fs = require('fs');
 const envPath = path.join(__dirname, '.env');
 if (fs.existsSync(envPath)) {
   require('dotenv').config({ path: envPath });
+  console.log('✅ .env file loaded successfully');
 } else {
-  console.log('⚠️  .env file not found at root directory');
+  console.log('⚠️  .env file not found at root directory, using system environment variables');
 }
+
+// Debug: Print key environment variables
+console.log('🔧 Environment Variables:');
+console.log(`   DB_HOST: ${process.env.DB_HOST || 'NOT SET'}`);
+console.log(`   DB_NAME: ${process.env.DB_NAME || 'NOT SET'}`);
+console.log(`   DB_USER: ${process.env.DB_USER || 'NOT SET'}`);
+console.log(`   DB_PORT: ${process.env.DB_PORT || 'NOT SET'}`);
+console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log('');
 
 // Database configuration - menggunakan config yang sama dengan aplikasi
 const config = require('./src/config/config');
@@ -27,9 +37,13 @@ console.log(`   Port: ${dbConfig.port}`);
 console.log(`   Username: ${dbConfig.username}`);
 console.log('');
 
+// Perbaikan untuk server production - gunakan host yang benar
+const dbHost = dbConfig.host === 'localhost' ? '127.0.0.1' : dbConfig.host;
+console.log(`🔧 Using host: ${dbHost} (original: ${dbConfig.host})`);
+
 const sequelize = new Sequelize({
   dialect: dbConfig.dialect,
-  host: dbConfig.host,
+  host: dbHost,
   username: dbConfig.username,
   password: dbConfig.password,
   port: dbConfig.port,
