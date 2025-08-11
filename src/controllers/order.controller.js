@@ -1073,39 +1073,51 @@ const paymentFinish = async (req, res) => {
     
     console.log('✅ Payment finish callback:', { order_id });
     
-    // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
-    const order = await Order.findOne({
-      where: { order_number: order_id }
+    // Redirect immediately to avoid delay
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    let redirectUrl = `${frontendUrl}/my-orders`;
+    
+    // Process order update asynchronously (non-blocking)
+    setImmediate(async () => {
+      try {
+        // Cari order berdasarkan order_number dengan timeout
+        const order = await Order.findOne({
+          where: { order_number: order_id }
+        }).timeout(3000); // 3 detik timeout
+        
+        if (!order) {
+          console.log(`❌ Order not found for order_number: ${order_id}`);
+          return;
+        }
+        
+        // Check if order has expired based on expired_at timestamp
+        const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+        
+        if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+          console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+          
+          await order.update({
+            status: 'cancelled',
+            payment_status: 'expired',
+            cancelled_at: new Date(),
+            cancelled_by: 'system',
+            cancel_reason: 'Payment expired via time check'
+          });
+          console.log(`✅ Order ${order.order_number} marked as expired`);
+        } else {
+          // If order exists and not expired, redirect to specific order
+          redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
+        }
+      } catch (error) {
+        console.error('❌ Async order update error:', error);
+        // Don't block redirect even if update fails
+      }
     });
     
-    if (!order) {
-      console.log(`❌ Order not found for order_number: ${order_id}`);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      const redirectUrl = `${frontendUrl}/my-orders`;
-      return res.redirect(redirectUrl);
-    }
-    
-    // Check if order has expired based on expired_at timestamp
-    const isOrderExpired = order.expired_at && new Date() > order.expired_at;
-    
-    if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
-      console.log(`🔴 Order expired: ${order.order_number} - updating status`);
-      
-      await order.update({
-        status: 'cancelled',
-        payment_status: 'expired',
-        cancelled_at: new Date(),
-        cancelled_by: null,
-        cancel_reason: 'Payment expired via time check'
-      });
-      console.log(`✅ Order ${order.order_number} marked as expired`);
-    }
-    
-    // Redirect to frontend with success status
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
-    console.log('🔄 Redirecting to:', redirectUrl);
+    // Redirect immediately without waiting for order update
+    console.log('🔄 Redirecting immediately to:', redirectUrl);
     res.redirect(redirectUrl);
+    
   } catch (error) {
     console.error('❌ Payment finish callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -1120,57 +1132,66 @@ const paymentError = async (req, res) => {
     
     console.log('🔴 Payment error callback:', { order_id });
 
-    // Cari order berdasarkan order_number
-    const order = await Order.findOne({
-      where: { order_number: order_id }
+    // Redirect immediately to avoid delay
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const redirectUrl = `${frontendUrl}/my-orders`;
+    
+    // Process order update asynchronously (non-blocking)
+    setImmediate(async () => {
+      try {
+        // Cari order berdasarkan order_number dengan timeout
+        const order = await Order.findOne({
+          where: { order_number: order_id }
+        }).timeout(3000); // 3 detik timeout
+        
+        if (!order) {
+          console.log(`❌ Order not found for order_number: ${order_id}`);
+          return;
+        }
+        
+        // Check if this is a phantom order (no transaction_id from Midtrans)
+        const isPhantomOrder = !order.midtrans_transaction_id && order.is_phantom_order;
+        
+        if (isPhantomOrder) {
+          console.log(`👻 Phantom order detected: ${order.order_number} - marking as cancelled`);
+          
+          // Mark as cancelled since it was never created in Midtrans
+          await order.update({
+            status: 'cancelled',
+            payment_status: 'cancelled',
+            cancelled_at: new Date(),
+            cancelled_by: 'system',
+            cancel_reason: 'Phantom order - never created in Midtrans payment system'
+          });
+          
+          console.log(`✅ Phantom order ${order.order_number} marked as cancelled`);
+        } else {
+          // Check if order has expired based on expired_at timestamp
+          const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+          
+          if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+            console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+            
+            await order.update({
+              status: 'cancelled',
+              payment_status: 'expired',
+              cancelled_at: new Date(),
+              cancelled_by: 'system',
+              cancel_reason: 'Payment expired via time check'
+            });
+            console.log(`✅ Order ${order.order_number} marked as expired`);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Async order update error:', error);
+        // Don't block redirect even if update fails
+      }
     });
     
-    if (!order) {
-      console.log(`❌ Order not found for order_number: ${order_id}`);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      const redirectUrl = `${frontendUrl}/my-orders`;
-      return res.redirect(redirectUrl);
-    }
-    
-    // Check if this is a phantom order (no transaction_id from Midtrans)
-    const isPhantomOrder = !order.midtrans_transaction_id && order.is_phantom_order;
-    
-    if (isPhantomOrder) {
-      console.log(`👻 Phantom order detected: ${order.order_number} - marking as cancelled`);
-      
-      // Mark as cancelled since it was never created in Midtrans
-      await order.update({
-        status: 'cancelled',
-        payment_status: 'cancelled',
-        cancelled_at: new Date(),
-        cancelled_by: 'system',
-        cancel_reason: 'Phantom order - never created in Midtrans payment system'
-      });
-      
-      console.log(`✅ Phantom order ${order.order_number} marked as cancelled`);
-    } else {
-      // Check if order has expired based on expired_at timestamp
-      const isOrderExpired = order.expired_at && new Date() > order.expired_at;
-      
-      if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
-        console.log(`🔴 Order expired: ${order.order_number} - updating status`);
-        
-        await order.update({
-          status: 'cancelled',
-          payment_status: 'expired',
-          cancelled_at: new Date(),
-          cancelled_by: 'system',
-          cancel_reason: 'Payment expired via time check'
-        });
-        console.log(`✅ Order ${order.order_number} marked as expired`);
-      }
-    }
-    
-    // Redirect to frontend with appropriate status
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
-    console.log('🔄 Redirecting to:', redirectUrl);
+    // Redirect immediately without waiting for order update
+    console.log('🔄 Redirecting immediately to:', redirectUrl);
     res.redirect(redirectUrl);
+    
   } catch (error) {
     console.error('❌ Payment error callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -1185,57 +1206,66 @@ const paymentPending = async (req, res) => {
 
     console.log('⏳ Payment pending callback:', { order_id });
 
-    // Cari order berdasarkan order_number
-    const order = await Order.findOne({
-      where: { order_number: order_id }
+    // Redirect immediately to avoid delay
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const redirectUrl = `${frontendUrl}/my-orders`;
+    
+    // Process order update asynchronously (non-blocking)
+    setImmediate(async () => {
+      try {
+        // Cari order berdasarkan order_number dengan timeout
+        const order = await Order.findOne({
+          where: { order_number: order_id }
+        }).timeout(3000); // 3 detik timeout
+        
+        if (!order) {
+          console.log(`❌ Order not found for order_number: ${order_id}`);
+          return;
+        }
+        
+        // Check if this is a phantom order (no transaction_id from Midtrans)
+        const isPhantomOrder = !order.midtrans_transaction_id && order.is_phantom_order;
+        
+        if (isPhantomOrder) {
+          console.log(`👻 Phantom order detected: ${order.order_number} - marking as cancelled`);
+          
+          // Mark as cancelled since it was never created in Midtrans
+          await order.update({
+            status: 'cancelled',
+            payment_status: 'cancelled',
+            cancelled_at: new Date(),
+            cancelled_by: 'system',
+            cancel_reason: 'Phantom order - never created in Midtrans payment system'
+          });
+          
+          console.log(`✅ Phantom order ${order.order_number} marked as cancelled`);
+        } else {
+          // Check if order has expired based on expired_at timestamp
+          const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+          
+          if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+            console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+            
+            await order.update({
+              status: 'cancelled',
+              payment_status: 'expired',
+              cancelled_at: new Date(),
+              cancelled_by: 'system',
+              cancel_reason: 'Payment expired via time check'
+            });
+            console.log(`✅ Order ${order.order_number} marked as expired`);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Async order update error:', error);
+        // Don't block redirect even if update fails
+      }
     });
     
-    if (!order) {
-      console.log(`❌ Order not found for order_number: ${order_id}`);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      const redirectUrl = `${frontendUrl}/my-orders`;
-      return res.redirect(redirectUrl);
-    }
-    
-    // Check if this is a phantom order (no transaction_id from Midtrans)
-    const isPhantomOrder = !order.midtrans_transaction_id && order.is_phantom_order;
-    
-    if (isPhantomOrder) {
-      console.log(`👻 Phantom order detected: ${order.order_number} - marking as cancelled`);
-      
-      // Mark as cancelled since it was never created in Midtrans
-      await order.update({
-        status: 'cancelled',
-        payment_status: 'cancelled',
-        cancelled_at: new Date(),
-        cancelled_by: 'system',
-        cancel_reason: 'Phantom order - never created in Midtrans payment system'
-      });
-      
-      console.log(`✅ Phantom order ${order.order_number} marked as cancelled`);
-    } else {
-      // Check if order has expired based on expired_at timestamp
-      const isOrderExpired = order.expired_at && new Date() > order.expired_at;
-      
-      if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
-        console.log(`🔴 Order expired: ${order.order_number} - updating status`);
-        
-        await order.update({
-          status: 'cancelled',
-          payment_status: 'expired',
-          cancelled_at: new Date(),
-          cancelled_by: 'system',
-          cancel_reason: 'Payment expired via time check'
-        });
-        console.log(`✅ Order ${order.order_number} marked as expired`);
-      }
-    }
-    
-    // Redirect to frontend with appropriate status
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
-    console.log('🔄 Redirecting to:', redirectUrl);
+    // Redirect immediately without waiting for order update
+    console.log('🔄 Redirecting immediately to:', redirectUrl);
     res.redirect(redirectUrl);
+    
   } catch (error) {
     console.error('❌ Payment pending callback error:', error);
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';

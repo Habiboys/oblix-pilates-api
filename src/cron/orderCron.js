@@ -64,15 +64,17 @@ const handleExpiredOrders = async () => {
         const expiredOrders = [];
         const cancelledOrders = [];
         
-        // 1. Handle orders yang sudah expired berdasarkan expired_at
+                // 1. Handle orders yang sudah expired berdasarkan expired_at
         const expiredOrdersByTime = await Order.findAll({
-            where: {
-                status: { [Op.in]: ['pending', 'processing'] },
-                payment_status: 'pending',
-                expired_at: {
-                    [Op.lt]: currentTime
-                }
+          where: {
+            status: { [Op.in]: ['pending', 'processing'] },
+            payment_status: 'pending',
+            expired_at: {
+              [Op.lt]: currentTime
             }
+          },
+          attributes: ['id', 'order_number', 'member_id', 'status', 'payment_status', 'expired_at'],
+          limit: 100 // Process in batches
         });
         
         for (const order of expiredOrdersByTime) {
@@ -98,19 +100,21 @@ const handleExpiredOrders = async () => {
             }
         }
         
-        // 2. Handle phantom orders (pending tanpa transaction_id dari Midtrans)
+                // 2. Handle phantom orders (pending tanpa transaction_id dari Midtrans)
         // Order yang sudah lebih dari 20 menit tapi tidak ada transaction_id
         const phantomOrdersTimeout = new Date(currentTime.getTime() - (20 * 60 * 1000)); // 20 menit
         
         const phantomOrders = await Order.findAll({
-            where: {
-                status: { [Op.in]: ['pending', 'processing'] },
-                payment_status: 'pending',
-                midtrans_transaction_id: null, // Tidak ada transaction_id dari Midtrans
-                createdAt: {
-                    [Op.lt]: phantomOrdersTimeout
-                }
+          where: {
+            status: { [Op.in]: ['pending', 'processing'] },
+            payment_status: 'pending',
+            midtrans_transaction_id: null, // Tidak ada transaction_id dari Midtrans
+            createdAt: {
+              [Op.lt]: phantomOrdersTimeout
             }
+          },
+          attributes: ['id', 'order_number', 'member_id', 'status', 'payment_status', 'midtrans_order_id', 'createdAt'],
+          limit: 100 // Process in batches
         });
         
         for (const order of phantomOrders) {
@@ -165,18 +169,20 @@ const handleExpiredOrders = async () => {
             }
         }
         
-        // 3. Handle orders yang sudah lama pending (lebih dari 30 menit)
+                // 3. Handle orders yang sudah lama pending (lebih dari 30 menit)
         // Ini sebagai fallback untuk order yang mungkin terlewat
         const longPendingTimeout = new Date(currentTime.getTime() - (30 * 60 * 1000)); // 30 menit
         
         const longPendingOrders = await Order.findAll({
-            where: {
-                status: { [Op.in]: ['pending', 'processing'] },
-                payment_status: 'pending',
-                createdAt: {
-                    [Op.lt]: longPendingTimeout
-                }
+          where: {
+            status: { [Op.in]: ['pending', 'processing'] },
+            payment_status: 'pending',
+            createdAt: {
+              [Op.lt]: longPendingTimeout
             }
+          },
+          attributes: ['id', 'order_number', 'member_id', 'status', 'payment_status', 'createdAt'],
+          limit: 100 // Process in batches
         });
         
         for (const order of longPendingOrders) {
