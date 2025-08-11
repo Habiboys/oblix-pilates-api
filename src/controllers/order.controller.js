@@ -1116,11 +1116,11 @@ const paymentFinish = async (req, res) => {
 
 const paymentError = async (req, res) => {
   try {
-      const { order_id, transaction_status, transaction_id, status_code, status_message } = req.query;
+    const { order_id, transaction_status, transaction_id, status_code, status_message } = req.query;
     
     console.log('🔴 Payment error callback:', { order_id });
 
-    // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
+    // Cari order berdasarkan order_number
     const order = await Order.findOne({
       where: { order_number: order_id }
     });
@@ -1132,23 +1132,41 @@ const paymentError = async (req, res) => {
       return res.redirect(redirectUrl);
     }
     
-    // Check if order has expired based on expired_at timestamp
-    const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+    // Check if this is a phantom order (no transaction_id from Midtrans)
+    const isPhantomOrder = !order.midtrans_transaction_id && order.is_phantom_order;
     
-    if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
-      console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+    if (isPhantomOrder) {
+      console.log(`👻 Phantom order detected: ${order.order_number} - marking as cancelled`);
       
+      // Mark as cancelled since it was never created in Midtrans
       await order.update({
         status: 'cancelled',
-        payment_status: 'expired',
+        payment_status: 'cancelled',
         cancelled_at: new Date(),
-        cancelled_by: null,
-        cancel_reason: 'Payment expired via time check'
+        cancelled_by: 'system',
+        cancel_reason: 'Phantom order - never created in Midtrans payment system'
       });
-      console.log(`✅ Order ${order.order_number} marked as expired`);
+      
+      console.log(`✅ Phantom order ${order.order_number} marked as cancelled`);
+    } else {
+      // Check if order has expired based on expired_at timestamp
+      const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+      
+      if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+        console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+        
+        await order.update({
+          status: 'cancelled',
+          payment_status: 'expired',
+          cancelled_at: new Date(),
+          cancelled_by: 'system',
+          cancel_reason: 'Payment expired via time check'
+        });
+        console.log(`✅ Order ${order.order_number} marked as expired`);
+      }
     }
     
-    // Redirect to frontend with error status
+    // Redirect to frontend with appropriate status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
     console.log('🔄 Redirecting to:', redirectUrl);
@@ -1167,7 +1185,7 @@ const paymentPending = async (req, res) => {
 
     console.log('⏳ Payment pending callback:', { order_id });
 
-    // Cari order berdasarkan order_number (karena Midtrans mengirim order_number, bukan id)
+    // Cari order berdasarkan order_number
     const order = await Order.findOne({
       where: { order_number: order_id }
     });
@@ -1179,23 +1197,41 @@ const paymentPending = async (req, res) => {
       return res.redirect(redirectUrl);
     }
     
-    // Check if order has expired based on expired_at timestamp
-    const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+    // Check if this is a phantom order (no transaction_id from Midtrans)
+    const isPhantomOrder = !order.midtrans_transaction_id && order.is_phantom_order;
     
-    if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
-      console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+    if (isPhantomOrder) {
+      console.log(`👻 Phantom order detected: ${order.order_number} - marking as cancelled`);
       
+      // Mark as cancelled since it was never created in Midtrans
       await order.update({
         status: 'cancelled',
-        payment_status: 'expired',
+        payment_status: 'cancelled',
         cancelled_at: new Date(),
-        cancelled_by: null,
-        cancel_reason: 'Payment expired via time check'
+        cancelled_by: 'system',
+        cancel_reason: 'Phantom order - never created in Midtrans payment system'
       });
-      console.log(`✅ Order ${order.order_number} marked as expired`);
+      
+      console.log(`✅ Phantom order ${order.order_number} marked as cancelled`);
+    } else {
+      // Check if order has expired based on expired_at timestamp
+      const isOrderExpired = order.expired_at && new Date() > order.expired_at;
+      
+      if (isOrderExpired && (order.status === 'pending' || order.status === 'processing')) {
+        console.log(`🔴 Order expired: ${order.order_number} - updating status`);
+        
+        await order.update({
+          status: 'cancelled',
+          payment_status: 'expired',
+          cancelled_at: new Date(),
+          cancelled_by: 'system',
+          cancel_reason: 'Payment expired via time check'
+        });
+        console.log(`✅ Order ${order.order_number} marked as expired`);
+      }
     }
     
-    // Redirect to frontend with pending status
+    // Redirect to frontend with appropriate status
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const redirectUrl = `${frontendUrl}/my-orders/${order.id}`;
     console.log('🔄 Redirecting to:', redirectUrl);
