@@ -142,12 +142,9 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     cancelled_by: {
-      type: DataTypes.UUID,
+      type: DataTypes.STRING(50),
       allowNull: true,
-      references: {
-        model: 'users',
-        key: 'id'
-      }
+      comment: 'User ID or system identifier who cancelled the order'
     },
     cancel_reason: {
       type: DataTypes.TEXT,
@@ -156,6 +153,28 @@ module.exports = (sequelize, DataTypes) => {
     notes: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    midtrans_created_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Timestamp when order was created in Midtrans'
+    },
+    last_midtrans_check: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Last time we checked order status with Midtrans'
+    },
+    midtrans_check_count: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: 'Number of times we checked order status with Midtrans'
+    },
+    is_phantom_order: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Flag to identify orders that were never created in Midtrans'
     }
   }, {
     sequelize,

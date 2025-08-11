@@ -75,6 +75,10 @@ class MidtransService {
       
       logger.info('Midtrans transaction created successfully:', JSON.stringify(transaction, null, 2));
       
+      // Add additional tracking data
+      transaction.midtrans_created_at = new Date();
+      transaction.order_id = orderData.order_number;
+      
       return transaction;
     } catch (error) {
       logger.error('Midtrans create transaction error details:', {

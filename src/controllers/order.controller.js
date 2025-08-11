@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const MidtransService = require('../services/midtrans.service');
 const { sequelize } = require('../models');
 const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
+const { updateOrderStatus } = require('../utils/orderUtils');
 const logger = require('../config/logger');
 const config = require('../config/config');
 // Create new order
@@ -340,7 +341,9 @@ const createOrder = async (req, res) => {
       payment_status: 'pending',
       status: 'pending',
       notes,
-      expired_at: new Date(Date.now() + config.midtrans.expiredTime * 60 * 1000) // Use MIDTRANS_EXPIRED_TIME from config
+      expired_at: new Date(Date.now() + config.midtrans.expiredTime * 60 * 1000), // Use MIDTRANS_EXPIRED_TIME from config
+      is_phantom_order: true, // Mark as phantom until confirmed in Midtrans
+      midtrans_check_count: 0
     }, { transaction });
 
     // Prepare data for Midtrans
@@ -390,7 +393,11 @@ const createOrder = async (req, res) => {
     await order.update({
       midtrans_order_id: order.order_number, // Use our order number as Midtrans order ID
       midtrans_token: midtransResponse.token,
-      midtrans_redirect_url: midtransResponse.redirect_url
+      midtrans_redirect_url: midtransResponse.redirect_url,
+      midtrans_created_at: midtransResponse.midtrans_created_at,
+      is_phantom_order: false, // Order confirmed in Midtrans
+      last_midtrans_check: new Date(),
+      midtrans_check_count: 1
     }, { transaction });
 
     await transaction.commit();
@@ -999,177 +1006,51 @@ const paymentNotification = async (req, res) => {
       will_process: status.transaction_status === 'expire' || !(order.expired_at && new Date() > order.expired_at)
     });
 
-    // Map Midtrans status to our status
-    const newStatus = MidtransService.mapPaymentStatus(status.transaction_status);
+    // Use utility function to update order status
+    const updateResult = await updateOrderStatus(order.id, status, notification);
     
-    console.log(`📊 Processing Midtrans notification:`, {
-      order_id: status.order_id,
-      transaction_status: status.transaction_status,
-      mapped_status: newStatus
-    });
-    logger.info('Processing Midtrans notification:', {
-      order_id: status.order_id,
-      transaction_status: status.transaction_status,
-      mapped_status: newStatus
-    });
-
-    // Map status untuk kolom 'status' (handle expired case)
-    let orderStatus;
-    if (newStatus === 'paid') {
-      orderStatus = 'completed';
-    } else if (newStatus === 'expired') {
-      orderStatus = 'cancelled'; // Gunakan 'cancelled' untuk expired orders
-    } else {
-      orderStatus = newStatus;
+    if (!updateResult.success) {
+      console.error(`❌ Failed to update order status:`, updateResult.error);
+      logger.error('Failed to update order status:', updateResult.error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update order status'
+      });
     }
     
-    console.log(`🎯 Status mapping:`, {
-      payment_status: newStatus,
-      order_status: orderStatus
+    console.log(`✅ Order ${order.order_number} updated successfully:`, {
+      old_status: updateResult.old_status,
+      new_status: updateResult.new_status,
+      order_status: updateResult.order_status
     });
-    logger.info('Status mapping:', {
-      payment_status: newStatus,
-      order_status: orderStatus
-    });
-
-    // Update order
-    console.log(`💾 Updating order ${order.order_number}:`, {
-      payment_status: newStatus,
-      status: orderStatus,
-      transaction_status: status.transaction_status
-    });
-    logger.info('Updating order:', {
-      order_number: order.order_number,
-      payment_status: newStatus,
-      status: orderStatus,
-      transaction_status: status.transaction_status
-    });
-    
-    await order.update({
-      payment_status: newStatus,
-      status: orderStatus, // Gunakan mapping yang benar
-      midtrans_transaction_id: status.transaction_id,
-      midtrans_transaction_status: status.transaction_status,
-      midtrans_fraud_status: status.fraud_status,
-      midtrans_payment_type: status.payment_type,
-      midtrans_va_numbers: status.va_numbers,
-      midtrans_pdf_url: status.pdf_url,
-      paid_at: newStatus === 'paid' ? new Date() : null
-    });
-    
-    console.log(`✅ Order ${order.order_number} updated successfully`);
     logger.info('Order updated successfully:', {
       order_number: order.order_number,
-      new_payment_status: newStatus,
-      new_status: orderStatus
+      old_status: updateResult.old_status,
+      new_status: updateResult.new_status,
+      order_status: updateResult.order_status
     });
 
     // Special logging for expired notifications
     if (status.transaction_status === 'expire') {
       console.log(`🔴 EXPIRED NOTIFICATION DETECTED for order ${order.order_number}:`, {
         transaction_status: status.transaction_status,
-        mapped_status: newStatus,
-        order_status: orderStatus,
+        mapped_status: updateResult.new_status,
+        order_status: updateResult.order_status,
         order_id: order.id,
         order_number: order.order_number
       });
       logger.warn('EXPIRED NOTIFICATION DETECTED:', {
         order_number: order.order_number,
         transaction_status: status.transaction_status,
-        mapped_status: newStatus,
-        order_status: orderStatus,
+        mapped_status: updateResult.new_status,
+        order_status: updateResult.order_status,
         order_id: order.id
       });
     }
     
-    // If payment is successful, activate member package
-    if (newStatus === 'paid') {
-      try {
-        // Simpan data payment ke tabel payments
-        await Payment.create({
-          order_id: order.id,
-          payment_type: status.payment_type,
-          payment_status: 'success',
-          transaction_time: status.transaction_time ? new Date(status.transaction_time) : new Date(),
-          settlement_time: status.settlement_time ? new Date(status.settlement_time) : null,
-          midtrans_response: status
-        });
+    // Payment and member package creation is now handled in updateOrderStatus utility
 
-        // Update member status to 'Active' if this is a membership package
-        if (order.package_type === 'membership') {
-          const member = await Member.findByPk(order.member_id);
-          if (member && member.status === 'Registered') {
-            await member.update({ status: 'Active' });
-            console.log(`Member status updated to Active for member ${member.id}`);
-          }
-        }
-
-        // Check if MemberPackage already exists for this order
-        const existingMemberPackage = await MemberPackage.findOne({
-          where: { order_id: order.id }
-        });
-
-        if (!existingMemberPackage) {
-          // PERBAIKAN: start_date dan end_date akan di-set saat booking pertama yang berhasil
-          // Tidak perlu menghitung di sini karena akan di-set saat booking berhasil
-
-          // Get package details to determine session type based on category
-          const package = await Package.findByPk(order.package_id, {
-            include: [
-              {
-                model: PackageMembership,
-                include: [{ model: Category }]
-              }
-            ]
-          });
-
-          // Determine session type based on package category
-          let sessionType = 'group'; // default
-          if (package && package.PackageMembership && package.PackageMembership.Category) {
-            const categoryName = package.PackageMembership.Category.category_name;
-            if (categoryName === 'Semi-Private Class') {
-              sessionType = 'semi_private';
-            } else if (categoryName === 'Private Class') {
-              sessionType = 'private';
-            }
-          }
-
-          // PERBAIKAN: Konversi duration ke minggu untuk active_period
-          let activePeriodInWeeks = order.duration_value;
-          if (order.duration_unit === 'month') {
-            activePeriodInWeeks = order.duration_value * 4; // 1 bulan = 4 minggu
-          } else if (order.duration_unit === 'day') {
-            activePeriodInWeeks = Math.ceil(order.duration_value / 7); // 1 minggu = 7 hari
-          } else if (order.duration_unit === 'year') {
-            activePeriodInWeeks = order.duration_value * 52; // 1 tahun = 52 minggu
-          }
-          // Jika duration_unit sudah 'week', tidak perlu konversi
-
-          // Create MemberPackage record
-          const memberPackage = await MemberPackage.create({
-            member_id: order.member_id,
-            package_id: order.package_id,
-            order_id: order.id,
-            // PERBAIKAN: start_date dan end_date akan di-set saat booking pertama yang berhasil
-            // start_date: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-            // end_date: endDate.toISOString().split('T')[0] // Format: YYYY-MM-DD
-            active_period: activePeriodInWeeks // Copy validity period dalam minggu
-          });
-
-          // Update session usage untuk member package baru dengan session type yang benar
-          try {
-            await updateSessionUsage(memberPackage.id, order.member_id, order.package_id, null, sessionType);
-          } catch (error) {
-            console.error('Error updating session usage for new member package:', error);
-          }
-        }
-      } catch (error) {
-        console.error('Error creating MemberPackage:', error);
-        // Don't throw error here to avoid breaking the payment notification
-      }
-    }
-
-    console.log(`Payment notification processed successfully for order: ${order.order_number}, status: ${newStatus}`);
+    console.log(`Payment notification processed successfully for order: ${order.order_number}, status: ${updateResult.new_status}`);
     
     res.json({
       success: true,

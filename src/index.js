@@ -38,6 +38,7 @@ const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
 const { logger, errorLogger } = require('./middlewares/logger.middleware');
 const { startAllCronJobs } = require('./cron/bookingCron');
 const { startReminderCronJobs } = require('./cron/reminderCron');
+const { startOrderExpiryCron } = require('./cron/orderCron');
 
 // Middleware untuk logging semua request
 app.use(logger);
@@ -119,4 +120,5 @@ app.listen(PORT, () => {
   // Start cron jobs
   startAllCronJobs();
   startReminderCronJobs();
+  startOrderExpiryCron();
 });
