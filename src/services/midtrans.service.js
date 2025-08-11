@@ -54,8 +54,8 @@ class MidtransService {
         })),
         callbacks: {
           finish: `${config.app.baseUrl}/api/order/payment/finish`,
-          error: `${config.app.baseUrl}/api/order/payment/error`,
-          pending: `${config.app.baseUrl}/api/order/payment/pending`
+          error: `${config.app.baseUrl}/api/order/payment/redirect`,  // Custom redirect handler
+          pending: `${config.app.baseUrl}/api/order/payment/redirect`  // Custom redirect handler
         },
         // Add notification URL for webhook notifications (including expire status)
         notification_url: `${config.app.baseUrl}/api/order/payment/notification`,
