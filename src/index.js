@@ -66,7 +66,7 @@ app.use(express.json());
 
 app.use(cors());
 
-app.options('*', cors());
+// app.options('*', cors());
 
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
