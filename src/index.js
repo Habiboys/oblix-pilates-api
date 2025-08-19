@@ -70,7 +70,35 @@ app.use(express.json());
 // }));
 // Serve static files dari folder uploads
 
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, postman, etc)
+      if (!origin) return callback(null, true);
+      
+      // Allow localhost dengan port apapun
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          return callback(null, true);
+      }
+      
+      // Allow production domains
+      const allowedDomains = [
+          'oblixpilates.id',
+          'www.oblixpilates.id',
+          'oblix-pilates.vercel.app'
+      ];
+      
+      if (allowedDomains.some(domain => origin.includes(domain))) {
+          return callback(null, true);
+      }
+      
+      // Allow untuk development (bisa ditambah sesuai kebutuhan)
+      return callback(null, true);
+  },
+  // credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
