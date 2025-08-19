@@ -51,25 +51,20 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
 }));
 
 app.use(express.json());
+
 // app.use(cors({
-//     origin: '*',
-//     credentials: true,
-//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//     allowedHeaders: ['Content-Type', 'Authorization'],
+//   origin: [
+//     'https://oblix-pilates.vercel.app',
+//     'http://localhost:5173', // untuk development
+//     'https://oblixpilates.id',
+//     'https://www.oblixpilates.id'
+//   ],
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   // allowedHeaders: ['Content-Type', 'Authorization'],
+//   // credentials: true
 // }));
-app.use(cors({
-  origin: [
-    'https://oblix-pilates.vercel.app',
-    'http://localhost:5173', // untuk development
-    'https://oblixpilates.id',
-    'https://www.oblixpilates.id'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  // allowedHeaders: ['Content-Type', 'Authorization'],
-  // credentials: true
-}));
 
-
+app.use(cors());
 
 app.options('*', cors());
 
