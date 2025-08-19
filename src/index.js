@@ -57,18 +57,21 @@ app.use(express.json());
 //     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 //     allowedHeaders: ['Content-Type', 'Authorization'],
 // }));
-app.use(cors({
-  origin: [
-    'https://oblix-pilates.vercel.app',
-    'http://localhost:5173', // untuk development
-    'https://oblixpilates.id',
-    'https://www.oblixpilates.id'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+// app.use(cors({
+//   origin: [
+//     'https://oblix-pilates.vercel.app',
+//     'http://localhost:5173', // untuk development
+//     'https://oblixpilates.id',
+//     'https://www.oblixpilates.id'
+//   ],
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+//   credentials: true
+// }));
 // Serve static files dari folder uploads
+
+app.use(cors());
+
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/auth', authRoutes);
