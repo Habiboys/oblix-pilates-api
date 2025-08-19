@@ -64,6 +64,8 @@ app.use(cors({
     'https://oblixpilates.id',
     'https://www.oblixpilates.id'
   ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
 // Serve static files dari folder uploads
