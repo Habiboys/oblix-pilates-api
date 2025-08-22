@@ -1,4 +1,4 @@
-const { sendWhatsAppMessage, sendBookingReminder } = require('../services/twilio.service');
+const { sendWhatsAppMessage, sendBookingReminder, getAvailableTemplates } = require('../services/whatsapp.service');
 const { Booking, Schedule, Member, Class, Trainer } = require('../models');
 const { sendH1Reminders } = require('../utils/bookingUtils');
 
@@ -249,44 +249,43 @@ const testH1Reminder = async (req, res) => {
 };
 
 /**
- * Get Twilio configuration status
+ * Get Meta WhatsApp API configuration status
  */
-const getTwilioStatus = async (req, res) => {
+const getWhatsAppStatus = async (req, res) => {
     try {
-        // Check WhatsApp number configuration
-        let whatsappStatus = '❌ Not configured (using sandbox)';
-        let whatsappNumber = '+14155238886 (Twilio Sandbox)';
+        // Check WhatsApp API configuration
+        const accessTokenStatus = process.env.META_ACCESS_TOKEN ? '✅ Configured' : '❌ Missing';
+        const phoneNumberIdStatus = process.env.META_PHONE_NUMBER_ID ? '✅ Configured' : '❌ Missing';
         
-        if (process.env.TWILIO_WHATSAPP_NUMBER) {
-            whatsappStatus = '✅ Custom number configured';
-            const configuredNumber = process.env.TWILIO_WHATSAPP_NUMBER.startsWith('+') 
-                ? process.env.TWILIO_WHATSAPP_NUMBER 
-                : `+${process.env.TWILIO_WHATSAPP_NUMBER}`;
-            whatsappNumber = configuredNumber;
-        }
-
+        // Get available templates
+        const templates = await getAvailableTemplates();
+        
         const config = {
-            account_sid: process.env.TWILIO_ACCOUNT_SID ? '✅ Configured' : '❌ Missing',
-            auth_token: process.env.TWILIO_AUTH_TOKEN ? '✅ Configured' : '❌ Missing',
-            whatsapp_number_status: whatsappStatus,
-            whatsapp_number: whatsappNumber,
+            access_token: accessTokenStatus,
+            phone_number_id: phoneNumberIdStatus,
             environment: process.env.NODE_ENV || 'development',
-            using_sandbox: !process.env.TWILIO_WHATSAPP_NUMBER,
-            sandbox_setup_required: !process.env.TWILIO_WHATSAPP_NUMBER,
+            api_version: 'v20.0',
+            base_url: 'https://graph.facebook.com',
+            available_templates: templates.map(t => ({
+                name: t.name,
+                status: t.status,
+                language: t.language
+            })),
             instructions: {
-                sandbox: "Jika menggunakan sandbox, penerima harus kirim 'join <keyword>' ke +1 415 523 8886 dulu",
-                business: "Jika menggunakan business number, pastikan TWILIO_WHATSAPP_NUMBER sudah diisi di .env"
+                setup: "Pastikan META_ACCESS_TOKEN dan META_PHONE_NUMBER_ID sudah diisi di .env",
+                templates: "Template messages harus sudah diapprove di Meta Business Manager",
+                testing: "Gunakan endpoint /test/whatsapp untuk test pengiriman pesan"
             }
         };
 
         res.status(200).json({
             success: true,
-            message: 'Twilio configuration status',
+            message: 'Meta WhatsApp API configuration status',
             data: config
         });
 
     } catch (error) {
-        console.error('Get Twilio status error:', error);
+        console.error('Get WhatsApp status error:', error);
         res.status(500).json({
             success: false,
             message: 'Internal server error'
@@ -300,5 +299,5 @@ module.exports = {
     testBookingReminderManual,
     testUserReminder,
     testH1Reminder,
-    getTwilioStatus
+    getWhatsAppStatus
 }; 

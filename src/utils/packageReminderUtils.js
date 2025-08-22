@@ -1,6 +1,6 @@
 const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Member, User } = require('../models');
 const { Op } = require('sequelize');
-const twilioService = require('../services/twilio.service');
+const whatsappService = require('../services/whatsapp.service');
 const logger = require('../config/logger');
 
 /**
@@ -96,7 +96,7 @@ const sendLowSessionReminder = async () => {
                         days_remaining: Math.ceil((new Date(memberPackage.end_date) - currentDate) / (1000 * 60 * 60 * 24))
                     };
 
-                    const result = await twilioService.sendLowSessionReminder(reminderData);
+                    const result = await whatsappService.sendLowSessionReminder(reminderData);
                     
                     if (result.success) {
                         reminderCount++;
@@ -231,7 +231,7 @@ const sendExpiryReminder = async () => {
                     days_remaining: daysRemaining
                 };
 
-                const result = await twilioService.sendExpiryReminder(reminderData);
+                const result = await whatsappService.sendExpiryReminder(reminderData);
                 
                 if (result.success) {
                     reminderCount++;

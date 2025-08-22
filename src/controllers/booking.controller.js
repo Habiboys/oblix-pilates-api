@@ -3,7 +3,8 @@ const { validateSessionAvailability, createSessionAllocation, getMemberSessionSu
 const { autoCancelExpiredBookings, processWaitlistPromotion } = require('../utils/bookingUtils');
 const { validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 const { updateSessionUsage } = require('../utils/sessionTrackingUtils');
-const twilioService = require('../services/twilio.service');
+const whatsappService = require('../services/whatsapp.service');
+
 const logger = require('../config/logger');
 
 
@@ -327,7 +328,7 @@ const createUserBooking = async (req, res) => {
 
         // Send WhatsApp and email confirmation (async, don't wait for response)
         try {
-            twilioService.sendBookingConfirmation(createdBooking)
+            whatsappService.sendBookingConfirmation(createdBooking)
                 .then(result => {
                     if (result.success) {
                         logger.info(`✅ WhatsApp & Email confirmation sent to ${createdBooking.Member.full_name}`);
@@ -477,7 +478,7 @@ const updateBookingStatus = async (req, res) => {
                 });
 
                 if (fullBooking) {
-                    twilioService.sendWaitlistPromotion(fullBooking)
+                    whatsappService.sendWaitlistPromotion(fullBooking)
                         .then(result => {
                             if (result.success) {
                                 logger.info(`✅ Waitlist promotion WhatsApp & Email sent to ${fullBooking.Member.full_name}`);
@@ -515,7 +516,7 @@ const updateBookingStatus = async (req, res) => {
                 });
 
                 if (fullBooking) {
-                    twilioService.sendBookingCancellation(fullBooking, notes || 'Booking dibatalkan oleh admin')
+                    whatsappService.sendBookingCancellation(fullBooking, notes || 'Booking dibatalkan oleh admin')
                         .then(result => {
                             if (result.success) {
                                 logger.info(`✅ Booking cancellation WhatsApp & Email sent to ${fullBooking.Member.full_name}`);
@@ -629,7 +630,7 @@ const cancelBooking = async (req, res) => {
 
         // Send WhatsApp and email cancellation notification (async)
         try {
-            twilioService.sendBookingCancellation(booking, cancelReason)
+            whatsappService.sendBookingCancellation(booking, cancelReason)
                 .then(result => {
                     if (result.success) {
                         logger.info(`✅ WhatsApp & Email cancellation sent to ${booking.Member.full_name}`);
@@ -800,7 +801,7 @@ const adminCancelBooking = async (req, res) => {
         // Send WhatsApp and email cancellation notification (async)
         try {
             // Send WhatsApp
-            const whatsappResult = await twilioService.sendAdminCancellation(
+            const whatsappResult = await whatsappService.sendAdminCancellation(
                 booking.Member.phone_number,
                 booking.Member.full_name,
                 booking.Schedule.Class.class_name,
@@ -987,7 +988,7 @@ const updateAttendance = async (req, res) => {
         // Send WhatsApp notification for absent/late attendance
         if (attendance === 'absent' || attendance === 'late') {
             try {
-                twilioService.sendAttendanceNotification(
+                whatsappService.sendAttendanceNotification(
                     booking.Member.phone_number,
                     booking.Member.full_name,
                     booking.Schedule.Class.class_name,
@@ -1108,7 +1109,7 @@ const updateScheduleAttendance = async (req, res) => {
                 // Send WhatsApp notification for absent/late attendance
                 if (attendanceData.attendance === 'absent' || attendanceData.attendance === 'late') {
                     try {
-                        twilioService.sendAttendanceNotification(
+                        whatsappService.sendAttendanceNotification(
                             booking.Member.phone_number,
                             booking.Member.full_name,
                             schedule.Class.class_name,

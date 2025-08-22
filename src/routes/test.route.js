@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { testWhatsApp, testH1Reminder, getTwilioStatus } = require('../controllers/test.controller');
+const { testWhatsApp, testH1Reminder, getWhatsAppStatus } = require('../controllers/test.controller');
 const { validateToken, checkRole } = require('../middlewares/auth.middleware');
 const { validate } = require('../middlewares/validation.middleware');
 const { testWhatsAppSchema } = require('../validations/test.validation');
 
 // Endpoint untuk cek status konfigurasi Twilio
-router.get('/twilio/status', validateToken, checkRole('admin'), getTwilioStatus);
+router.get('/whatsapp/status', validateToken, checkRole('admin'), getWhatsAppStatus);
 
 // Endpoint untuk test kirim WhatsApp
 router.post('/twilio/whatsapp', validateToken, checkRole('admin'), validate(testWhatsAppSchema), testWhatsApp);

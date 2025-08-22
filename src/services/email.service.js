@@ -33,7 +33,7 @@ class EmailService {
                             </p>
                             
                             <div style="text-align: center; margin: 30px 0;">
-                                <a href="${resetUrl}?token=${resetToken}" 
+                                <a href="${resetUrl}/reset-password?token=${resetToken}" 
                                    style="background-color: #007bff; color: white; padding: 12px 30px; 
                                           text-decoration: none; border-radius: 5px; display: inline-block;">
                                     Reset Password
@@ -46,7 +46,7 @@ class EmailService {
                             
                             <p style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; 
                                       word-break: break-all; color: #333;">
-                                ${resetUrl}?token=${resetToken}
+                                ${resetUrl}/reset-password?token=${resetToken}
                             </p>
                             
                             <p style="color: #666; line-height: 1.6; margin-top: 30px;">

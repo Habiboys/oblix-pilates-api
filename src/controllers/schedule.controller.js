@@ -4,7 +4,7 @@ const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistic
 const { validateTrainerScheduleConflict, validateMemberScheduleConflict } = require('../utils/scheduleUtils');
 
 const ScheduleService = require('../services/schedule.service');
-const twilioService = require('../services/twilio.service');
+const whatsappService = require('../services/whatsapp.service');
 const logger = require('../config/logger');
 const { Op } = require('sequelize');
 const fs = require('fs');

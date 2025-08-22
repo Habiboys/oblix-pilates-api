@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Qontak WhatsApp Broadcast API</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c5530;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #25D366;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .recipients-container {
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            background: #f9f9f9;
+        }
+        
+        .recipient-item {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .recipient-item input {
+            margin-right: 10px;
+            margin-bottom: 0;
+        }
+        
+        .btn {
+            background: #25D366;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background: #128C7E;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #25D366;
+            background: #f8f9fa;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #25D366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border: 1px solid #b3d7ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Test Qontak WhatsApp Broadcast API</h1>
+        
+        <div class="info-box">
+            <h3>📋 Informasi Penting</h3>
+            <ul>
+                <li>Pastikan Anda memiliki akun Qontak dengan akses API</li>
+                <li>Token API harus valid dan memiliki permission untuk broadcast</li>
+                <li><strong>⚠️ Template message HARUS sudah dibuat dan disetujui WhatsApp</strong></li>
+                <li>Anda TIDAK bisa membuat pesan langsung di kode - harus menggunakan template</li>
+                <li>Nomor tujuan harus dalam format internasional (contoh: 628123456789)</li>
+                <li>Proses approval template biasanya 24-48 jam</li>
+            </ul>
+        </div>
+        
+        <div class="info-box" style="background: #fff3cd; border-color: #ffeaa7;">
+            <h3>🚨 Cara Membuat Template Message</h3>
+            <ol>
+                <li><strong>Login</strong> ke dashboard Qontak</li>
+                <li><strong>Buka</strong> menu "Template Messages" atau "Message Templates"</li>
+                <li><strong>Klik</strong> "Create Template" atau "Buat Template"</li>
+                <li><strong>Isi</strong> detail template (nama, kategori, konten, bahasa)</li>
+                <li><strong>Submit</strong> untuk review WhatsApp</li>
+                <li><strong>Tunggu</strong> approval (24-48 jam)</li>
+                <li><strong>Copy</strong> Template ID setelah approved</li>
+            </ol>
+        </div>
+        
+        <form id="broadcastForm">
+            <div class="form-group">
+                <label for="apiToken">🔑 API Token *</label>
+                <input type="password" id="apiToken" placeholder="Masukkan token API Qontak Anda" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="baseUrl">🌐 Base URL</label>
+                <select id="baseUrl">
+                    <option value="https://service-chat.qontak.com/api/open/v1">service-chat.qontak.com (Chat & Conversation)</option>
+                    <option value="https://service.qontak.com/api/open/v1">service.qontak.com (Outbound Only)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="channelIntegrationId">📱 Channel Integration ID *</label>
+                <input type="text" id="channelIntegrationId" placeholder="ID integrasi channel WhatsApp" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="messageTemplateId">📝 Message Template ID *</label>
+                <input type="text" id="messageTemplateId" placeholder="ID template pesan yang sudah disetujui" required>
+            </div>
+            
+            <div class="form-group">
+                <label>📞 Daftar Penerima *</label>
+                <div class="recipients-container" id="recipientsContainer">
+                    <div class="recipient-item">
+                        <input type="text" placeholder="Nama penerima" class="recipient-name">
+                        <input type="tel" placeholder="628123456789" class="recipient-number">
+                        <button type="button" class="btn btn-danger" onclick="removeRecipient(this)">❌</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="addRecipient()">➕ Tambah Penerima</button>
+            </div>
+            
+            <div class="form-group">
+                <label for="languageCode">🌍 Kode Bahasa</label>
+                <select id="languageCode">
+                    <option value="id">Bahasa Indonesia (id)</option>
+                    <option value="en">English (en)</option>
+                    <option value="en_US">English US (en_US)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="parameters">⚙️ Parameters (JSON Format)</label>
+                <textarea id="parameters" placeholder='{"body": [{"key": "name", "value": "John"}], "header": {"format": "TEXT", "params": [{"key": "title", "value": "Hello"}]}}'></textarea>
+            </div>
+            
+            <button type="submit" class="btn">📤 Kirim Broadcast</button>
+            <button type="button" class="btn btn-secondary" onclick="generateCurlCommand()">📋 Generate cURL</button>
+            <button type="button" class="btn btn-secondary" onclick="testConnection()">🔍 Test Connection</button>
+            <button type="button" class="btn btn-secondary" onclick="clearForm()">🗑️ Clear Form</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Mengirim broadcast...</p>
+        </div>
+        
+        <div id="response" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Fungsi untuk menambah penerima
+        function addRecipient() {
+            const container = document.getElementById('recipientsContainer');
+            const recipientItem = document.createElement('div');
+            recipientItem.className = 'recipient-item';
+            recipientItem.innerHTML = `
+                <input type="text" placeholder="Nama penerima" class="recipient-name">
+                <input type="tel" placeholder="628123456789" class="recipient-number">
+                <button type="button" class="btn btn-danger" onclick="removeRecipient(this)">❌</button>
+            `;
+            container.appendChild(recipientItem);
+        }
+
+        // Fungsi untuk menghapus penerima
+        function removeRecipient(button) {
+            const container = document.getElementById('recipientsContainer');
+            if (container.children.length > 1) {
+                button.parentElement.remove();
+            } else {
+                alert('Minimal harus ada satu penerima');
+            }
+        }
+
+        // Fungsi untuk mengambil data penerima
+        function getRecipients() {
+            const recipientItems = document.querySelectorAll('.recipient-item');
+            const recipients = [];
+            
+            recipientItems.forEach(item => {
+                const name = item.querySelector('.recipient-name').value.trim();
+                const number = item.querySelector('.recipient-number').value.trim();
+                
+                if (name && number) {
+                    recipients.push({
+                        to_name: name,
+                        to_number: number
+                    });
+                }
+            });
+            
+            return recipients;
+        }
+
+        // Fungsi untuk membuat payload API
+        function createApiPayload() {
+            const recipients = getRecipients();
+            const parameters = document.getElementById('parameters').value.trim();
+            
+            let parsedParameters = {};
+            if (parameters) {
+                try {
+                    parsedParameters = JSON.parse(parameters);
+                } catch (e) {
+                    throw new Error('Format JSON parameters tidak valid');
+                }
+            }
+
+            const payload = {
+                to_name: recipients.map(r => r.to_name),
+                to_number: recipients.map(r => r.to_number),
+                message_template_id: document.getElementById('messageTemplateId').value.trim(),
+                channel_integration_id: document.getElementById('channelIntegrationId').value.trim(),
+                language: {
+                    code: document.getElementById('languageCode').value
+                }
+            };
+
+            if (Object.keys(parsedParameters).length > 0) {
+                payload.parameters = parsedParameters;
+            }
+
+            return payload;
+        }
+
+        // Fungsi untuk mengirim broadcast dengan error handling yang lebih baik
+        async function sendBroadcast(payload) {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const token = document.getElementById('apiToken').value;
+            
+            // Tambahkan timeout dan error handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 detik timeout
+            
+            try {
+                const response = await fetch(`${baseUrl}/broadcasts/whatsapp/direct`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'User-Agent': 'QontakAPI-Test/1.0'
+                    },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+                
+                let result;
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    const text = await response.text();
+                    result = { error: 'Response bukan JSON', content: text };
+                }
+                
+                return { response, result };
+                
+            } catch (error) {
+                clearTimeout(timeoutId);
+                
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timeout (30 detik) - Periksa koneksi internet atau server sedang down');
+                } else if (error.message.includes('Failed to fetch')) {
+                    throw new Error('Gagal koneksi ke server. Kemungkinan: \n1. CORS policy memblokir request\n2. URL endpoint salah\n3. Server tidak dapat diakses\n4. Masalah jaringan\n\nCoba gunakan cURL command atau Postman');
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        // Event listener untuk form submission
+        document.getElementById('broadcastForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const responseDiv = document.getElementById('response');
+            const loading = document.getElementById('loading');
+            
+            try {
+                // Validasi
+                const recipients = getRecipients();
+                if (recipients.length === 0) {
+                    throw new Error('Minimal harus ada satu penerima yang valid');
+                }
+
+                // Tampilkan loading
+                loading.style.display = 'block';
+                responseDiv.style.display = 'none';
+
+                // Buat payload
+                const payload = createApiPayload();
+                
+                // Log payload untuk debugging
+                console.log('Payload yang akan dikirim:', JSON.stringify(payload, null, 2));
+
+                // Kirim request
+                const { response, result } = await sendBroadcast(payload);
+
+                // Sembunyikan loading
+                loading.style.display = 'none';
+
+                // Tampilkan response
+                responseDiv.style.display = 'block';
+                responseDiv.className = `response ${response.ok ? '' : 'error'}`;
+                
+                const responseText = `Status: ${response.status} ${response.statusText}
+URL: ${response.url}
+Timestamp: ${new Date().toLocaleString()}
+
+=== REQUEST PAYLOAD ===
+${JSON.stringify(payload, null, 2)}
+
+=== RESPONSE ===
+${JSON.stringify(result, null, 2)}`;
+
+                responseDiv.textContent = responseText;
+
+            } catch (error) {
+                // Sembunyikan loading
+                loading.style.display = 'none';
+                
+                // Tampilkan error
+                responseDiv.style.display = 'block';
+                responseDiv.className = 'response error';
+                responseDiv.textContent = `❌ Error: ${error.message}\n\nTimestamp: ${new Date().toLocaleString()}`;
+            }
+        });
+
+        // Fungsi untuk test koneksi
+        async function testConnection() {
+            const baseUrl = document.getElementById('baseUrl').value;
+            const token = document.getElementById('apiToken').value;
+            const responseDiv = document.getElementById('response');
+            
+            if (!token.trim()) {
+                alert('Masukkan API Token terlebih dahulu');
+                return;
+            }
+            
+            responseDiv.style.display = 'block';
+            responseDiv.className = 'response';
+            responseDiv.textContent = 'Testing connection...';
+            
+            try {
+                // Test dengan endpoint yang lebih sederhana dulu
+                const testUrl = `${baseUrl}/templates`; // endpoint untuk list templates
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const response = await fetch(testUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const responseText = `=== CONNECTION TEST RESULT ===
+Status: ${response.status} ${response.statusText}
+URL: ${testUrl}
+Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}
+Timestamp: ${new Date().toLocaleString()}
+
+${response.ok ? '✅ Koneksi berhasil!' : '❌ Koneksi gagal - periksa token atau URL'}`;
+
+                responseDiv.textContent = responseText;
+                responseDiv.className = `response ${response.ok ? '' : 'error'}`;
+                
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.textContent = `❌ Connection Test Failed: ${error.message}\n\nTimestamp: ${new Date().toLocaleString()}`;
+            }
+        }
+
+        // Fungsi untuk generate cURL command
+        function generateCurlCommand() {
+            try {
+                const payload = createApiPayload();
+                const baseUrl = document.getElementById('baseUrl').value;
+                const token = document.getElementById('apiToken').value;
+
+                const curlCommand = `curl -X POST "${baseUrl}/broadcasts/whatsapp/direct" \\
+  -H "Authorization: Bearer ${token}" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(payload, null, 2)}'`;
+
+                const responseDiv = document.getElementById('response');
+                responseDiv.style.display = 'block';
+                responseDiv.className = 'response';
+                responseDiv.textContent = `=== CURL COMMAND ===\n${curlCommand}`;
+
+            } catch (error) {
+                alert(`Error generating cURL: ${error.message}`);
+            }
+        }
+
+        // Fungsi untuk clear form
+        function clearForm() {
+            if (confirm('Apakah Anda yakin ingin menghapus semua data di form?')) {
+                document.getElementById('broadcastForm').reset();
+                
+                // Reset recipients container
+                const container = document.getElementById('recipientsContainer');
+                container.innerHTML = `
+                    <div class="recipient-item">
+                        <input type="text" placeholder="Nama penerima" class="recipient-name">
+                        <input type="tel" placeholder="628123456789" class="recipient-number">
+                        <button type="button" class="btn btn-danger" onclick="removeRecipient(this)">❌</button>
+                    </div>
+                `;
+                
+                // Hide response
+                document.getElementById('response').style.display = 'none';
+            }
+        }
+
+        // Load sample data untuk testing (opsional)
+        window.addEventListener('load', () => {
+            // Uncomment untuk auto-fill data sample
+            /*
+            document.getElementById('channelIntegrationId').value = 'your-channel-id';
+            document.getElementById('messageTemplateId').value = 'your-template-id';
+            document.getElementById('parameters').value = JSON.stringify({
+                body: [
+                    {key: "name", value: "Customer Name"},
+                    {key: "product", value: "Product Name"}
+                ]
+            }, null, 2);
+            */
+        });
+    </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 const { Booking, Schedule, Member, MemberPackage } = require('../models');
 const { Op } = require('sequelize');
 const logger = require('../config/logger');
-const twilioService = require('../services/twilio.service');
+const whatsappService = require('../services/whatsapp.service');
 const { updateSessionUsage, setPackageStartDate } = require('./sessionTrackingUtils');
 
 /**
@@ -155,7 +155,7 @@ const autoCancelExpiredBookings = async () => {
                         logger.info(`📧 Preparing to send notifications for ${bookingsToCancel.length} cancelled bookings`);
                         logger.info(`📧 Schedule: ${scheduleWithClass.Class?.class_name || 'Unknown'} on ${schedule.date_start} ${schedule.time_start}`);
                         
-                        const result = await twilioService.sendClassCancellation(bookingsToCancel, scheduleWithClass);
+                        const result = await whatsappService.sendClassCancellation(bookingsToCancel, scheduleWithClass);
                         const successCount = result.filter(r => r.success).length;
                         const whatsappCount = result.filter(r => r.whatsapp && r.whatsapp.success).length;
                         const emailCount = result.filter(r => r.email && r.email.success).length;
@@ -314,7 +314,7 @@ const processWaitlistPromotion = async (scheduleId) => {
 
                 // Send WhatsApp promotion notification (async)
                 try {
-                    twilioService.sendWaitlistPromotion(nextWaitlistBooking)
+                    whatsappService.sendWaitlistPromotion(nextWaitlistBooking)
                         .then(result => {
                             if (result.success) {
                                 logger.info(`✅ WhatsApp & Email promotion notification sent to ${nextWaitlistBooking.Member.full_name}`);
@@ -395,7 +395,7 @@ const sendH1Reminders = async () => {
             try {
                 logger.info(`📱 Sending H-1 reminder to ${booking.Member.full_name} for class ${booking.Schedule.Class.class_name}`);
 
-                const result = await twilioService.sendBookingReminder(booking);
+                const result = await whatsappService.sendBookingReminder(booking);
                 
                 results.push({
                     booking_id: booking.id,
