@@ -254,6 +254,63 @@ const changePassword = async (req, res) => {
     }
 }
 
+const checkResetToken = async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        // Validasi input
+        if (!token) {
+            return res.status(400).json({
+                message: "Token is required"
+            });
+        }
+
+        // Cari user berdasarkan reset token
+        const user = await User.findOne({ 
+            where: { 
+                reset_token: token,
+                reset_token_expiry: {
+                    [require('sequelize').Op.gt]: new Date()
+                }
+            },
+            attributes: ['id', 'email', 'reset_token_expiry'] // Hanya ambil data yang diperlukan
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                message: "Invalid or expired reset token",
+                valid: false,
+                reason: "Token tidak ditemukan atau sudah expired"
+            });
+        }
+
+        // Hitung sisa waktu token
+        const now = new Date();
+        const expiryTime = new Date(user.reset_token_expiry);
+        const timeLeft = Math.max(0, expiryTime.getTime() - now.getTime());
+        const minutesLeft = Math.ceil(timeLeft / (1000 * 60));
+
+        res.status(200).json({
+            message: "Token is valid",
+            valid: true,
+            data: {
+                email: user.email,
+                expires_at: user.reset_token_expiry,
+                minutes_left: minutesLeft,
+                can_reset: true
+            }
+        });
+
+    } catch (error) {
+        console.error('Check reset token error:', error);
+        res.status(500).json({
+            message: "Internal server error",
+            valid: false,
+            reason: "Server error"
+        });
+    }
+};
+
 const resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
@@ -381,6 +438,7 @@ module.exports = {
     refreshToken,
     forgotPassword,
     changePassword,
+    checkResetToken,
     resetPassword,
     checkPurchaseStatus,
     checkTokenStatus
