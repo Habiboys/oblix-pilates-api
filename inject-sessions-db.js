@@ -709,6 +709,18 @@ const MEMBER_SESSIONS = [
     usedPrivateSessions: 0,
     validPeriod: 12
   },
+ 
+  {
+    email: 'rose81h@gmail.com',
+    startDate: '', 
+    groupSessions: 19, // Group Class, sisa 3 (Promo 20sesi)
+    semiPrivateSessions: 0,
+    privateSessions: 0,
+    usedGroupSessions: 1, // 20 sesi total - 3 sisa = 17 used
+    usedSemiPrivateSessions: 0,
+    usedPrivateSessions: 0,
+    validPeriod: 12
+  },
   {
     email: 'roslinamgm@yahoo.com',
     startDate: '', 
@@ -746,36 +758,36 @@ const MEMBER_SESSIONS = [
   //-----
   {
     email: "dhnota2005@yahoo.com",
-    startDate: '2025-08-03', 
-    groupSessions: 11, // Group Class, sisa 12 (Promo 10 + 2)
-    semiPrivateSessions: 0,
+    startDate: '2025-08-17', 
+    groupSessions: 0, // Group Class, sisa 12 (Promo 10 + 2)
+    semiPrivateSessions: 8,
     privateSessions: 0,
-    usedGroupSessions: 1, // 12 sesi total - 12 sisa = 0 used
-    usedSemiPrivateSessions: 0,
+    usedGroupSessions: 0, // 12 sesi total - 12 sisa = 0 used
+    usedSemiPrivateSessions: 2,
     usedPrivateSessions: 0,
-    validPeriod: 6
+    validPeriod: 10
   },
   {
     email: "L1nd470@gmail.com", 
-    startDate: '2025-08-03', 
-    groupSessions: 11, // Group Class, sisa 12 (Promo 10 + 2)
-    semiPrivateSessions: 0,
+    startDate: '2025-08-17', 
+    groupSessions: 0, // Group Class, sisa 12 (Promo 10 + 2)
+    semiPrivateSessions: 8,
     privateSessions: 0,
-    usedGroupSessions: 1, // 12 sesi total - 12 sisa = 0 used
-    usedSemiPrivateSessions: 0,
+    usedGroupSessions: 0, // 12 sesi total - 12 sisa = 0 used
+    usedSemiPrivateSessions: 2,
     usedPrivateSessions: 0,
-    validPeriod: 6
+    validPeriod: 10
   },
   {
     email: "06winniethepooh06@gmail.com",
-    startDate: '2025-08-03', 
-    groupSessions: 11, // Group Class, sisa 12 (Promo 10 + 2)
+    startDate: '2025-08-25', 
+    groupSessions: 11, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 1, // 12 sesi total - 12 sisa = 0 used
+    usedGroupSessions: 1, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
-    validPeriod: 6
+    validPeriod: 10
   },
   // Tambahkan member lain di sini sesuai kebutuhan
 ];
