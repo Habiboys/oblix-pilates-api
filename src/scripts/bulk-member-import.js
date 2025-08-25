@@ -10,56 +10,87 @@ require('dotenv').config();
 
 // Data member yang akan diimport (hard coded dari gambar)
 const membersData = [
+//     {
+//     "full_name": "M Nouval Habibie",
+//     "email": "nouvalhabibie18@gmail.com",
+//     "phone_number": "+6285142247464",
+//     "username": "mnouvalhabibie"
+//   },
+
+      {
+    "full_name": "Ms Marina",
+    "email": "marinafung@gmail.com",
+    "phone_number": "+6287878932888",
+    "username": "msmarina"
+  },
+  {
+    "full_name": "Ms Dahlia",
+    "email": "dhnota2005@yahoo.com",
+    "phone_number": "+628129222396",
+    "username": "msdahlia"
+  },
+  {
+    "full_name": "Ms Linda",
+    "email": "L1nd470@gmail.com",
+    "phone_number": "+62811609884",
+    "username": "mslinda"
+  },
+  {
+    "full_name": "Ms Vinny",
+    "email": "06winniethepooh06@gmail.com",
+    "phone_number": "+6281212861118",
+    "username": "mslinda"
+  },
 
 
-  {
-    "full_name": "Ms Tuty",
-    "email": "cuanwie@gmail.com",
-    "phone_number": "+6288115300010",
-    "username": "mstuty"
-  },
-  {
-    "full_name": "Juli",
-    "email": "henny.mul@gmail.com",
-    "phone_number": "+6282183836363",
-    "username": "juli"
-  },
-  {
-    "full_name": "Ms Henny mulyadi",
-    "email": "henny3672@gmail.com",
-    "phone_number": "+6287881078130",
-    "username": "mshennymulyadi"
-  },
-  {
-    "full_name": "Ms Chintya",
-    "email": "cynthiaprayitno@icloud.com",
-    "phone_number": "+6281611019999",
-    "username": "mschintya"
-  },
-  {
-    "full_name": "Ms Vivian",
-    "email": "Vivianncen@gmail.com",
-    "phone_number": "+6285159775467",
-    "username": "msvivian"
-  },
-  {
-    "full_name": "Ms Natasya",
-    "email": "Natasyaaaa19@gmail.com",
-    "phone_number": "+6285685350777",
-    "username": "msnatasya"
-  },
-  {
-    "full_name": "Ms Jenifer",
-    "email": "jennismemories@gmail.com",
-    "phone_number": "+6288210651657",
-    "username": "msjenifer"
-  },
-  {
-    "full_name": "Ms Jessica",
-    "email": "jennkezia@gmail.com",
-    "phone_number": "+6288210651656",
-    "username": "msjessica"
-  }
+//   {
+//     "full_name": "Ms Tuty",
+//     "email": "cuanwie@gmail.com",
+//     "phone_number": "+6288115300010",
+//     "username": "mstuty"
+//   },
+//   {
+//     "full_name": "Juli",
+//     "email": "henny.mul@gmail.com",
+//     "phone_number": "+6282183836363",
+//     "username": "juli"
+//   },
+//   {
+//     "full_name": "Ms Henny mulyadi",
+//     "email": "henny3672@gmail.com",
+//     "phone_number": "+6287881078130",
+//     "username": "mshennymulyadi"
+//   },
+//   {
+//     "full_name": "Ms Chintya",
+//     "email": "cynthiaprayitno@icloud.com",
+//     "phone_number": "+6281611019999",
+//     "username": "mschintya"
+//   },
+//   {
+//     "full_name": "Ms Vivian",
+//     "email": "Vivianncen@gmail.com",
+//     "phone_number": "+6285159775467",
+//     "username": "msvivian"
+//   },
+//   {
+//     "full_name": "Ms Natasya",
+//     "email": "Natasyaaaa19@gmail.com",
+//     "phone_number": "+6285685350777",
+//     "username": "msnatasya"
+//   },
+//   {
+//     "full_name": "Ms Jenifer",
+//     "email": "jennismemories@gmail.com",
+//     "phone_number": "+6288210651657",
+//     "username": "msjenifer"
+//   },
+//   {
+//     "full_name": "Ms Jessica",
+//     "email": "jennkezia@gmail.com",
+//     "phone_number": "+6288210651656",
+//     "username": "msjessica"
+//   }
     // {
     //     "full_name": "Khalied Maturino",
     //     "email": "khalidmaturino@gmail.com",
@@ -415,17 +446,17 @@ const createUserAndMember = async (memberData) => {
         // Hash password (default: phone number) - convert to +62 format without strip
         let defaultPassword = phone_number;
         
-        // Convert phone number to +62 format without strip
-        if (defaultPassword.startsWith('0')) {
-            defaultPassword = '+62' + defaultPassword.substring(1);
-        } else if (defaultPassword.startsWith('62')) {
-            defaultPassword = '+' + defaultPassword;
-        } else if (!defaultPassword.startsWith('+62')) {
-            defaultPassword = '+62' + defaultPassword.replace(/[^0-9]/g, '');
-        }
+        // // Convert phone number to +62 format without strip
+        // if (defaultPassword.startsWith('0')) {
+        //     defaultPassword = '+62' + defaultPassword.substring(1);
+        // } else if (defaultPassword.startsWith('62')) {
+        //     defaultPassword = '+' + defaultPassword;
+        // } else if (!defaultPassword.startsWith('+62')) {
+        //     defaultPassword = '+62' + defaultPassword.replace(/[^0-9]/g, '');
+        // }
         
-        // Remove any remaining non-numeric characters except +
-        defaultPassword = defaultPassword.replace(/[^+0-9]/g, '');
+        // // Remove any remaining non-numeric characters except +
+        // defaultPassword = defaultPassword.replace(/[^+0-9]/g, '');
         
         const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
