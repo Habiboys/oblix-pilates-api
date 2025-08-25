@@ -44,13 +44,13 @@ const testDatabaseConnection = async () => {
 // Daftar email member yang perlu dikirim email perbaruan
 const memberEmails = [
   'nouvalhabibie18@gmail.com',
-  //  'nellyathien@gmail.com',
-//  'mond81700@gmail.com',
-//  'eviespp@gmail.com',
-//  'sharines89@gmail.com',
-//  'Natasyaaaa19@gmail.com',
-//  'cynthiaprayitno@icloud.com',
-//  'nzzzel@yahoo.com'
+   'nellyathien@gmail.com',
+ 'mond81700@gmail.com',
+ 'eviespp@gmail.com',
+ 'sharines89@gmail.com',
+ 'Natasyaaaa19@gmail.com',
+ 'cynthiaprayitno@icloud.com',
+ 'nzzzel@yahoo.com'
  
 ];
 // const memberEmails = [
