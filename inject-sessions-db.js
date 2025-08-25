@@ -104,32 +104,32 @@ const MEMBER_SESSIONS = [
   {
     email: 'juliana627@yahooo.com',
     startDate: '2025-02-24', // Format: YYYY-MM-DD
-    groupSessions: 0, // Ms Yunnie memiliki Group Class (0 sisa) + Private 1:1 (7 sisa), tapi Private dihitung terpisah
+    groupSessions: 9, 
     semiPrivateSessions: 0,
-    privateSessions: 5, // Private 1:1 20sesi, sisa 7
-    usedGroupSessions: 10, // 20 sesi total - 7 sisa = 13 used
+    privateSessions: 4, 
+    usedGroupSessions: 1, 
     usedSemiPrivateSessions: 0,
-    usedPrivateSessions: 15, // 20 sesi total - 7 sisa = 13 used
-    validPeriod: 12 // 12 minggu
+    usedPrivateSessions: 16, 
+    validPeriod: 20 
   },
   {
     email: 'eviespp@gmail.com',
-    startDate: '2024-07-11', // Format: YYYY-MM-DD
-    groupSessions: 19, // Group Class, sisa 19 (Promo 20sesi)
+    startDate: '2024-07-11', 
+    groupSessions: 19, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 1, // 20 sesi total - 19 sisa = 1 used
+    usedGroupSessions: 1,
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
-    validPeriod: 12 // 12 minggu
+    validPeriod: 12 
   },
   {
     email: 'nellyathien@gmail.com',
     startDate: '2025-06-14', 
-    groupSessions: 26, // Group Class, sisa 11 (Renewal package 12 sessi)
+    groupSessions: 15, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 6, // 12 sesi total - 11 sisa = 1 used
+    usedGroupSessions: 17, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 12
@@ -137,10 +137,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'alepang447@gmail.com',
     startDate: '2025-06-03', 
-    groupSessions: 17, // Group Class, sisa 6 (Renewal package 12 sessi)
+    groupSessions: 4, // Group Class, sisa 6 (Renewal package 12 sessi)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 17, // 12 sesi total - 6 sisa = 6 used
+    usedGroupSessions: 30, // 12 sesi total - 6 sisa = 6 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 12
@@ -148,10 +148,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'juliewid@yahoo.com',
     startDate: '2025-06-14', 
-    groupSessions: 11, // Group Class, sisa 11 (Promo 20sesi)
+    groupSessions: 9, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 1, // 20 sesi total - 11 sisa = 9 used
+    usedGroupSessions: 3, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
@@ -159,10 +159,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'cnc_sweet@yahoo.com',
     startDate: '2025-07-07', 
-    groupSessions: 12, // Group Class, sisa 13 (Promo 10 + 2)
+    groupSessions: 9, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 8, // 12 sesi total - 13 sisa = 0 used (mungkin ada bonus)
+    usedGroupSessions: 11, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 12
@@ -170,10 +170,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'chellainte@yahoo.com',
     startDate: '2025-03-28', 
-    groupSessions: 10, // Group Class, sisa 12 (Promo 10 + 2)
+    groupSessions: 9, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 2, // 12 sesi total - 12 sisa = 0 used
+    usedGroupSessions: 3,
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod:6
@@ -181,10 +181,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'Ijuwita66@yahoo.com',
     startDate: '2025-07-03', 
-    groupSessions: 4, // Group Class, sisa 5 (Promo Ramadhan 12sesi)
+    groupSessions: 3, // Group Class, sisa 5 (Promo Ramadhan 12sesi)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 8, // 12 sesi total - 5 sisa = 7 used
+    usedGroupSessions: 9, // 12 sesi total - 5 sisa = 7 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
@@ -192,10 +192,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'goh_weiching@yahoo.com',
     startDate: '2025-07-18', 
-    groupSessions: 5, // Group Class, sisa 4 (Promo 10 + 2)
+    groupSessions: 1, // Group Class, sisa 4 (Promo 10 + 2)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 7, // 12 sesi total - 4 sisa = 8 used
+    usedGroupSessions: 11, // 12 sesi total - 4 sisa = 8 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
@@ -214,10 +214,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'nzzzel@yahoo.com',
     startDate: '2025-07-16', 
-    groupSessions: 10, // Group Class, sisa 10 (Promo 10 + 2)
+    groupSessions: 9, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 2, // 12 sesi total - 10 sisa = 2 used
+    usedGroupSessions: 3, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
@@ -225,32 +225,32 @@ const MEMBER_SESSIONS = [
   {
     email: 'cvabigail@gmail.com',
     startDate: '2025-08-02', 
-    groupSessions: 12, // Group Class, sisa 13 (Promo 10 + 2)
+    groupSessions: 9, // Group Class, sisa 13 (Promo 10 + 2)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 0, // 12 sesi total - 13 sisa = 0 used (mungkin ada bonus)
+    usedGroupSessions: 3, // 12 sesi total - 13 sisa = 0 used (mungkin ada bonus)
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
   },
   {
     email: 'veniliong@gmail.com',
-    startDate: '2025-07-19', 
-    groupSessions: 6, // Group Class, sisa 8 (Promo 10 + 2)
+    startDate: '', 
+    groupSessions: 25, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 6, // 12 sesi total - 8 sisa = 4 used
+    usedGroupSessions: 0, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
-    validPeriod: 6
+    validPeriod: 12
   },
   {
     email: 'sumicst8@gmail.com',
-    startDate: '2025-06-06', 
-    groupSessions: 18, // Group Class, sisa 18 (Paket Promo 20sesi, sisa 6 + Renewal package 12 sessi)
+    startDate: '', 
+    groupSessions: 12, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 8, // 32 sesi total - 18 sisa = 14 used
+    usedGroupSessions: 0, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 12
@@ -269,21 +269,21 @@ const MEMBER_SESSIONS = [
   {
     email: 'ching1905@yahoo.com.sg',
     startDate: '2025-06-03', 
-    groupSessions: 40, // Ms Ching Ching memiliki Group Class (40 sisa) + Private 1:1 (18 sisa)
+    groupSessions: 35, 
     semiPrivateSessions: 0,
-    privateSessions: 17, // Private 1:1, sisa 18
-    usedGroupSessions: 0, // 40 sesi total - 40 sisa = 0 used
+    privateSessions: 18, 
+    usedGroupSessions: 5, 
     usedSemiPrivateSessions: 0,
-    usedPrivateSessions: 3, // 20 sesi total - 18 sisa = 2 used
+    usedPrivateSessions: 2, 
     validPeriod: 24
   },
   {
     email: 'yuri.lian@yahoo.com',
     startDate: '2025-05-30', 
-    groupSessions: 13, // Group Class, sisa 14 (Promo 20sesi)
+    groupSessions: 8, // Group Class, sisa 14 (Promo 20sesi)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 7, // 20 sesi total - 14 sisa = 6 used
+    usedGroupSessions: 12, // 20 sesi total - 14 sisa = 6 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 12
@@ -291,10 +291,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'chingsiehsiu@gmail.com',
     startDate: '2025-07-06', 
-    groupSessions: 20, // Group Class, sisa 8 (Renewal package 12 sessi)
+    groupSessions: 4, // Group Class, sisa 8 (Renewal package 12 sessi)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 12, // 12 sesi total - 8 sisa = 4 used
+    usedGroupSessions: 28, // 12 sesi total - 8 sisa = 4 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 12
@@ -302,10 +302,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'cuanwie@gmail.com',
     startDate: '2025-07-04', 
-    groupSessions: 7, // Group Class, sisa 8 (Promo 10 + 2)
+    groupSessions: 3, // Group Class, sisa 8 (Promo 10 + 2)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 5, // 12 sesi total - 8 sisa = 4 used
+    usedGroupSessions: 9, // 12 sesi total - 8 sisa = 4 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
@@ -313,10 +313,10 @@ const MEMBER_SESSIONS = [
   {
     email: 'taniahagy@gmail.com',
     startDate: '2025-07-21', 
-    groupSessions: 7, // Group Class, sisa 10 (Promo 10+2)
+    groupSessions: 6, // Group Class, sisa 10 (Promo 10+2)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 5, // 12 sesi total - 10 sisa = 2 used
+    usedGroupSessions: 6, // 12 sesi total - 10 sisa = 2 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
@@ -324,21 +324,21 @@ const MEMBER_SESSIONS = [
   {
     email: 'jusitze83@gmail.com',
     startDate: '2025-03-25', 
-    groupSessions: 55, // Group Class, sisa 25 (Promo unlimited 1 Tahun)
+    groupSessions: 17, // Group Class, sisa 25 (Promo unlimited 1 Tahun)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 0, // Unlimited, tidak ada used
+    usedGroupSessions: 38, // Unlimited, tidak ada used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
-    validPeriod: 52 // 1 tahun untuk unlimited
+    validPeriod: 52 
   },
   {
     email: 'ch1nkch1nk789@gmail.com',
     startDate: '2025-07-17', 
-    groupSessions: 8, // Group Class, sisa 9 (Promo 10+2)
+    groupSessions: 6, // Group Class, sisa 9 (Promo 10+2)
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 4, // 12 sesi total - 9 sisa = 3 used
+    usedGroupSessions: 6, // 12 sesi total - 9 sisa = 3 used
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
@@ -652,17 +652,19 @@ const MEMBER_SESSIONS = [
     usedPrivateSessions: 0,
     validPeriod: 12
   },
+  //sudah ======
   {
     email: 'connyandriani@gmail.com',
     startDate: '2025-07-21', 
-    groupSessions: 10, // Group Class, sisa 10 (Promo 10 + 2)
+    groupSessions: 6, 
     semiPrivateSessions: 0,
     privateSessions: 0,
-    usedGroupSessions: 2, // 12 sesi total - 10 sisa = 2 used
+    usedGroupSessions: 6, 
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 6
   },
+  //-----
   {
     email: 'jennismemories@gmail.com',
     startDate: '', 
@@ -706,7 +708,53 @@ const MEMBER_SESSIONS = [
     usedSemiPrivateSessions: 0,
     usedPrivateSessions: 0,
     validPeriod: 12
-  }
+  },
+//====sudah======
+  {
+    email: "marinafung@gmail.com",
+    startDate: '2025-08-16', 
+    groupSessions: 18, // Group Class, sisa 12 (Promo 10 + 2)
+    semiPrivateSessions: 0,
+    privateSessions: 0,
+    usedGroupSessions: 6, // 12 sesi total - 12 sisa = 0 used
+    usedSemiPrivateSessions: 0,
+    usedPrivateSessions: 0,
+    validPeriod: 8
+  },
+  //-----
+  {
+    email: "dhnota2005@yahoo.com",
+    startDate: '2025-08-03', 
+    groupSessions: 11, // Group Class, sisa 12 (Promo 10 + 2)
+    semiPrivateSessions: 0,
+    privateSessions: 0,
+    usedGroupSessions: 1, // 12 sesi total - 12 sisa = 0 used
+    usedSemiPrivateSessions: 0,
+    usedPrivateSessions: 0,
+    validPeriod: 6
+  },
+  {
+    email: "L1nd470@gmail.com", 
+    startDate: '2025-08-03', 
+    groupSessions: 11, // Group Class, sisa 12 (Promo 10 + 2)
+    semiPrivateSessions: 0,
+    privateSessions: 0,
+    usedGroupSessions: 1, // 12 sesi total - 12 sisa = 0 used
+    usedSemiPrivateSessions: 0,
+    usedPrivateSessions: 0,
+    validPeriod: 6
+  },
+  {
+    email: "06winniethepooh06@gmail.com",
+    startDate: '2025-08-03', 
+    groupSessions: 11, // Group Class, sisa 12 (Promo 10 + 2)
+    semiPrivateSessions: 0,
+    privateSessions: 0,
+    usedGroupSessions: 1, // 12 sesi total - 12 sisa = 0 used
+    usedSemiPrivateSessions: 0,
+    usedPrivateSessions: 0,
+    validPeriod: 6
+  },
   // Tambahkan member lain di sini sesuai kebutuhan
 ];
 

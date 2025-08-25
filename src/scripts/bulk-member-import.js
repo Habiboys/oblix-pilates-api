@@ -17,6 +17,13 @@ const membersData = [
 //     "username": "mnouvalhabibie"
 //   },
 
+{
+    "full_name": "Ms Mona Nest",
+    "email": "monajohan99@gmail.com",
+    "phone_number": "+6281282860300",
+    "username": "msmonanest"
+}
+
 //       {
 //     "full_name": "Ms Marina",
 //     "email": "marinafung@gmail.com",
@@ -35,12 +42,12 @@ const membersData = [
 //     "phone_number": "+62811609884",
 //     "username": "mslinda"
 //   },
-  {
-    "full_name": "Ms Vinny",
-    "email": "06winniethepooh06@gmail.com",
-    "phone_number": "+6281212861118",
-    "username": "msvinny"
-  },
+//   {
+//     "full_name": "Ms Vinny",
+//     "email": "06winniethepooh06@gmail.com",
+//     "phone_number": "+6281212861118",
+//     "username": "msvinny"
+//   },
 
 
 //   {
