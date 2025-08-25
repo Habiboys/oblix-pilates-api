@@ -17,11 +17,17 @@ const membersData = [
 //     "username": "mnouvalhabibie"
 //   },
 
+// {
+//     "full_name": "Ms Mona Nest",
+//     "email": "monajohan99@gmail.com",
+//     "phone_number": "+6281282860300",
+//     "username": "msmonanest"
+// },
 {
-    "full_name": "Ms Mona Nest",
-    "email": "monajohan99@gmail.com",
-    "phone_number": "+6281282860300",
-    "username": "msmonanest"
+    "full_name": "Mr Apui",
+    "email": "boitania@yahoo.com",
+    "phone_number": "+62818952121",
+    "username": "mrapui"
 }
 
 //       {
