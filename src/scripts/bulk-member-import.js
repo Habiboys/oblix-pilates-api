@@ -17,29 +17,29 @@ const membersData = [
 //     "username": "mnouvalhabibie"
 //   },
 
-      {
-    "full_name": "Ms Marina",
-    "email": "marinafung@gmail.com",
-    "phone_number": "+6287878932888",
-    "username": "msmarina"
-  },
-  {
-    "full_name": "Ms Dahlia",
-    "email": "dhnota2005@yahoo.com",
-    "phone_number": "+628129222396",
-    "username": "msdahlia"
-  },
-  {
-    "full_name": "Ms Linda",
-    "email": "L1nd470@gmail.com",
-    "phone_number": "+62811609884",
-    "username": "mslinda"
-  },
+//       {
+//     "full_name": "Ms Marina",
+//     "email": "marinafung@gmail.com",
+//     "phone_number": "+6287878932888",
+//     "username": "msmarina"
+//   },
+//   {
+//     "full_name": "Ms Dahlia",
+//     "email": "dhnota2005@yahoo.com",
+//     "phone_number": "+628129222396",
+//     "username": "msdahlia"
+//   },
+//   {
+//     "full_name": "Ms Linda",
+//     "email": "L1nd470@gmail.com",
+//     "phone_number": "+62811609884",
+//     "username": "mslinda"
+//   },
   {
     "full_name": "Ms Vinny",
     "email": "06winniethepooh06@gmail.com",
     "phone_number": "+6281212861118",
-    "username": "mslinda"
+    "username": "msvinny"
   },
 
 
