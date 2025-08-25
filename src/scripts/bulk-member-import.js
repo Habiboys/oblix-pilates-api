@@ -23,11 +23,18 @@ const membersData = [
 //     "phone_number": "+6281282860300",
 //     "username": "msmonanest"
 // },
+// {
+//     "full_name": "Mr Apui",
+//     "email": "boitania@yahoo.com",
+//     "phone_number": "+62818952121",
+//     "username": "mrapui"
+// }
 {
-    "full_name": "Mr Apui",
-    "email": "boitania@yahoo.com",
-    "phone_number": "+62818952121",
-    "username": "mrapui"
+    "full_name": "Ms Rose",
+    "email": "rose81h@gmail.com",
+    "phone_number": "+628111821981",
+    "username": "mrose"
+
 }
 
 //       {
