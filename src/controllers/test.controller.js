@@ -1,6 +1,9 @@
 const { sendWhatsAppMessage, sendBookingReminder, getAvailableTemplates } = require('../services/whatsapp.service');
 const { Booking, Schedule, Member, Class, Trainer } = require('../models');
 const { sendH1Reminders } = require('../utils/bookingUtils');
+const whatsappService = require('../services/whatsapp.service');
+const logger = require('../config/logger');
+const axios = require('axios');
 
 /**
  * Test endpoint untuk mengirim pesan WhatsApp
@@ -293,11 +296,138 @@ const getWhatsAppStatus = async (req, res) => {
     }
 };
 
+const checkWhatsAppTemplates = async (req, res) => {
+    try {
+        const templates = await whatsappService.getAvailableTemplates();
+        
+        // Check specific templates
+        const bookingConfirmation = await whatsappService.getTemplateStatus('booking_confirmation');
+        const bookingReminder = await whatsappService.getTemplateStatus('booking_reminder');
+        const tes = await whatsappService.getTemplateStatus('tes');
+        const genericNotification = await whatsappService.getTemplateStatus('generic_booking_notification');
+        
+        res.json({
+            success: true,
+            data: {
+                total_templates: templates.length,
+                all_templates: templates.map(t => ({
+                    name: t.name,
+                    status: t.status,
+                    category: t.category,
+                    language: t.language,
+                    components: t.components
+                })),
+                specific_templates: {
+                    booking_confirmation: bookingConfirmation,
+                    booking_reminder: bookingReminder,
+                    tes: tes,
+                    generic_booking_notification: genericNotification
+                },
+                environment: {
+                    business_account_id: process.env.META_BUSINESS_ACCOUNT_ID,
+                    phone_number_id: process.env.META_PHONE_NUMBER_ID,
+                    access_token_length: process.env.META_ACCESS_TOKEN ? process.env.META_ACCESS_TOKEN.length : 0
+                }
+            }
+        });
+    } catch (error) {
+        logger.error('Error checking WhatsApp templates:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+const testMetaWhatsApp = async (req, res) => {
+    try {
+        const { phone_number, template_name, parameters } = req.body;
+        
+        const result = await whatsappService.sendTemplateMessage(
+            phone_number,
+            template_name,
+            parameters || []
+        );
+        
+        res.json({
+            success: result.success,
+            message: result.success ? 'Pesan berhasil dikirim' : 'Gagal mengirim pesan',
+            data: result
+        });
+        
+    } catch (error) {
+        logger.error('Error testing Meta WhatsApp:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+const testMetaAPIConnection = async (req, res) => {
+    try {
+        const accessToken = process.env.META_ACCESS_TOKEN;
+        const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
+        const businessAccountId = process.env.META_BUSINESS_ACCOUNT_ID;
+        
+        // Test 1: Get phone number info
+        const phoneInfoResponse = await axios.get(`https://graph.facebook.com/v20.0/${phoneNumberId}`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        // Test 2: Get templates from business account
+        const templatesResponse = await axios.get(`https://graph.facebook.com/v20.0/${businessAccountId}/message_templates`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        // Test 3: Get business account info
+        const businessResponse = await axios.get(`https://graph.facebook.com/v20.0/${businessAccountId}`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+
+        
+        res.json({
+            success: true,
+            data: {
+                phone_number_info: phoneInfoResponse.data,
+                templates: templatesResponse.data,
+                business_account_info: businessResponse.data,
+
+                environment: {
+                    access_token_length: accessToken ? accessToken.length : 0,
+                    phone_number_id: phoneNumberId,
+                    business_account_id: businessAccountId
+                }
+            }
+        });
+        
+    } catch (error) {
+        logger.error('Error testing Meta API connection:', error);
+        res.status(500).json({
+            success: false,
+            error: error.response?.data || error.message
+        });
+    }
+};
+
 module.exports = {
     testWhatsApp,
     testBookingReminder,
     testBookingReminderManual,
     testUserReminder,
     testH1Reminder,
-    getWhatsAppStatus
+    getWhatsAppStatus,
+    checkWhatsAppTemplates,
+    testMetaWhatsApp,
+    testMetaAPIConnection
 }; 

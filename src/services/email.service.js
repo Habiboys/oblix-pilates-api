@@ -133,7 +133,7 @@ class EmailService {
         }
     }
 
-    async sendLoginInfoEmail(email, fullName, phoneNumber, memberCode) {
+    async sendLoginInfoEmail(email, fullName, phoneNumber) {
         // Convert phone number to +62 format without strip for display
         let displayPassword = phoneNumber;
         
@@ -882,6 +882,101 @@ class EmailService {
                 success: false,
                 error: error.message
             };
+        }
+    }
+
+    /**
+     * Send updated login info email when phone number is corrected
+     */
+    async sendUpdatedLoginInfoEmail(email, fullName, phoneNumber) {
+        // Convert phone number to +62 format without strip for display
+        let displayPassword = phoneNumber;
+        
+        // Convert phone number to +62 format without strip
+        if (displayPassword.startsWith('0')) {
+            displayPassword = '+62' + displayPassword.substring(1);
+        } else if (displayPassword.startsWith('62')) {
+            displayPassword = '+' + displayPassword;
+        } else if (!displayPassword.startsWith('+62')) {
+            displayPassword = '+62' + displayPassword.replace(/[^0-9]/g, '');
+        }
+        
+        // Remove any remaining non-numeric characters except +
+        displayPassword = displayPassword.replace(/[^+0-9]/g, '');
+        
+        try {
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Perbaruan Informasi Login - Oblix Pilates',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <h1 style="color: #333; margin: 0;">Oblix Pilates</h1>
+                        </div>
+                        
+                        <div style="padding: 30px; background-color: white;">
+                            <h2 style="color: #333; margin-bottom: 20px;">Perbaruan Informasi Login Akun Anda</h2>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Halo <strong>${fullName}</strong>,
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                                Kami telah memperbarui informasi nomor HP Anda di sistem. Akibatnya, password login Anda juga telah diperbarui sesuai dengan nomor HP yang baru. Berikut adalah informasi login terbaru Anda:
+                            </p>
+                            
+                            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                                <h3 style="margin-top: 0; color: #155724;">📱 Informasi Login Terbaru:</h3>
+                                <p><strong>Email:</strong> ${email}</p>
+                                <p><strong>Password Baru:</strong> ${displayPassword}</p>
+                            
+                                <p style="color: #155724; font-size: 14px; margin-top: 15px; background-color: #d4edda; padding: 10px; border-radius: 4px;">
+                                    <strong>📝 Catatan:</strong> Password baru menggunakan format nomor HP yang telah diperbarui dengan +62 tanpa strip (contoh: +6281234567890)
+                                </p>
+                            </div>
+                            
+                            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                <h4 style="margin-top: 0; color: #856404;">🔐 Perubahan Keamanan</h4>
+                                <p style="margin-bottom: 0;">Password Anda telah diperbarui secara otomatis sesuai dengan nomor HP yang baru. <strong>Segera login dan ganti password</strong> sesuai keinginan Anda untuk keamanan yang lebih baik.</p>
+                            </div>
+                            
+                            <p style="color: #666; line-height: 1.6;">
+                                Silakan gunakan email dan password baru di atas untuk login ke aplikasi Oblix Pilates.
+                            </p>
+                            
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="https://oblixpilates.id/login" 
+                                   style="background-color: #007bff; color: white; padding: 12px 30px; 
+                                          text-decoration: none; border-radius: 5px; display: inline-block;
+                                          font-weight: bold;">
+                                    Login ke Oblix Pilates
+                                </a>
+                            </div>
+                            
+                            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                                <h4 style="margin-top: 0; color: #495057;">📞 Bantuan</h4>
+                                <p style="margin-bottom: 0; color: #6c757d;">
+                                    Jika Anda mengalami kesulitan saat login atau memiliki pertanyaan lainnya, jangan ragu untuk menghubungi tim support kami.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+                            <p style="color: #666; margin: 0; font-size: 14px;">
+                                © 2024 Oblix Pilates. All rights reserved.
+                            </p>
+                        </div>
+                    </div>
+                `
+            };
+
+            const result = await this.transporter.sendMail(mailOptions);
+            console.log('Updated login info email sent successfully:', result.messageId);
+            return { success: true, messageId: result.messageId };
+        } catch (error) {
+            console.error('Updated login info email sending failed:', error);
+            return { success: false, error: error.message };
         }
     }
 }

@@ -22,7 +22,13 @@ class WhatsAppService {
      */
     async getAvailableTemplates() {
         try {
-            const response = await axios.get(`${this.baseUrl}/message_templates`, {
+            const businessAccountId = process.env.META_BUSINESS_ACCOUNT_ID;
+            if (!businessAccountId) {
+                logger.error('META_BUSINESS_ACCOUNT_ID not configured');
+                return [];
+            }
+            
+            const response = await axios.get(`https://graph.facebook.com/v20.0/${businessAccountId}/message_templates`, {
                 headers: {
                     'Authorization': `Bearer ${this.accessToken}`,
                     'Content-Type': 'application/json'
@@ -33,6 +39,56 @@ class WhatsAppService {
         } catch (error) {
             logger.error('Error getting available templates:', error.response?.data || error.message);
             return [];
+        }
+    }
+
+    /**
+     * Check if template exists and is approved
+     * @param {string} templateName - Template name to check
+     * @returns {Promise<boolean>} True if template exists and is approved
+     */
+    async isTemplateApproved(templateName) {
+        try {
+            const templates = await this.getAvailableTemplates();
+            const template = templates.find(t => t.name === templateName);
+            return template && template.status === 'APPROVED';
+        } catch (error) {
+            logger.error('Error checking template approval:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Get template status and details
+     * @param {string} templateName - Template name to check
+     * @returns {Promise<Object>} Template status and details
+     */
+    async getTemplateStatus(templateName) {
+        try {
+            const templates = await this.getAvailableTemplates();
+            const template = templates.find(t => t.name === templateName);
+            
+            if (!template) {
+                return {
+                    exists: false,
+                    status: 'NOT_FOUND',
+                    message: `Template '${templateName}' tidak ditemukan`
+                };
+            }
+
+            return {
+                exists: true,
+                status: template.status,
+                message: `Template '${templateName}' status: ${template.status}`,
+                template: template
+            };
+        } catch (error) {
+            logger.error('Error getting template status:', error);
+            return {
+                exists: false,
+                status: 'ERROR',
+                message: 'Error saat mengecek template'
+            };
         }
     }
 
@@ -222,11 +278,24 @@ const sendBookingConfirmation = async (booking) => {
             if (error.response?.data?.error?.code === 132001) {
                 // Template not approved, use generic template
                 logger.warn('Template booking_confirmation not approved, using fallback');
-                whatsappResult = await whatsappService.sendTemplateMessage(
-                    member.phone_number, 
-                    'generic_booking_notification',
-                    [member.full_name, classInfo.class_name, formattedDate, formattedTime]
-                );
+                try {
+                    whatsappResult = await whatsappService.sendTemplateMessage(
+                        member.phone_number, 
+                        'generic_booking_notification',
+                        [member.full_name, classInfo.class_name, formattedDate, formattedTime]
+                    );
+                } catch (fallbackError) {
+                    // If both templates fail, log error but don't break the flow
+                    logger.error('Both booking templates failed:', {
+                        original: error.response?.data?.error,
+                        fallback: fallbackError.response?.data?.error
+                    });
+                    whatsappResult = {
+                        success: false,
+                        error: 'No approved templates available',
+                        errorCode: 'TEMPLATE_NOT_APPROVED'
+                    };
+                }
             } else {
                 throw error;
             }
@@ -592,6 +661,8 @@ module.exports = {
     // Core service
     sendTemplateMessage: (to, templateName, parameters) => whatsappService.sendTemplateMessage(to, templateName, parameters),
     getAvailableTemplates: () => whatsappService.getAvailableTemplates(),
+    isTemplateApproved: (templateName) => whatsappService.isTemplateApproved(templateName),
+    getTemplateStatus: (templateName) => whatsappService.getTemplateStatus(templateName),
     
     // Booking functions
     sendBookingReminder,
