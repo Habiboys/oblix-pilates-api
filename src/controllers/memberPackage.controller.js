@@ -1,5 +1,5 @@
 const { MemberPackage, Package, PackageMembership, PackageFirstTrial, PackagePromo, PackageBonus, Category, Order, Booking } = require('../models');
-const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getTotalAvailableSessions, getAllMemberPackagesByPriority } = require('../utils/sessionTrackingUtils');
+const { calculateAvailableSessions, updateAllMemberPackagesSessionUsage, getTotalAvailableSessions, getAllMemberPackagesByPriority, getAllActiveMemberPackagesByPriority } = require('../utils/sessionTrackingUtils');
 
 const getMyPackages = async (req, res) => {
   try {
@@ -61,11 +61,14 @@ const getMyPackages = async (req, res) => {
     // Get total available sessions from all packages
     const totalAvailableSessions = await getTotalAvailableSessions(member_id);
     
-    // Get all member packages sorted by priority for history
+    // Get all member packages sorted by priority for history (termasuk expired)
     const allMemberPackages = await getAllMemberPackagesByPriority(member_id);
     
+    // Get active member packages for total sessions calculation
+    const activeMemberPackages = await getAllActiveMemberPackagesByPriority(member_id);
+    
     // Calculate total sessions owned by member from MemberPackage (remaining + used) - Only active packages
-    const totalSessionsOwned = allMemberPackages
+    const totalSessionsOwned = activeMemberPackages
       .filter(memberPackage => {
         // Hanya hitung paket yang aktif (belum expired) atau belum dipakai
         const currentDate = new Date();

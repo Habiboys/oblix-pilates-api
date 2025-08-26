@@ -982,11 +982,49 @@ const getTotalAvailableSessions = async (memberId) => {
 };
 
 /**
- * Get all member packages sorted by priority for history
+ * Mengambil semua paket member (termasuk expired) dan mengurutkan berdasarkan prioritas
  * @param {string} memberId - ID member
- * @returns {Promise<Array>} All member packages sorted by priority
+ * @returns {Promise<Array>} Array paket member yang sudah diurutkan berdasarkan prioritas
  */
 const getAllMemberPackagesByPriority = async (memberId) => {
+  try {
+    const memberPackages = await MemberPackage.findAll({
+      where: { 
+        member_id: memberId
+        // Hapus filter end_date agar semua paket (termasuk expired) diambil
+      },
+      include: [
+        {
+          model: Package,
+          include: [
+            { model: PackageMembership, include: [{ model: Category }] },
+            { model: PackageFirstTrial },
+            { model: PackagePromo },
+            { model: PackageBonus }
+          ]
+        },
+        {
+          model: Order,
+          attributes: ['id', 'order_number', 'paid_at', 'total_amount', 'payment_status']
+        }
+      ]
+    });
+
+    // Sort by priority and return
+    return sortPackagesByPriority(memberPackages);
+
+  } catch (error) {
+    console.error('Error getting member packages by priority:', error);
+    throw error;
+  }
+};
+
+/**
+ * Mengambil hanya paket member yang aktif (belum expired) dan mengurutkan berdasarkan prioritas
+ * @param {string} memberId - ID member
+ * @returns {Promise<Array>} Array paket member aktif yang sudah diurutkan berdasarkan prioritas
+ */
+const getAllActiveMemberPackagesByPriority = async (memberId) => {
   try {
     const currentDate = new Date().toISOString().split('T')[0];
     
@@ -1025,7 +1063,7 @@ const getAllMemberPackagesByPriority = async (memberId) => {
     return sortPackagesByPriority(memberPackages);
 
   } catch (error) {
-    console.error('Error getting member packages by priority:', error);
+    console.error('Error getting active member packages by priority:', error);
     throw error;
   }
 };
@@ -1128,5 +1166,6 @@ module.exports = {
   getCurrentActivePackage,
   getTotalAvailableSessions,
   getAllMemberPackagesByPriority,
+  getAllActiveMemberPackagesByPriority,
   setPackageStartDate
 }; 
