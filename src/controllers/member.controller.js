@@ -423,43 +423,21 @@ const getMemberDetailById = async (req, res) => {
 
     // Format packages data
     const formattedPackages = memberPackages.map((mp, index) => {
-      // Calculate initial sessions based on package type
-      let initialGroupSessions = 0;
-      let initialSemiPrivateSessions = 0;
-      let initialPrivateSessions = 0;
-      let totalInitialSessions = 0;
-
-      if (mp.Package?.type === 'membership' && mp.Package?.PackageMembership) {
-        const sessionCount = mp.Package.PackageMembership.session || 0;
-        const categoryName = mp.Package.PackageMembership.Category?.category_name;
-        
-        if (categoryName === 'Semi-Private Class') {
-          initialSemiPrivateSessions = sessionCount;
-        } else if (categoryName === 'Private Class') {
-          initialPrivateSessions = sessionCount;
-        } else {
-          // Default ke group (termasuk 'Group Class' atau category lain)
-          initialGroupSessions = sessionCount;
-        }
-        totalInitialSessions = sessionCount;
-      } else if (mp.Package?.type === 'first_trial' && mp.Package?.PackageFirstTrial) {
-        initialGroupSessions = mp.Package.PackageFirstTrial.group_session || 0;
-        initialPrivateSessions = mp.Package.PackageFirstTrial.private_session || 0;
-        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
-      } else if (mp.Package?.type === 'promo' && mp.Package?.PackagePromo) {
-        initialGroupSessions = mp.Package.PackagePromo.group_session || 0;
-        initialPrivateSessions = mp.Package.PackagePromo.private_session || 0;
-        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
-      } else if (mp.Package?.type === 'bonus' && mp.Package?.PackageBonus) {
-        initialGroupSessions = mp.Package.PackageBonus.group_session || 0;
-        initialPrivateSessions = mp.Package.PackageBonus.private_session || 0;
-        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
-      }
-
-      // Get remaining sessions from member package
+      // Calculate initial sessions based on MemberPackage data (remaining + used)
+      const usedGroupSessions = mp.used_group_session || 0;
+      const usedSemiPrivateSessions = mp.used_semi_private_session || 0;
+      const usedPrivateSessions = mp.used_private_session || 0;
       const remainingGroupSessions = mp.remaining_group_session || 0;
       const remainingSemiPrivateSessions = mp.remaining_semi_private_session || 0;
       const remainingPrivateSessions = mp.remaining_private_session || 0;
+      
+      // Total = remaining + used
+      const initialGroupSessions = remainingGroupSessions + usedGroupSessions;
+      const initialSemiPrivateSessions = remainingSemiPrivateSessions + usedSemiPrivateSessions;
+      const initialPrivateSessions = remainingPrivateSessions + usedPrivateSessions;
+      const totalInitialSessions = initialGroupSessions + initialSemiPrivateSessions + initialPrivateSessions;
+
+      // Get remaining sessions from member package
       const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
 
       return {
@@ -650,43 +628,21 @@ const getMemberPackages = async (req, res) => {
 
     // Format packages data
     const formattedPackages = memberPackages.map((mp, index) => {
-      // Calculate initial sessions based on package type
-      let initialGroupSessions = 0;
-      let initialSemiPrivateSessions = 0;
-      let initialPrivateSessions = 0;
-      let totalInitialSessions = 0;
-
-      if (mp.Package?.type === 'membership' && mp.Package?.PackageMembership) {
-        const sessionCount = mp.Package.PackageMembership.session || 0;
-        const categoryName = mp.Package.PackageMembership.Category?.category_name;
-        
-        if (categoryName === 'Semi-Private Class') {
-          initialSemiPrivateSessions = sessionCount;
-        } else if (categoryName === 'Private Class') {
-          initialPrivateSessions = sessionCount;
-        } else {
-          // Default ke group (termasuk 'Group Class' atau category lain)
-          initialGroupSessions = sessionCount;
-        }
-        totalInitialSessions = sessionCount;
-      } else if (mp.Package?.type === 'first_trial' && mp.Package?.PackageFirstTrial) {
-        initialGroupSessions = mp.Package.PackageFirstTrial.group_session || 0;
-        initialPrivateSessions = mp.Package.PackageFirstTrial.private_session || 0;
-        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
-      } else if (mp.Package?.type === 'promo' && mp.Package?.PackagePromo) {
-        initialGroupSessions = mp.Package.PackagePromo.group_session || 0;
-        initialPrivateSessions = mp.Package.PackagePromo.private_session || 0;
-        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
-      } else if (mp.Package?.type === 'bonus' && mp.Package?.PackageBonus) {
-        initialGroupSessions = mp.Package.PackageBonus.group_session || 0;
-        initialPrivateSessions = mp.Package.PackageBonus.private_session || 0;
-        totalInitialSessions = initialGroupSessions + initialPrivateSessions;
-      }
-
-      // Get remaining sessions from member package
+      // Calculate initial sessions based on MemberPackage data (remaining + used)
+      const usedGroupSessions = mp.used_group_session || 0;
+      const usedSemiPrivateSessions = mp.used_semi_private_session || 0;
+      const usedPrivateSessions = mp.used_private_session || 0;
       const remainingGroupSessions = mp.remaining_group_session || 0;
       const remainingSemiPrivateSessions = mp.remaining_semi_private_session || 0;
       const remainingPrivateSessions = mp.remaining_private_session || 0;
+      
+      // Total = remaining + used
+      const initialGroupSessions = remainingGroupSessions + usedGroupSessions;
+      const initialSemiPrivateSessions = remainingSemiPrivateSessions + usedSemiPrivateSessions;
+      const initialPrivateSessions = remainingPrivateSessions + usedPrivateSessions;
+      const totalInitialSessions = initialGroupSessions + initialSemiPrivateSessions + initialPrivateSessions;
+
+      // Get remaining sessions from member package
       const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
 
       return {
