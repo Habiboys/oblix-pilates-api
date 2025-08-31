@@ -4,7 +4,7 @@ const { Op } = require('sequelize');
 // Get all promo packages with pagination and search
 const getAllPromoPackages = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '' } = req.query;
+    const { page = 1, limit = 10, search = '', active_only = 'false' } = req.query;
     const offset = (page - 1) * limit;
 
     const whereClause = {
@@ -13,32 +13,37 @@ const getAllPromoPackages = async (req, res) => {
     
     if (search) {
       whereClause.name = {
-                    [Op.like]: `%${search}%`
+        [Op.like]: `%${search}%`
       };
     }
 
-    // Get current date for promo period filtering
-    const currentDate = new Date();
+    // Build include clause based on active_only parameter
+    const includeClause = [
+      {
+        model: PackagePromo,
+        required: true
+      }
+    ];
+
+    // If active_only is true, filter by promo period
+    if (active_only === 'true') {
+      const currentDate = new Date();
+      includeClause[0].where = {
+        start_time: {
+          [Op.lte]: currentDate
+        },
+        end_time: {
+          [Op.gte]: currentDate
+        }
+      };
+    }
 
     const { count, rows: packages } = await Package.findAndCountAll({
       where: {
         ...whereClause,
         is_deleted: false
       },
-      include: [
-        {
-          model: PackagePromo,
-          where: {
-            start_time: {
-              [Op.lte]: currentDate
-            },
-            end_time: {
-              [Op.gte]: currentDate
-            }
-          },
-          required: true
-        }
-      ],
+      include: includeClause,
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['createdAt', 'DESC']]
@@ -63,7 +68,9 @@ const getAllPromoPackages = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Promo packages retrieved successfully',
+      message: active_only === 'true' 
+        ? 'Active promo packages retrieved successfully' 
+        : 'All promo packages retrieved successfully',
       data: {
         packages: transformedPackages,
         pagination: {
@@ -71,6 +78,9 @@ const getAllPromoPackages = async (req, res) => {
           totalPages,
           totalItems: count,
           itemsPerPage: parseInt(limit)
+        },
+        filter: {
+          active_only: active_only === 'true'
         }
       }
     });

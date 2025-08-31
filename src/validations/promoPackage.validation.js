@@ -269,6 +269,13 @@ const promoPackageQuerySchema = Joi.object({
     .allow('')
     .messages({
       'string.max': 'Search term cannot exceed 100 characters'
+    }),
+  active_only: Joi.string()
+    .valid('true', 'false')
+    .optional()
+    .default('false')
+    .messages({
+      'any.only': 'Active only must be either "true" or "false"'
     })
 });
 
