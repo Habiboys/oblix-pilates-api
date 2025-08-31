@@ -1,4 +1,5 @@
-const { Booking, Schedule, Member, Package, MemberPackage } = require('../models');
+const { Booking, Schedule, Member, Package, MemberPackage, Class, Trainer, User } = require('../models');
+const { Op } = require('sequelize');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary, getBestPackageForBooking, setPackageStartDate } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion } = require('../utils/bookingUtils');
 const { validateMemberScheduleConflict } = require('../utils/scheduleUtils');
@@ -376,6 +377,390 @@ const createUserBooking = async (req, res) => {
     }
 };
 
+// Create booking for admin (menambahkan member ke schedule)
+const createAdminBooking = async (req, res) => {
+    try {
+        const { schedule_id, member_ids, notes } = req.body;
+
+        // Validasi input
+        if (!schedule_id || !member_ids || !Array.isArray(member_ids) || member_ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'schedule_id dan member_ids (array) harus diisi'
+            });
+        }
+
+        // Cek apakah schedule exists
+        const schedule = await Schedule.findByPk(schedule_id);
+        if (!schedule) {
+            return res.status(404).json({
+                success: false,
+                message: 'Schedule tidak ditemukan'
+            });
+        }
+
+        // Cek apakah semua member exists
+        const members = await Member.findAll({
+            where: { id: member_ids }
+        });
+
+        if (members.length !== member_ids.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Beberapa member tidak ditemukan'
+            });
+        }
+
+        // Cek apakah schedule sudah lewat waktu
+        const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
+        const currentDateTime = new Date();
+        
+        if (scheduleDateTime <= currentDateTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tidak dapat booking untuk schedule yang sudah lewat waktu'
+            });
+        }
+
+        // Cek kapasitas schedule dan existing bookings
+        const currentSignups = await Booking.count({
+            where: {
+                schedule_id: schedule_id,
+                status: 'signup'
+            }
+        });
+
+        const maxCapacity = schedule.pax || 20;
+        const availableSlots = maxCapacity - currentSignups;
+        
+        if (member_ids.length > availableSlots) {
+            return res.status(400).json({
+                success: false,
+                message: `Schedule hanya memiliki ${availableSlots} slot tersisa, tidak cukup untuk ${member_ids.length} member`
+            });
+        }
+
+        // Cek existing bookings untuk semua member (hanya yang aktif, bukan cancelled)
+        const existingBookings = await Booking.findAll({
+            where: {
+                schedule_id,
+                member_id: member_ids,
+                status: {
+                    [Op.notIn]: ['cancelled']
+                }
+            }
+        });
+
+        if (existingBookings.length > 0) {
+            const existingMemberIds = existingBookings.map(b => b.member_id);
+            const existingMemberNames = members
+                .filter(m => existingMemberIds.includes(m.id))
+                .map(m => m.full_name);
+            
+            return res.status(400).json({
+                success: false,
+                message: `Beberapa member sudah terdaftar di schedule ini: ${existingMemberNames.join(', ')}`
+            });
+        }
+
+        // Cek booking yang sudah di-cancel untuk diaktifkan kembali
+        const cancelledBookings = await Booking.findAll({
+            where: {
+                schedule_id,
+                member_id: member_ids,
+                status: 'cancelled'
+            }
+        });
+
+        const membersToReuse = [];
+        const membersToCreate = [];
+
+        for (const member of members) {
+            const cancelledBooking = cancelledBookings.find(b => b.member_id === member.id);
+            if (cancelledBooking) {
+                membersToReuse.push({ member, cancelledBooking });
+            } else {
+                membersToCreate.push(member);
+            }
+        }
+
+        // Cek jadwal bentrok untuk semua member
+        const membersWithConflicts = [];
+        for (const member of members) {
+            try {
+                const memberConflict = await validateMemberScheduleConflict(
+                    member.id,
+                    schedule.date_start,
+                    schedule.time_start,
+                    schedule.time_end
+                );
+
+                if (memberConflict.hasConflict) {
+                    membersWithConflicts.push({
+                        member_name: member.full_name,
+                        conflicts: memberConflict.conflicts
+                    });
+                }
+            } catch (error) {
+                logger.error(`Error checking schedule conflict for member ${member.full_name}:`, error);
+                // Jika ada error validasi, anggap ada conflict untuk safety
+                membersWithConflicts.push({
+                    member_name: member.full_name,
+                    conflicts: [{ message: 'Error checking schedule conflict' }]
+                });
+            }
+        }
+
+        if (membersWithConflicts.length > 0) {
+            const conflictDetails = membersWithConflicts.map(m => 
+                `${m.member_name}: ${m.conflicts.map(c => c.message).join(', ')}`
+            ).join('; ');
+            
+            return res.status(400).json({
+                success: false,
+                message: 'Beberapa member memiliki jadwal yang bentrok',
+                data: {
+                    members_with_conflicts: membersWithConflicts,
+                    conflict_summary: conflictDetails
+                }
+            });
+        }
+
+        // Buat multiple bookings untuk semua member
+        const adminNotes = notes ? `${notes} (Ditambahkan oleh admin)` : 'Ditambahkan oleh admin';
+        const bookings = [];
+        
+        // Aktifkan kembali booking yang sudah di-cancel
+        for (const { member, cancelledBooking } of membersToReuse) {
+            try {
+                // Update booking yang sudah di-cancel menjadi signup
+                await cancelledBooking.update({
+                    status: 'signup',
+                    notes: adminNotes,
+                    cancelled_by: null // Reset cancelled_by karena sekarang aktif lagi
+                });
+
+                // Cari MemberPackage yang sesuai
+                const memberPackage = await MemberPackage.findOne({
+                    where: {
+                        member_id: member.id,
+                        package_id: cancelledBooking.package_id
+                    }
+                });
+
+                if (memberPackage) {
+                    // Update session usage untuk mengembalikan quota yang sudah dikembalikan saat cancel
+                    await updateSessionUsage(memberPackage.id, member.id, cancelledBooking.package_id);
+                }
+
+                bookings.push({
+                    booking_id: cancelledBooking.id,
+                    member_name: member.full_name,
+                    package_name: 'Reused from cancelled booking',
+                    package_type: 'reused',
+                    action: 'reactivated'
+                });
+
+                logger.info(`✅ Reactivated cancelled booking for ${member.full_name}`);
+            } catch (error) {
+                logger.error(`❌ Failed to reactivate booking for ${member.full_name}: ${error.message}`);
+            }
+        }
+        
+        // Buat booking baru untuk member yang belum pernah booking
+        for (const member of membersToCreate) {
+            // Cari package yang tersedia untuk member ini
+            let bestPackage = null;
+            
+            // Tentukan scheduleType seperti di user booking
+            let scheduleType = 'group';
+            if (schedule.type === 'private') {
+                scheduleType = 'private';
+            } else if (schedule.type === 'semi_private') {
+                scheduleType = 'semi_private';
+            }
+            
+            // Debug: Cek MemberPackage yang dimiliki member (simplified)
+            const memberPackages = await MemberPackage.findAll({
+                where: { member_id: member.id },
+                include: [
+                    {
+                        model: Package,
+                        attributes: ['id', 'name', 'type']
+                    }
+                ]
+            });
+            
+            logger.info(`🔍 Debug ${member.full_name}: Found ${memberPackages.length} member packages`);
+            memberPackages.forEach((mp, idx) => {
+                logger.info(`  Package ${idx + 1}: ${mp.Package?.name} (${mp.Package?.type})`);
+                logger.info(`    Group: ${mp.remaining_group_session}/${mp.used_group_session}`);
+                logger.info(`    Private: ${mp.remaining_private_session}/${mp.used_private_session}`);
+                logger.info(`    Semi-Private: ${mp.remaining_semi_private_session}/${mp.used_semi_private_session}`);
+                logger.info(`    End Date: ${mp.end_date}, Active: ${mp.end_date ? (new Date(mp.end_date) >= new Date() ? 'Yes' : 'No') : 'No end date'}`);
+            });
+            
+            try {
+                bestPackage = await getBestPackageForBooking(member.id, scheduleType);
+                logger.info(`✅ ${member.full_name}: Found best package: ${bestPackage.package_name}`);
+            } catch (error) {
+                logger.warn(`❌ ${member.full_name} tidak memiliki package yang tersedia untuk ${scheduleType} class: ${error.message}`);
+                continue; // Skip member ini, lanjut ke member berikutnya
+            }
+
+            if (bestPackage) {
+                // Buat booking
+                const booking = await Booking.create({
+                    schedule_id,
+                    member_id: member.id,
+                    package_id: bestPackage.package_id,
+                    status: 'signup',
+                    notes: adminNotes
+                });
+
+                // Cari MemberPackage yang sesuai
+                const memberPackage = await MemberPackage.findOne({
+                    where: {
+                        member_id: member.id,
+                        package_id: bestPackage.package_id
+                    }
+                });
+
+                if (memberPackage) {
+                    // Update session usage
+                    await updateSessionUsage(memberPackage.id, member.id, bestPackage.package_id);
+                } else {
+                    logger.warn(`MemberPackage not found for member ${member.full_name} and package ${bestPackage.package_name}`);
+                }
+
+                // Set package start date jika belum ada
+                if (memberPackage) {
+                    await setPackageStartDate(member.id, bestPackage.package_id, memberPackage.id);
+                } else {
+                    logger.warn(`Cannot set package start date for ${member.full_name}: MemberPackage not found`);
+                }
+
+                bookings.push({
+                    booking_id: booking.id,
+                    member_name: member.full_name,
+                    package_name: bestPackage.package_name,
+                    package_type: bestPackage.package_type
+                });
+            }
+        }
+
+        if (bookings.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Tidak ada member yang berhasil ditambahkan karena tidak memiliki package yang tersedia untuk ${schedule.type} class`,
+                data: {
+                    schedule_type: schedule.type,
+                    total_members_checked: members.length,
+                    members_without_packages: members.map(m => m.full_name)
+                }
+            });
+        }
+
+        // Kirim notifikasi WhatsApp untuk semua member yang berhasil ditambahkan
+        for (const booking of bookings) {
+            const member = members.find(m => m.full_name === booking.member_name);
+            if (member) {
+                try {
+                                         // Untuk booking yang di-reactivate, kita perlu fetch booking data yang lengkap
+                     let fullBookingData;
+                     if (booking.action === 'reactivated') {
+                         fullBookingData = await Booking.findByPk(booking.booking_id, {
+                             include: [
+                                 {
+                                     model: Schedule,
+                                     include: [
+                                         {
+                                             model: Class
+                                         },
+                                         {
+                                             model: Trainer
+                                         }
+                                     ]
+                                 },
+                                 {
+                                     model: Member,
+                                     include: [
+                                         {
+                                             model: User
+                                         }
+                                     ]
+                                 }
+                             ]
+                         });
+                                         } else {
+                         // Untuk booking baru, gunakan data yang sudah ada
+                         fullBookingData = await Booking.findByPk(booking.booking_id, {
+                             include: [
+                                 {
+                                     model: Schedule,
+                                     include: [
+                                         {
+                                             model: Class
+                                         },
+                                         {
+                                             model: Trainer
+                                         }
+                                     ]
+                                 },
+                                 {
+                                     model: Member,
+                                     include: [
+                                         {
+                                             model: User
+                                         }
+                                     ]
+                                 }
+                             ]
+                         });
+                     }
+                    
+                                         if (fullBookingData && fullBookingData.Schedule && fullBookingData.Schedule.Class) {
+                         try {
+                             await whatsappService.sendBookingConfirmation(fullBookingData);
+                         } catch (whatsappError) {
+                             logger.warn(`WhatsApp notification failed for ${member.full_name}:`, whatsappError.message);
+                         }
+                     } else {
+                         logger.warn(`Cannot send WhatsApp notification for ${member.full_name}: Missing booking data`);
+                     }
+                } catch (whatsappError) {
+                    logger.warn(`Failed to send WhatsApp notification to ${member.full_name}:`, whatsappError);
+                }
+            }
+        }
+
+        const reactivatedCount = bookings.filter(b => b.action === 'reactivated').length;
+        const newBookingsCount = bookings.filter(b => !b.action).length;
+        
+        res.status(201).json({
+            success: true,
+            message: `${bookings.length} member berhasil ditambahkan ke schedule oleh admin`,
+            data: {
+                schedule_id: schedule_id,
+                schedule_date: schedule.date_start,
+                schedule_time: `${schedule.time_start} - ${schedule.time_end}`,
+                total_members_added: bookings.length,
+                reactivated_bookings: reactivatedCount,
+                new_bookings: newBookingsCount,
+                notes: adminNotes,
+                bookings: bookings
+            }
+        });
+
+    } catch (error) {
+        logger.error('Error creating admin booking:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
 // Update booking status
 const updateBookingStatus = async (req, res) => {
     try {
@@ -432,7 +817,7 @@ const updateBookingStatus = async (req, res) => {
         // Update session usage jika status berubah dari waiting_list ke signup
         if (oldStatus === 'waiting_list' && status === 'signup') {
             try {
-                const memberPackage = await require('../models').MemberPackage.findOne({
+                const memberPackage = await MemberPackage.findOne({
                     where: {
                         member_id: booking.member_id,
                         package_id: booking.package_id
@@ -560,6 +945,9 @@ const cancelBooking = async (req, res) => {
         const { id } = req.params;
         const { reason } = req.body || {};
         const cancelReason = reason || 'Booking dibatalkan oleh user';
+        
+        logger.info(`🔧 USER CANCEL BOOKING called for booking ID: ${id}`);
+        logger.info(`🔧 User ID: ${req.user.id}, Role: ${req.user.role}`);
 
         const booking = await Booking.findOne({
             where: {
@@ -626,6 +1014,7 @@ const cancelBooking = async (req, res) => {
             cancelled_by: 'user' // User yang melakukan cancel
         });
 
+        logger.info(`✅ USER CANCEL: Booking ${booking.id} status updated to: ${booking.status}, cancelled_by: user`);
         console.log(`🔄 Booking ${booking.id} status updated to: ${booking.status}`);
 
         // Send WhatsApp and email cancellation notification (async)
@@ -749,6 +1138,9 @@ const adminCancelBooking = async (req, res) => {
         const { id } = req.params;
         const { reason } = req.body || {};
         const cancelReason = reason || 'Booking dibatalkan oleh admin';
+        
+        logger.info(`🔧 ADMIN CANCEL BOOKING called for booking ID: ${id}`);
+        logger.info(`🔧 Admin user ID: ${req.user.id}, Role: ${req.user.role}`);
 
         const booking = await Booking.findOne({
             where: {
@@ -796,6 +1188,7 @@ const adminCancelBooking = async (req, res) => {
             cancelled_by: 'admin' // Admin yang melakukan cancel
         });
 
+        logger.info(`✅ ADMIN CANCEL: Booking ${booking.id} status updated to: ${booking.status}, cancelled_by: admin`);
         console.log(`🔄 Booking ${booking.id} status updated to: ${booking.status}`);
 
         // Send WhatsApp and email cancellation notification (async)
@@ -903,7 +1296,7 @@ const adminCancelBooking = async (req, res) => {
                 logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
         }
 
-        res.json({
+        const responseData = {
             success: true,
             message: 'Booking berhasil dibatalkan oleh admin',
             data: {
@@ -925,7 +1318,10 @@ const adminCancelBooking = async (req, res) => {
                     promoted_at: promotionResult.updatedAt
                 } : null
             }
-        });
+        };
+        
+        logger.info(`✅ ADMIN CANCEL RESPONSE: cancelled_by = ${responseData.data.cancelled_by}`);
+        res.json(responseData);
     } catch (error) {
         logger.error('Error admin cancelling booking:', error);
         res.status(500).json({
@@ -1178,5 +1574,6 @@ module.exports = {
     updateScheduleAttendance,
     createUserBooking,
     cancelBooking,
-    adminCancelBooking
+    adminCancelBooking,
+    createAdminBooking
 }; 

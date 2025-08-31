@@ -84,4 +84,25 @@ router.delete('/:id',
   memberController.deleteMember
 );
 
+// Admin package management routes
+router.post('/:id/packages',
+  validateToken,
+  checkRole('admin'),
+  validate(memberIdSchema, 'params'),
+  memberController.addPackageToMember
+);
+
+router.put('/packages/:member_package_id/extend',
+  validateToken,
+  checkRole('admin'),
+  memberController.extendPackageDuration
+);
+
+// Export member data
+router.get('/export/data',
+  validateToken,
+  checkRole('admin'),
+  memberController.exportMemberData
+);
+
 module.exports = router; 

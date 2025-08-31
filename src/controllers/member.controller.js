@@ -59,10 +59,26 @@ const getAllMembers = async (req, res) => {
     // Tidak perlu update session usage di sini karena akan meng-overwrite bonus package
     // Session usage akan diupdate saat ada booking baru
 
-    // Get member packages untuk menghitung detail sesi
+    // Get member packages untuk menghitung detail sesi (hanya package yang valid)
     const membersWithSessions = await Promise.all(members.map(async (member) => {
+      const currentDate = new Date().toISOString().split('T')[0];
+      
       const memberPackages = await MemberPackage.findAll({
-        where: { member_id: member.id },
+        where: { 
+          member_id: member.id,
+          // Filter package yang valid (belum expired dan sudah aktif)
+          [Op.or]: [
+            {
+              // Package yang sudah aktif (ada start_date) dan belum expired
+              start_date: { [Op.ne]: null },
+              end_date: { [Op.gte]: currentDate }
+            },
+            {
+              // Package yang belum aktif (belum ada start_date) - akan aktif saat booking pertama
+              start_date: null
+            }
+          ]
+        },
         include: [
           {
             model: Package,
@@ -152,6 +168,26 @@ const getAllMembers = async (req, res) => {
       const totalUsedSessions = usedGroupSessions + usedSemiPrivateSessions + usedPrivateSessions;
       const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
 
+      // Tambahkan informasi package yang valid
+      const validPackages = memberPackages.map(mp => ({
+        id: mp.id,
+        package_name: mp.Package?.name || 'Unknown Package',
+        package_type: mp.Package?.type || 'unknown',
+        start_date: mp.start_date,
+        end_date: mp.end_date,
+        is_active: mp.start_date ? (new Date(mp.end_date) >= new Date(currentDate)) : true,
+        remaining_sessions: {
+          group: mp.remaining_group_session || 0,
+          semi_private: mp.remaining_semi_private_session || 0,
+          private: mp.remaining_private_session || 0
+        },
+        used_sessions: {
+          group: mp.used_group_session || 0,
+          semi_private: mp.used_semi_private_session || 0,
+          private: mp.used_private_session || 0
+        }
+      }));
+
       return {
         ...member.toJSON(),
         session_details: {
@@ -176,6 +212,13 @@ const getAllMembers = async (req, res) => {
             remaining: remainingPrivateSessions,
             progress_percentage: totalPrivateSessions > 0 ? Math.round((usedPrivateSessions / totalPrivateSessions) * 100) : 0
           }
+        },
+        valid_packages: validPackages,
+        package_count: {
+          total: memberPackages.length,
+          active: validPackages.filter(p => p.is_active).length,
+          expired: validPackages.filter(p => !p.is_active && p.start_date).length,
+          not_started: validPackages.filter(p => !p.start_date).length
         }
       };
     }));
@@ -646,6 +689,7 @@ const getMemberPackages = async (req, res) => {
       const totalRemainingSessions = remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions;
 
       return {
+        id: mp.id, // Tambahkan ID member package
         no: index + 1,
         payment_date: mp.Order?.paid_at ? new Date(mp.Order.paid_at).toLocaleDateString('en-GB', {
           day: '2-digit',
@@ -999,6 +1043,594 @@ const deleteMember = async (req, res) => {
   }
 };
 
+// Add package to member (admin function)
+const addPackageToMember = async (req, res) => {
+  try {
+    const { id: member_id } = req.params; // Ambil dari URL parameter
+    const { package_id, order_id } = req.body;
+
+    // Validasi input
+    if (!package_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'package_id harus diisi'
+      });
+    }
+
+    // Cek apakah member exists
+    const member = await Member.findByPk(member_id);
+    if (!member) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member tidak ditemukan'
+      });
+    }
+
+    // Cek apakah package exists dengan relasi lengkap
+    const package = await Package.findByPk(package_id, {
+      include: [
+        {
+          model: PackageMembership,
+          include: [
+            {
+              model: Category,
+              attributes: ['category_name']
+            }
+          ]
+        },
+        {
+          model: PackageFirstTrial
+        },
+        {
+          model: PackagePromo
+        },
+        {
+          model: PackageBonus
+        }
+      ]
+    });
+    
+    if (!package) {
+      return res.status(404).json({
+        success: false,
+        message: 'Package tidak ditemukan'
+      });
+    }
+
+    // Cek apakah order exists (jika ada)
+    if (order_id) {
+      const order = await Order.findByPk(order_id);
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order tidak ditemukan'
+        });
+      }
+    }
+
+    // Hitung session berdasarkan package type
+    let remainingGroupSessions = 0;
+    let remainingSemiPrivateSessions = 0;
+    let remainingPrivateSessions = 0;
+
+    if (package.type === 'membership' && package.PackageMembership) {
+      const sessionCount = package.PackageMembership.session || 0;
+      const categoryName = package.PackageMembership.Category?.category_name;
+      
+      if (categoryName === 'Semi-Private Class') {
+        remainingSemiPrivateSessions = sessionCount;
+      } else if (categoryName === 'Private Class') {
+        remainingPrivateSessions = sessionCount;
+      } else {
+        // Default ke group (termasuk 'Group Class' atau category lain)
+        remainingGroupSessions = sessionCount;
+      }
+    } else if (package.type === 'first_trial' && package.PackageFirstTrial) {
+      remainingGroupSessions = package.PackageFirstTrial.group_session || 0;
+      remainingPrivateSessions = package.PackageFirstTrial.private_session || 0;
+    } else if (package.type === 'promo' && package.PackagePromo) {
+      remainingGroupSessions = package.PackagePromo.group_session || 0;
+      remainingPrivateSessions = package.PackagePromo.private_session || 0;
+    } else if (package.type === 'bonus' && package.PackageBonus) {
+      remainingGroupSessions = package.PackageBonus.group_session || 0;
+      remainingPrivateSessions = package.PackageBonus.private_session || 0;
+    }
+
+    // Hitung tanggal berdasarkan paket template
+    const currentDate = new Date();
+    let packageStartDate = null; // Akan diset saat booking pertama
+    let packageEndDate = null;
+    let activePeriod = 0;
+
+    // Ambil durasi dari paket template
+    if (package.type === 'membership' && package.PackageMembership) {
+      activePeriod = package.PackageMembership.active_period || 0;
+    } else if (package.type === 'first_trial' && package.PackageFirstTrial) {
+      activePeriod = package.PackageFirstTrial.active_period || 0;
+    } else if (package.type === 'promo' && package.PackagePromo) {
+      activePeriod = package.PackagePromo.active_period || 0;
+    } else if (package.type === 'bonus' && package.PackageBonus) {
+      activePeriod = package.PackageBonus.active_period || 0;
+    }
+
+    // Set end_date berdasarkan active_period dari paket template
+    if (activePeriod > 0) {
+      packageEndDate = new Date(currentDate);
+      packageEndDate.setDate(packageEndDate.getDate() + (activePeriod * 7)); // active_period dalam minggu
+    }
+
+    // Buat member package
+    const memberPackage = await MemberPackage.create({
+      member_id,
+      package_id,
+      order_id: order_id || null,
+      start_date: packageStartDate, // null, akan diset saat booking pertama
+      end_date: packageEndDate, // berdasarkan active_period dari paket template
+      active_period: activePeriod, // dari paket template
+      remaining_group_session: remainingGroupSessions,
+      remaining_semi_private_session: remainingSemiPrivateSessions,
+      remaining_private_session: remainingPrivateSessions,
+      used_group_session: 0,
+      used_semi_private_session: 0,
+      used_private_session: 0
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Paket berhasil ditambahkan ke member',
+      data: {
+        member_package_id: memberPackage.id,
+        member_name: member.full_name,
+        package_name: package.name,
+        package_type: package.type,
+        start_date: packageStartDate, // null, akan aktif saat booking pertama
+        end_date: packageEndDate, // berdasarkan active_period dari paket template
+        active_period: activePeriod, // dari paket template (minggu)
+        sessions: {
+          group: remainingGroupSessions,
+          semi_private: remainingSemiPrivateSessions,
+          private: remainingPrivateSessions,
+          total: remainingGroupSessions + remainingSemiPrivateSessions + remainingPrivateSessions
+        },
+        note: 'Paket akan aktif saat member melakukan booking pertama'
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error adding package to member:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Extend package duration (admin function)
+const extendPackageDuration = async (req, res) => {
+  try {
+    const { member_package_id } = req.params; // Ambil dari URL parameter
+    const { extend_weeks, new_end_date } = req.body;
+
+    // Validasi input
+    if (!member_package_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'member_package_id harus diisi'
+      });
+    }
+
+    if (!extend_weeks && !new_end_date) {
+      return res.status(400).json({
+        success: false,
+        message: 'extend_weeks atau new_end_date harus diisi'
+      });
+    }
+
+    // Cek apakah member package exists
+    const memberPackage = await MemberPackage.findByPk(member_package_id, {
+      include: [
+        {
+          model: Member,
+          attributes: ['id', 'full_name', 'phone_number']
+        },
+        {
+          model: Package,
+          attributes: ['id', 'name', 'type']
+        }
+      ]
+    });
+
+    if (!memberPackage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member package tidak ditemukan'
+      });
+    }
+
+    // Hitung end date baru
+    let newEndDate;
+    if (new_end_date) {
+      newEndDate = new Date(new_end_date);
+    } else if (extend_weeks) {
+      const currentEndDate = memberPackage.end_date ? new Date(memberPackage.end_date) : new Date();
+      newEndDate = new Date(currentEndDate);
+      newEndDate.setDate(newEndDate.getDate() + (extend_weeks * 7));
+    }
+
+    // Validasi bahwa end date baru lebih besar dari yang lama
+    if (memberPackage.end_date && newEndDate <= new Date(memberPackage.end_date)) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date baru harus lebih besar dari end date yang lama'
+      });
+    }
+
+    // Update member package
+    const updatedMemberPackage = await memberPackage.update({
+      end_date: newEndDate,
+      active_period: memberPackage.active_period + (extend_weeks || 0)
+    });
+
+    res.json({
+      success: true,
+      message: 'Durasi package berhasil diperpanjang',
+      data: {
+        member_package_id: updatedMemberPackage.id,
+        member_name: memberPackage.Member.full_name,
+        package_name: memberPackage.Package.name,
+        old_end_date: memberPackage.end_date,
+        new_end_date: newEndDate,
+        extended_weeks: extend_weeks || 'custom',
+        active_period: updatedMemberPackage.active_period
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error extending package duration:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Export member data dengan informasi lengkap
+const exportMemberData = async (req, res) => {
+  try {
+    const { status, format = 'excel' } = req.query;
+
+    // Build where clause
+    const whereClause = {};
+    if (status) {
+      whereClause.status = status;
+    }
+
+    // Get all members dengan data lengkap
+    console.log('🔍 Query members with whereClause:', whereClause);
+    const members = await Member.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          attributes: ['email']
+        },
+        {
+          model: MemberPackage,
+          include: [
+            {
+              model: Package,
+              attributes: ['name', 'type']
+            }
+          ]
+        },
+        {
+          model: Booking,
+          include: [
+            {
+              model: Schedule,
+              include: [
+                {
+                  model: Class,
+                  attributes: ['class_name']
+                },
+                {
+                  model: Trainer,
+                  attributes: ['title']
+                }
+              ]
+            },
+            {
+              model: Package,
+              attributes: ['name']
+            }
+          ],
+          where: {
+            status: 'signup' // Hanya booking yang berhasil (bukan cancelled)
+          },
+          order: [['createdAt', 'DESC']],
+          required: false // Jangan require booking, ambil semua member
+        }
+      ],
+      order: [['full_name', 'ASC']]
+    });
+
+    console.log(`📊 Found ${members.length} members in database`);
+    members.forEach((member, index) => {
+      console.log(`${index + 1}. ${member.full_name} - Packages: ${member.MemberPackages.length}, Bookings: ${member.Bookings.length}`);
+    });
+
+    // Format data untuk Excel - 1 row per paket dengan data member di-merge
+    const excelData = [];
+    let rowNumber = 1;
+
+    members.forEach(member => {
+      // Ambil semua paket member
+      const allPackages = member.MemberPackages;
+
+      // Data member yang sama untuk semua paket
+      const memberData = {
+        'Nama Member': member.full_name || '-',
+        'Email': member.User?.email || '-',
+        'Nomor Telepon': member.phone_number || '-',
+        'Status Member': member.status || 'NonAktif',
+        'Tanggal Bergabung': member.date_of_join ? new Date(member.date_of_join).toLocaleDateString('id-ID') : '-'
+      };
+
+      // Jika member tidak punya paket, buat 1 row dengan data member saja
+      if (allPackages.length === 0) {
+        excelData.push({
+          'No': rowNumber++,
+          ...memberData,
+          'Nama Paket': '-',
+          'Jenis Paket': '-',
+          'Status Paket': '-',
+          'Tanggal Mulai': '-',
+          'Tanggal Expired': '-',
+          'Sesi Group': '-',
+          'Sesi Semi Private': '-',
+          'Sesi Private': '-',
+          'Total Sesi': '-',
+          'Sesi Terpakai': '-',
+          'Sisa Sesi': '-',
+          'Harga': '-',
+          'Order ID': '-',
+          packageCount: 1,
+          isFirstPackage: true
+        });
+      } else {
+        // Buat 1 row per paket dengan data member yang sama
+        allPackages.forEach((mp, packageIndex) => {
+          const currentDate = new Date();
+          const endDate = new Date(mp.end_date);
+          const startDate = new Date(mp.start_date);
+          
+          // Hitung status paket
+          let packageStatus = 'Belum Aktif';
+          if (mp.start_date) {
+            if (endDate >= currentDate) {
+              packageStatus = 'Aktif';
+            } else {
+              packageStatus = 'Expired';
+            }
+          }
+
+          // Hitung total sesi (remaining + used)
+          const totalGroupSessions = (mp.remaining_group_session || 0) + (mp.used_group_session || 0);
+          const totalSemiPrivateSessions = (mp.remaining_semi_private_session || 0) + (mp.used_semi_private_session || 0);
+          const totalPrivateSessions = (mp.remaining_private_session || 0) + (mp.used_private_session || 0);
+          const totalSessions = totalGroupSessions + totalSemiPrivateSessions + totalPrivateSessions;
+
+          // Hitung sesi terpakai
+          const usedSessions = (mp.used_group_session || 0) + (mp.used_semi_private_session || 0) + (mp.used_private_session || 0);
+
+          // Hitung sisa sesi
+          const remainingSessions = (mp.remaining_group_session || 0) + (mp.remaining_semi_private_session || 0) + (mp.remaining_private_session || 0);
+
+          // Format harga dan order
+          const priceInfo = mp.Order?.total_amount ? `Rp${mp.Order.total_amount.toLocaleString()}` : '-';
+          const orderInfo = mp.order_id || '-';
+
+          excelData.push({
+            'No': packageIndex === 0 ? rowNumber : '', // Hanya tampil nomor di row pertama
+            'Nama Member': packageIndex === 0 ? memberData['Nama Member'] : '',
+            'Email': packageIndex === 0 ? memberData['Email'] : '',
+            'Nomor Telepon': packageIndex === 0 ? memberData['Nomor Telepon'] : '',
+            'Status Member': packageIndex === 0 ? memberData['Status Member'] : '',
+            'Tanggal Bergabung': packageIndex === 0 ? memberData['Tanggal Bergabung'] : '',
+            'Nama Paket': mp.Package?.name || '-',
+            'Jenis Paket': mp.Package?.type || '-',
+            'Status Paket': packageStatus,
+            'Tanggal Mulai': mp.start_date ? startDate.toLocaleDateString('id-ID') : '-',
+            'Tanggal Expired': mp.end_date ? endDate.toLocaleDateString('id-ID') : '-',
+            'Sesi Group': `${mp.remaining_group_session || 0}/${totalGroupSessions}`,
+            'Sesi Semi Private': `${mp.remaining_semi_private_session || 0}/${totalSemiPrivateSessions}`,
+            'Sesi Private': `${mp.remaining_private_session || 0}/${totalPrivateSessions}`,
+            'Total Sesi': totalSessions,
+            'Sesi Terpakai': usedSessions,
+            'Sisa Sesi': remainingSessions,
+            'Harga': priceInfo,
+            'Order ID': orderInfo,
+            packageCount: allPackages.length,
+            isFirstPackage: packageIndex === 0,
+            memberIndex: member.id // untuk tracking merge
+          });
+        });
+        
+        // Increment row number setelah semua paket member diproses
+        rowNumber++;
+      }
+    });
+
+    console.log(`📋 Generated ${excelData.length} rows for Excel export`);
+    
+    // Debug: Print structure data
+    console.log('📋 Data structure preview:');
+    excelData.slice(0, 10).forEach((row, idx) => {
+      console.log(`Row ${idx + 1}: Member="${row['Nama Member']}", Package="${row['Nama Paket']}", PackageCount=${row.packageCount}, IsFirst=${row.isFirstPackage}`);
+    });
+
+    if (format === 'excel') {
+      // Generate Excel file
+      const ExcelJS = require('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Data Member');
+
+      // Set header
+      const headers = [
+        'No', 'Nama Member', 'Email', 
+        'Nomor Telepon', 'Status Member', 'Tanggal Bergabung',
+        'Nama Paket', 'Jenis Paket', 'Status Paket', 'Tanggal Mulai', 'Tanggal Expired', 
+        'Sesi Group', 'Sesi Semi Private', 'Sesi Private', 'Total Sesi', 'Sesi Terpakai', 'Sisa Sesi', 'Harga', 'Order ID'
+      ];
+
+      // Add header row
+      const headerRow = worksheet.addRow(headers);
+      headerRow.font = { bold: true };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+
+      // Add data rows dan tracking untuk merge
+      let currentRow = 2; // Mulai dari row 2 (setelah header)
+      const mergeRanges = []; // Array untuk menyimpan range yang perlu di-merge
+
+      excelData.forEach((row, index) => {
+        // Remove metadata sebelum add row
+        const { packageCount, isFirstPackage, memberIndex, ...cleanRow } = row;
+        
+                 const dataRow = worksheet.addRow(Object.values(cleanRow));
+         
+         // Set alignment untuk kolom nomor (kolom A) - justify left
+         const numberCell = dataRow.getCell(1); // Kolom A
+         numberCell.alignment = {
+           horizontal: 'left',
+           vertical: 'middle'
+         };
+         
+         // Apply alternating row colors dengan warna yang lebih lembut
+         if (index % 2 === 0) {
+           dataRow.fill = {
+             type: 'pattern',
+             pattern: 'solid',
+             fgColor: { argb: 'FFF0F8FF' } // Alice Blue - sangat lembut
+           };
+         } else {
+           dataRow.fill = {
+             type: 'pattern',
+             pattern: 'solid',
+             fgColor: { argb: 'FFE6F3FF' } // Light Blue - lembut
+           };
+         }
+        
+        // Track untuk merge range
+        if (isFirstPackage && packageCount > 1) {
+          const startRow = currentRow;
+          const endRow = currentRow + packageCount - 1;
+          
+          // Simpan range untuk setiap kolom data member (A sampai F)
+          const columnNames = ['A', 'B', 'C', 'D', 'E', 'F'];
+          columnNames.forEach(colName => {
+            mergeRanges.push(`${colName}${startRow}:${colName}${endRow}`);
+          });
+        }
+        
+        currentRow++;
+      });
+
+      // Apply merge cells menggunakan A1 notation
+      mergeRanges.forEach(range => {
+        try {
+          console.log(`Merging range: ${range}`);
+          worksheet.mergeCells(range);
+          
+          // Set alignment untuk merged cell (ambil cell pertama dari range)
+          const firstCell = range.split(':')[0]; // Contoh: A2 dari A2:A4
+          const cell = worksheet.getCell(firstCell);
+          cell.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'left',
+            wrapText: true 
+          };
+        } catch (error) {
+          console.log(`Error merging range ${range}:`, error.message);
+        }
+      });
+
+      // Auto-fit columns
+      worksheet.columns.forEach((column, index) => {
+        let maxLength = 0;
+        column.eachCell({ includeEmpty: true }, (cell) => {
+          const columnLength = cell.value ? cell.value.toString().length : 10;
+          if (columnLength > maxLength) {
+            maxLength = columnLength;
+          }
+        });
+        column.width = Math.min(Math.max(maxLength + 2, 10), 50); // Min 10, max 50
+      });
+
+      // Add border to all cells
+      worksheet.eachRow((row, rowNumber) => {
+        row.eachCell((cell, colNumber) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+      });
+
+      // Set response headers
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="member-data-${new Date().toISOString().split('T')[0]}.xlsx"`);
+
+      // Write to response
+      await workbook.xlsx.write(res);
+      res.end();
+
+    } else if (format === 'csv') {
+      // Convert to CSV format
+      const csvHeader = 'No,Nama Member,Email,Nomor Telepon,Status Member,Tanggal Bergabung,Nama Paket,Jenis Paket,Status Paket,Tanggal Mulai,Tanggal Expired,Sesi Group,Sesi Semi Private,Sesi Private,Total Sesi,Sesi Terpakai,Sisa Sesi,Harga,Order ID\n';
+      const csvRows = excelData.map((row) => {
+        // Remove metadata untuk CSV
+        const { packageCount, isFirstPackage, memberIndex, ...cleanRow } = row;
+        return `${cleanRow['No']},"${cleanRow['Nama Member']}","${cleanRow['Email']}","${cleanRow['Nomor Telepon']}","${cleanRow['Status Member']}","${cleanRow['Tanggal Bergabung']}","${cleanRow['Nama Paket']},"${cleanRow['Jenis Paket']}","${cleanRow['Status Paket']},"${cleanRow['Tanggal Mulai']}","${cleanRow['Tanggal Expired']}","${cleanRow['Sesi Group']}","${cleanRow['Sesi Semi Private']}","${cleanRow['Sesi Private']}","${cleanRow['Total Sesi']}","${cleanRow['Sesi Terpakai']}","${cleanRow['Sisa Sesi']}","${cleanRow['Harga']}","${cleanRow['Order ID']}"`;
+      }).join('\n');
+      
+      const csvContent = csvHeader + csvRows;
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="member-data-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csvContent);
+    } else {
+      // Return JSON format - clean the data first
+      const cleanData = excelData.map(row => {
+        const { packageCount, isFirstPackage, memberIndex, ...cleanRow } = row;
+        return cleanRow;
+      });
+      
+      res.json({
+        success: true,
+        message: 'Data member berhasil diexport',
+        data: cleanData,
+        total: cleanData.length,
+        export_date: new Date().toISOString(),
+        format: format
+      });
+    }
+
+  } catch (error) {
+    logger.error('Error exporting member data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
 
 module.exports = {
 
@@ -1012,5 +1644,8 @@ module.exports = {
   getMemberProfile,
   getMemberPackages,
   getMemberBookings,
+  addPackageToMember,
+  extendPackageDuration,
+  exportMemberData,
  
 }; 

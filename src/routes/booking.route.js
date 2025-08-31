@@ -14,6 +14,12 @@ const {
 
 
 // Admin routes (admin role required)
+router.post('/admin', 
+    validateToken,
+    checkRole('admin'),
+    bookingController.createAdminBooking
+);
+
 router.put('/:id/status', 
     validateToken,
     checkRole('admin'),
@@ -41,15 +47,17 @@ router.put('/:id/admin-cancel',
 );
 
 
-// User routes (no admin role required)
+// User routes (member role only)
 router.post('/', 
     validateToken,
+    checkRole('member'),
     validate(createUserBookingSchema, 'body'),
     bookingController.createUserBooking
 );
 
 router.put('/:id/cancel', 
     validateToken,
+    checkRole('member'),
     bookingController.cancelBooking
 );
 
