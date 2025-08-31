@@ -17,7 +17,7 @@ const getAllPromoPackages = async (req, res) => {
       };
     }
 
-    // Build include clause based on active_only parameter
+    // Build include clause based on active_only parameter and user role
     const includeClause = [
       {
         model: PackagePromo,
@@ -25,8 +25,11 @@ const getAllPromoPackages = async (req, res) => {
       }
     ];
 
-    // If active_only is true, filter by promo period
-    if (active_only === 'true') {
+    // Admin can see all packages, non-admin only see active packages
+    const isAdmin = req.user && req.user.role === 'admin';
+    
+    // If not admin or active_only is explicitly true, filter by promo period
+    if (!isAdmin || active_only === 'true') {
       const currentDate = new Date();
       includeClause[0].where = {
         start_time: {
@@ -66,11 +69,19 @@ const getAllPromoPackages = async (req, res) => {
 
     const totalPages = Math.ceil(count / limit);
 
+    // Determine message based on user role and filter
+    let message = 'Promo packages retrieved successfully';
+    if (isAdmin) {
+      message = active_only === 'true' 
+        ? 'Active promo packages retrieved successfully (Admin view)' 
+        : 'All promo packages retrieved successfully (Admin view)';
+    } else {
+      message = 'Active promo packages retrieved successfully';
+    }
+
     res.json({
       success: true,
-      message: active_only === 'true' 
-        ? 'Active promo packages retrieved successfully' 
-        : 'All promo packages retrieved successfully',
+      message,
       data: {
         packages: transformedPackages,
         pagination: {
@@ -80,7 +91,8 @@ const getAllPromoPackages = async (req, res) => {
           itemsPerPage: parseInt(limit)
         },
         filter: {
-          active_only: active_only === 'true'
+          active_only: active_only === 'true',
+          user_role: isAdmin ? 'admin' : 'user'
         }
       }
     });

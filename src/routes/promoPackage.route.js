@@ -10,14 +10,16 @@ const {
   promoPackageQuerySchema
 } = require('../validations/promoPackage.validation');
 
-// Get all promo packages (public)
+// Get all promo packages (authenticated users)
 router.get('/',
+  validateToken,
   validate(promoPackageQuerySchema, 'query'),
   promoPackageController.getAllPromoPackages
 );
 
-// Get promo package by ID (public)
+// Get promo package by ID (authenticated users)
 router.get('/:id',
+  validateToken,
   validate(promoPackageIdSchema, 'params'),
   promoPackageController.getPromoPackageById
 );
