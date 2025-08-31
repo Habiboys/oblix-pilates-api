@@ -65,22 +65,24 @@ const createPromoPackageSchema = Joi.object({
   group_session: Joi.number()
     .integer()
     .min(0)
-    .required()
+    .optional()
+    .allow(null)
+    .default(0)
     .messages({
       'number.base': 'Group session must be a number',
       'number.integer': 'Group session must be an integer',
-      'number.min': 'Group session must be at least 0',
-      'any.required': 'Group session is required'
+      'number.min': 'Group session must be at least 0'
     }),
   private_session: Joi.number()
     .integer()
     .min(0)
-    .required()
+    .optional()
+    .allow(null)
+    .default(0)
     .messages({
       'number.base': 'Private session must be a number',
       'number.integer': 'Private session must be an integer',
-      'number.min': 'Private session must be at least 0',
-      'any.required': 'Private session is required'
+      'number.min': 'Private session must be at least 0'
     }),
   start_time: Joi.date()
     .iso()
@@ -98,7 +100,21 @@ const createPromoPackageSchema = Joi.object({
       'date.format': 'End time must be in ISO format',
       'any.required': 'End time is required'
     })
-});
+}).custom((value, helpers) => {
+  const { group_session, private_session } = value;
+  
+  // Pastikan minimal salah satu sesi diisi (tidak boleh keduanya 0)
+  const groupCount = group_session || 0;
+  const privateCount = private_session || 0;
+  
+  if (groupCount === 0 && privateCount === 0) {
+    return helpers.error('any.invalid', { 
+      message: 'Minimal salah satu jenis sesi harus diisi (group atau private)' 
+    });
+  }
+  
+  return value;
+}, 'validate-session-count');
 
 // Validation schema for updating promo package
 const updatePromoPackageSchema = Joi.object({
@@ -162,6 +178,8 @@ const updatePromoPackageSchema = Joi.object({
     .integer()
     .min(0)
     .optional()
+    .allow(null)
+    .default(0)
     .messages({
       'number.base': 'Group session must be a number',
       'number.integer': 'Group session must be an integer',
@@ -171,6 +189,8 @@ const updatePromoPackageSchema = Joi.object({
     .integer()
     .min(0)
     .optional()
+    .allow(null)
+    .default(0)
     .messages({
       'number.base': 'Private session must be a number',
       'number.integer': 'Private session must be an integer',
@@ -190,7 +210,23 @@ const updatePromoPackageSchema = Joi.object({
       'date.base': 'End time must be a valid date',
       'date.format': 'End time must be in ISO format'
     })
-});
+}).custom((value, helpers) => {
+  const { group_session, private_session } = value;
+  
+  // Jika kedua field diisi, validasi minimal salah satu tidak 0
+  if (group_session !== undefined && private_session !== undefined) {
+    const groupCount = group_session || 0;
+    const privateCount = private_session || 0;
+    
+    if (groupCount === 0 && privateCount === 0) {
+      return helpers.error('any.invalid', { 
+        message: 'Minimal salah satu jenis sesi harus diisi (group atau private)' 
+      });
+    }
+  }
+  
+  return value;
+}, 'validate-session-count-update');
 
 // Validation schema for promo package ID parameter
 const promoPackageIdSchema = Joi.object({

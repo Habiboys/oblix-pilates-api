@@ -123,8 +123,8 @@ const getPromoPackageById = async (req, res) => {
       id: package.id,
       name: package.name,
       price: package.price,
-      group_session: package.PackagePromo ? package.PackagePromo.group_session : null,
-      private_session: package.PackagePromo ? package.PackagePromo.private_session : null,
+      group_session: package.PackagePromo ? package.PackagePromo.group_session : 0,
+      private_session: package.PackagePromo ? package.PackagePromo.private_session : 0,
       start_time: package.PackagePromo ? package.PackagePromo.start_time : null,
       end_time: package.PackagePromo ? package.PackagePromo.end_time : null,
       duration_value: package.duration_value,
@@ -196,8 +196,8 @@ const createPromoPackage = async (req, res) => {
     // Create package promo
     await PackagePromo.create({
       package_id: newPackage.id,
-      group_session: group_session ? parseInt(group_session) : null,
-      private_session: private_session ? parseInt(private_session) : null,
+      group_session: group_session !== undefined && group_session !== null ? parseInt(group_session) : 0,
+      private_session: private_session !== undefined && private_session !== null ? parseInt(private_session) : 0,
       start_time,
       end_time
     }, { transaction: t });
@@ -218,8 +218,8 @@ const createPromoPackage = async (req, res) => {
       id: createdPackage.id,
       name: createdPackage.name,
       price: createdPackage.price,
-      group_session: createdPackage.PackagePromo ? createdPackage.PackagePromo.group_session : null,
-      private_session: createdPackage.PackagePromo ? createdPackage.PackagePromo.private_session : null,
+      group_session: createdPackage.PackagePromo ? createdPackage.PackagePromo.group_session : 0,
+      private_session: createdPackage.PackagePromo ? createdPackage.PackagePromo.private_session : 0,
       start_time: createdPackage.PackagePromo ? createdPackage.PackagePromo.start_time : null,
       end_time: createdPackage.PackagePromo ? createdPackage.PackagePromo.end_time : null,
       duration_value: createdPackage.duration_value,
@@ -308,10 +308,10 @@ const updatePromoPackage = async (req, res) => {
     });
     if (packagePromo) {
       await packagePromo.update({
-        group_session: group_session ? parseInt(group_session) : null,
-        private_session: private_session ? parseInt(private_session) : null,
-        start_time: start_time,
-        end_time: end_time
+        group_session: group_session !== undefined ? parseInt(group_session) : packagePromo.group_session,
+        private_session: private_session !== undefined ? parseInt(private_session) : packagePromo.private_session,
+        start_time: start_time || packagePromo.start_time,
+        end_time: end_time || packagePromo.end_time
       });
     }
 
@@ -330,8 +330,8 @@ const updatePromoPackage = async (req, res) => {
       id: updatedPackage.id,
       name: updatedPackage.name,
       price: updatedPackage.price,
-      group_session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.group_session : null,
-      private_session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.private_session : null,
+      group_session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.group_session : 0,
+      private_session: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.private_session : 0,
       start_time: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.start_time : null,
       end_time: updatedPackage.PackagePromo ? updatedPackage.PackagePromo.end_time : null,
       duration_value: updatedPackage.duration_value,
