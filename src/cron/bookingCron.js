@@ -19,6 +19,13 @@ const scheduleDynamicCancelJobs = async () => {
         
         // Get all future schedules that need cancel scheduling
         const schedules = await Schedule.findAll({
+            attributes: [
+                'id', 'class_id', 'picture', 'trainer_id', 'pax', 'type', 
+                'date_start', 'time_start', 'time_end', 'repeat_type', 
+                'repeat_days', 'schedule_until', 'booking_deadline_hour', 
+                'min_signup', 'cancel_buffer_minutes', 'parent_schedule_id', 
+                'member_id', 'level', 'createdAt', 'updatedAt'
+            ],
             where: {
                 date_start: {
                     [Op.gte]: currentTime.toISOString().split('T')[0] // Today or future

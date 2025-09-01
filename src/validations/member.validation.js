@@ -147,6 +147,89 @@ const updateMemberSchema = Joi.object({
     })
 });
 
+// Validation schema for updating member package
+const updateMemberPackageSchema = Joi.object({
+  remaining_group_session: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'Remaining group session must be a number',
+      'number.integer': 'Remaining group session must be an integer',
+      'number.min': 'Remaining group session must be at least 0'
+    }),
+  remaining_semi_private_session: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'Remaining semi private session must be a number',
+      'number.integer': 'Remaining semi private session must be an integer',
+      'number.min': 'Remaining semi private session must be at least 0'
+    }),
+  remaining_private_session: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'Remaining private session must be a number',
+      'number.integer': 'Remaining private session must be an integer',
+      'number.min': 'Remaining private session must be at least 0'
+    }),
+  used_group_session: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'Used group session must be a number',
+      'number.integer': 'Used group session must be an integer',
+      'number.min': 'Used group session must be at least 0'
+    }),
+  used_semi_private_session: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'Used semi private session must be a number',
+      'number.integer': 'Used semi private session must be an integer',
+      'number.min': 'Used semi private session must be at least 0'
+    }),
+  used_private_session: Joi.number()
+    .integer()
+    .min(0)
+    .optional()
+    .messages({
+      'number.base': 'Used private session must be a number',
+      'number.integer': 'Used private session must be an integer',
+      'number.min': 'Used private session must be at least 0'
+    }),
+  start_date: Joi.date()
+    .iso()
+    .optional()
+    .messages({
+      'date.base': 'Start date must be a valid date',
+      'date.format': 'Start date must be in ISO format (YYYY-MM-DD)'
+    }),
+  end_date: Joi.date()
+    .iso()
+    .optional()
+    .messages({
+      'date.base': 'End date must be a valid date',
+      'date.format': 'End date must be in ISO format (YYYY-MM-DD)'
+    })
+});
+
+// Validation schema for member package ID parameter
+const memberPackageIdSchema = Joi.object({
+  member_package_id: Joi.string()
+    .uuid()
+    .required()
+    .messages({
+      'string.guid': 'Member package ID must be a valid UUID',
+      'any.required': 'Member package ID is required'
+    })
+});
+
 // Validation schema for query parameters
 const getMembersQuerySchema = Joi.object({
   page: Joi.number()
@@ -230,6 +313,8 @@ const getBookingDetailsSchema = Joi.object({
 module.exports = {
   createMemberSchema,
   updateMemberSchema,
+  updateMemberPackageSchema,
+  memberPackageIdSchema,
   getMembersQuerySchema,
   memberIdSchema,
   getMyClassesSchema,

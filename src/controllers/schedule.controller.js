@@ -1,4 +1,4 @@
-const { Schedule, Class, Trainer, Member, Booking, User, Category } = require('../models');
+const { Schedule, Class, Trainer, Member, Booking, User, Category, Package } = require('../models');
 const { validateSessionAvailability, createSessionAllocation, getMemberSessionSummary } = require('../utils/sessionTrackingUtils');
 const { autoCancelExpiredBookings, processWaitlistPromotion, getBookingStatistics } = require('../utils/bookingUtils');
 const { validateTrainerScheduleConflict, validateMemberScheduleConflict } = require('../utils/scheduleUtils');
@@ -83,7 +83,7 @@ const createRepeatSchedules = async (scheduleData, repeatType, scheduleUntil, re
 // Get all group schedules with pagination and search
 const getAllGroupSchedules = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '', date } = req.query;
+        const { page = 1, limit = 10, search = '', date, include_status = 'true' } = req.query;
         const offset = (page - 1) * limit;
 
         const whereClause = ScheduleService.buildWhereClause('group', { search, date });
@@ -98,7 +98,9 @@ const getAllGroupSchedules = async (req, res) => {
 
         // Format schedules dengan informasi detail
         const formattedSchedules = await Promise.all(schedules.rows.map(schedule => 
-            ScheduleService.formatScheduleData(schedule, true)
+            include_status === 'true' 
+                ? ScheduleService.formatScheduleDataWithStatus(schedule, true)
+                : ScheduleService.formatScheduleData(schedule, true)
         ));
 
         const totalPages = Math.ceil(schedules.count / limit);
@@ -725,7 +727,7 @@ const deleteGroupSchedule = async (req, res) => {
 // Get all semi-private schedules with pagination and search
 const getAllSemiPrivateSchedules = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '', date } = req.query;
+        const { page = 1, limit = 10, search = '', date, include_status = 'true' } = req.query;
         const offset = (page - 1) * limit;
 
         const whereClause = ScheduleService.buildWhereClause('semi_private', { search, date });
@@ -740,7 +742,9 @@ const getAllSemiPrivateSchedules = async (req, res) => {
 
         // Format schedules dengan informasi detail
         const formattedSchedules = await Promise.all(schedules.rows.map(schedule => 
-            ScheduleService.formatScheduleData(schedule, true)
+            include_status === 'true' 
+                ? ScheduleService.formatScheduleDataWithStatus(schedule, true)
+                : ScheduleService.formatScheduleData(schedule, true)
         ));
 
         const totalPages = Math.ceil(schedules.count / limit);
@@ -1364,7 +1368,7 @@ const deleteSemiPrivateSchedule = async (req, res) => {
 // Get all private schedules with pagination and search
 const getAllPrivateSchedules = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '', date } = req.query;
+        const { page = 1, limit = 10, search = '', date, include_status = 'true' } = req.query;
         const offset = (page - 1) * limit;
 
         const whereClause = ScheduleService.buildWhereClause('private', { search, date });
@@ -1379,7 +1383,9 @@ const getAllPrivateSchedules = async (req, res) => {
 
         // Format schedules dengan informasi detail
         const formattedSchedules = await Promise.all(schedules.rows.map(schedule => 
-            ScheduleService.formatScheduleData(schedule, true)
+            include_status === 'true' 
+                ? ScheduleService.formatScheduleDataWithStatus(schedule, true)
+                : ScheduleService.formatScheduleData(schedule, true)
         ));
 
         const totalPages = Math.ceil(schedules.count / limit);
@@ -2155,7 +2161,7 @@ const deletePrivateSchedule = async (req, res) => {
 // Get schedule data for calendar view
 const getScheduleCalendar = async (req, res) => {
     try {
-        const { month, year, type, include_members = 'false' } = req.query;
+        const { month, year, type, include_members = 'false', include_status = 'true' } = req.query;
         
         // Default to current month/year if not provided
         const currentDate = new Date();
@@ -2219,7 +2225,13 @@ whereClause.date_start = {
             include: [
                 {
                     model: Class,
-                    attributes: ['id', 'class_name', 'color_sign']
+                    attributes: ['id', 'class_name', 'color_sign'],
+                    include: [
+                        {
+                            model: Category,
+                            attributes: ['id', 'category_name']
+                        }
+                    ]
                 },
                 {
                     model: Trainer,
@@ -2227,100 +2239,123 @@ whereClause.date_start = {
                 },
                 {
                     model: Booking,
-                    where: {
-                        status: {
-                            [Op.in]: ['signup', 'waiting_list']
-                        }
-                    },
                     required: false,
-                    attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'createdAt', 'updatedAt'],
-                    include: include_members === 'true' ? [
+                    attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt', 'cancelled_by', 'waitlist_joined_at'],
+                    include: [
                         {
                             model: Member,
-                            attributes: ['id', 'full_name']
+                            attributes: ['id', 'full_name', 'phone_number'],
+                            include: [
+                                {
+                                    model: User,
+                                    attributes: ['email']
+                                }
+                            ]
+                        },
+                        {
+                            model: Package,
+                            attributes: ['id', 'name', 'type']
                         }
-                    ] : []
+                    ]
                 }
             ],
             order: [['date_start', 'ASC'], ['time_start', 'ASC']]
         });
         
         // Format data untuk calendar dengan informasi slot
-        const formattedSchedules = await Promise.all(schedules.map(schedule => {
-            // Hitung booking berdasarkan status
-            const signupBookings = schedule.Bookings.filter(b => b.status === 'signup');
-            const waitlistBookings = schedule.Bookings.filter(b => b.status === 'waiting_list');
-            
-            // Tentukan kapasitas maksimal berdasarkan field pax
-            const maxCapacity = schedule.pax || 20;
-            
-            // Hitung slot tersisa
-            const availableSlots = Math.max(0, maxCapacity - signupBookings.length);
-            const isFull = availableSlots === 0;
-            const hasWaitlist = waitlistBookings.length > 0;
-            
-            // Status kelas
-            let status = 'available';
-            if (isFull && hasWaitlist) {
-                status = 'full_with_waitlist';
-            } else if (isFull) {
-                status = 'full';
-            } else if (signupBookings.length < (schedule.min_signup || 1)) {
-                status = 'minimum_not_met';
+        const formattedSchedules = await Promise.all(schedules.map(async schedule => {
+            if (include_status === 'true') {
+                // Gunakan formatScheduleDataWithStatus untuk mendapatkan status detection
+                const scheduleData = await ScheduleService.formatScheduleDataWithStatus(schedule, true);
+                
+                // Tambahkan informasi khusus untuk calendar
+                return {
+                    ...scheduleData,
+                    date: schedule.date_start, // Alias untuk date
+                    category_name: schedule.Class?.Category?.category_name || '',
+                    level: schedule.level || null,
+                    
+                    // Member information (jika diminta)
+                    signup_members: include_members === 'true' ? (schedule.Bookings || [])
+                        .filter(b => b.status === 'signup')
+                        .map(booking => ({
+                            id: booking.Member?.id || null,
+                            name: booking.Member?.full_name || ''
+                        })) : [],
+                    waitlist_members: include_members === 'true' ? (schedule.Bookings || [])
+                        .filter(b => b.status === 'waiting_list')
+                        .map(booking => ({
+                            id: booking.Member?.id || null,
+                            name: booking.Member?.full_name || ''
+                        })) : []
+                };
+            } else {
+                // Format sederhana tanpa status detection (untuk backward compatibility)
+                const signupBookings = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'signup') : [];
+                const waitlistBookings = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'waiting_list') : [];
+                
+                const maxCapacity = schedule.pax || 20;
+                const availableSlots = Math.max(0, maxCapacity - signupBookings.length);
+                const isFull = availableSlots === 0;
+                const hasWaitlist = waitlistBookings.length > 0;
+                
+                let status = 'available';
+                if (isFull && hasWaitlist) {
+                    status = 'full_with_waitlist';
+                } else if (isFull) {
+                    status = 'full';
+                } else if (signupBookings.length < (schedule.min_signup || 1)) {
+                    status = 'minimum_not_met';
+                }
+                
+                const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
+                const currentDateTime = new Date();
+                const cancelBufferMinutes = schedule.cancel_buffer_minutes ?? 120;
+                const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
+                const isPastCancelDeadline = currentDateTime > cancelDeadline;
+                
+                const scheduleData = {
+                    id: schedule.id,
+                    class_name: schedule.Class?.class_name || '',
+                    class_color: schedule.Class?.color_sign || '#000000',
+                    category_name: schedule.Class?.Category?.category_name || '',
+                    trainer_name: schedule.Trainer?.title || '',
+                    trainer_picture: schedule.Trainer?.picture || '',
+                    type: schedule.type,
+                    level: schedule.level || null,
+                    date: schedule.date_start,
+                    time_start: schedule.time_start,
+                    time_end: schedule.time_end,
+                    
+                    max_capacity: maxCapacity,
+                    current_signups: signupBookings.length,
+                    waitlist_count: waitlistBookings.length,
+                    available_slots: availableSlots,
+                    min_signup: schedule.min_signup || 1,
+                    
+                    status: status,
+                    is_full: isFull,
+                    has_waitlist: hasWaitlist,
+                    is_past_cancel_deadline: isPastCancelDeadline,
+                    
+                    cancel_buffer_minutes: cancelBufferMinutes,
+                    can_book: !isPastCancelDeadline && (availableSlots > 0 || hasWaitlist),
+                    can_cancel: !isPastCancelDeadline
+                };
+                
+                if (include_members === 'true') {
+                    scheduleData.signup_members = signupBookings.map(b => ({
+                        id: b.Member?.id || null,
+                        name: b.Member?.full_name || ''
+                    }));
+                    scheduleData.waitlist_members = waitlistBookings.map(b => ({
+                        id: b.Member?.id || null,
+                        name: b.Member?.full_name || ''
+                    }));
+                }
+                
+                return scheduleData;
             }
-            
-            // Cek apakah sudah melewati cancel buffer time
-            const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
-            const currentDateTime = new Date();
-            const cancelBufferMinutes = schedule.cancel_buffer_minutes ?? 120;
-            const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
-            const isPastCancelDeadline = currentDateTime > cancelDeadline;
-            
-            const scheduleData = {
-                id: schedule.id,
-                class_name: schedule.Class?.class_name || '',
-                class_color: schedule.Class?.color_sign || '#000000',
-                category_name: schedule.Class?.Category?.category_name || '',
-                trainer_name: schedule.Trainer?.title || '',
-                trainer_picture: schedule.Trainer?.picture || '',
-                type: schedule.type,
-                level: schedule.level || null,
-                date: schedule.date_start,
-                time_start: schedule.time_start,
-                time_end: schedule.time_end,
-                
-                // Informasi slot dan booking
-                max_capacity: maxCapacity,
-                current_signups: signupBookings.length,
-                waitlist_count: waitlistBookings.length,
-                available_slots: availableSlots,
-                min_signup: schedule.min_signup || 1,
-                
-                // Status kelas
-                status: status,
-                is_full: isFull,
-                has_waitlist: hasWaitlist,
-                is_past_cancel_deadline: isPastCancelDeadline,
-                
-                // Informasi tambahan
-                cancel_buffer_minutes: cancelBufferMinutes,
-                can_book: !isPastCancelDeadline && (availableSlots > 0 || hasWaitlist),
-                can_cancel: !isPastCancelDeadline
-            };
-            
-            // Tambahkan detail member jika diminta
-            if (include_members === 'true') {
-                scheduleData.signup_members = signupBookings.map(b => ({
-                    id: b.Member.id,
-                    name: b.Member.full_name
-                }));
-                scheduleData.waitlist_members = waitlistBookings.map(b => ({
-                    id: b.Member.id,
-                    name: b.Member.full_name
-                }));
-            }
-            
-            return scheduleData;
         }));
         
         // Group schedules by date for easier calendar rendering
@@ -2347,6 +2382,7 @@ whereClause.date_start = {
                 year: targetYear,
                 filter_type: type || 'all',
                 include_members: include_members === 'true',
+                include_status: include_status === 'true',
                 
                 // Statistik
                 total_schedules: totalSchedules,

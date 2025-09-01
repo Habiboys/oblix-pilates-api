@@ -449,6 +449,13 @@ const getMemberDetailById = async (req, res) => {
       include: [
         {
           model: Schedule,
+          attributes: [
+            'id', 'class_id', 'picture', 'trainer_id', 'pax', 'type', 
+            'date_start', 'time_start', 'time_end', 'repeat_type', 
+            'repeat_days', 'schedule_until', 'booking_deadline_hour', 
+            'min_signup', 'cancel_buffer_minutes', 'parent_schedule_id', 
+            'member_id', 'level', 'createdAt', 'updatedAt'
+          ],
           include: [
             {
               model: Class,
@@ -705,6 +712,11 @@ const getMemberPackages = async (req, res) => {
           month: 'short',
           year: 'numeric'
         }) : '-',
+        start_date: mp.start_date ? new Date(mp.start_date).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : '-',
         package: mp.Package?.name || '-',
         initial_session: {
           total: totalInitialSessions,
@@ -756,6 +768,13 @@ const getMemberBookings = async (req, res) => {
       include: [
         {
           model: Schedule,
+          attributes: [
+            'id', 'class_id', 'picture', 'trainer_id', 'pax', 'type', 
+            'date_start', 'time_start', 'time_end', 'repeat_type', 
+            'repeat_days', 'schedule_until', 'booking_deadline_hour', 
+            'min_signup', 'cancel_buffer_minutes', 'parent_schedule_id', 
+            'member_id', 'level', 'createdAt', 'updatedAt'
+          ],
           include: [
             {
               model: Class,
@@ -1294,6 +1313,173 @@ const extendPackageDuration = async (req, res) => {
   }
 };
 
+// Update member package (admin function)
+const updateMemberPackage = async (req, res) => {
+  try {
+    const { member_package_id } = req.params;
+    const {
+      remaining_group_session,
+      remaining_semi_private_session,
+      remaining_private_session,
+      used_group_session,
+      used_semi_private_session,
+      used_private_session,
+      start_date,
+      end_date
+    } = req.body;
+
+    // Find member package
+    const memberPackage = await MemberPackage.findByPk(member_package_id, {
+      include: [
+        {
+          model: Member,
+          attributes: ['id', 'full_name', 'phone_number']
+        },
+        {
+          model: Package,
+          attributes: ['id', 'name', 'type']
+        }
+      ]
+    });
+
+    if (!memberPackage) {
+      return res.status(404).json({
+        success: false,
+        message: 'Member package not found'
+      });
+    }
+
+    // Validate session numbers (cannot be negative)
+    const sessionFields = [
+      { name: 'remaining_group_session', value: remaining_group_session },
+      { name: 'remaining_semi_private_session', value: remaining_semi_private_session },
+      { name: 'remaining_private_session', value: remaining_private_session },
+      { name: 'used_group_session', value: used_group_session },
+      { name: 'used_semi_private_session', value: used_semi_private_session },
+      { name: 'used_private_session', value: used_private_session }
+    ];
+
+    for (const field of sessionFields) {
+      if (field.value !== undefined && field.value < 0) {
+        return res.status(400).json({
+          success: false,
+          message: `${field.name} cannot be negative`
+        });
+      }
+    }
+
+    // Validate date formats if provided
+    if (start_date && !Date.parse(start_date)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid start_date format. Use YYYY-MM-DD'
+      });
+    }
+
+    if (end_date && !Date.parse(end_date)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid end_date format. Use YYYY-MM-DD'
+      });
+    }
+
+    // Validate start_date <= end_date if both are provided
+    if (start_date && end_date && new Date(start_date) > new Date(end_date)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start date cannot be after end date'
+      });
+    }
+
+    // Prepare update data
+    const updateData = {};
+    
+    if (remaining_group_session !== undefined) updateData.remaining_group_session = parseInt(remaining_group_session);
+    if (remaining_semi_private_session !== undefined) updateData.remaining_semi_private_session = parseInt(remaining_semi_private_session);
+    if (remaining_private_session !== undefined) updateData.remaining_private_session = parseInt(remaining_private_session);
+    if (used_group_session !== undefined) updateData.used_group_session = parseInt(used_group_session);
+    if (used_semi_private_session !== undefined) updateData.used_semi_private_session = parseInt(used_semi_private_session);
+    if (used_private_session !== undefined) updateData.used_private_session = parseInt(used_private_session);
+    if (start_date !== undefined) updateData.start_date = start_date;
+    if (end_date !== undefined) updateData.end_date = end_date;
+
+    // Update member package
+    await memberPackage.update(updateData);
+
+    // Log the update
+    logger.info(`✅ Member package updated by admin: ${memberPackage.id}`);
+    logger.info(`📊 Updated fields:`, updateData);
+    logger.info(`👤 Member: ${memberPackage.Member.full_name}`);
+    logger.info(`📦 Package: ${memberPackage.Package.name}`);
+
+    // Get updated member package with relations
+    const updatedMemberPackage = await MemberPackage.findByPk(member_package_id, {
+      include: [
+        {
+          model: Member,
+          attributes: ['id', 'full_name', 'phone_number']
+        },
+        {
+          model: Package,
+          attributes: ['id', 'name', 'type']
+        }
+      ]
+    });
+
+    // Calculate total sessions
+    const totalGroupSessions = (updatedMemberPackage.remaining_group_session || 0) + (updatedMemberPackage.used_group_session || 0);
+    const totalSemiPrivateSessions = (updatedMemberPackage.remaining_semi_private_session || 0) + (updatedMemberPackage.used_semi_private_session || 0);
+    const totalPrivateSessions = (updatedMemberPackage.remaining_private_session || 0) + (updatedMemberPackage.used_private_session || 0);
+
+    res.json({
+      success: true,
+      message: 'Member package updated successfully',
+      data: {
+        member_package_id: updatedMemberPackage.id,
+        member: {
+          id: updatedMemberPackage.Member.id,
+          name: updatedMemberPackage.Member.full_name,
+          phone: updatedMemberPackage.Member.phone_number
+        },
+        package: {
+          id: updatedMemberPackage.Package.id,
+          name: updatedMemberPackage.Package.name,
+          type: updatedMemberPackage.Package.type
+        },
+        sessions: {
+          group: {
+            remaining: updatedMemberPackage.remaining_group_session || 0,
+            used: updatedMemberPackage.used_group_session || 0,
+            total: totalGroupSessions
+          },
+          semi_private: {
+            remaining: updatedMemberPackage.remaining_semi_private_session || 0,
+            used: updatedMemberPackage.used_semi_private_session || 0,
+            total: totalSemiPrivateSessions
+          },
+          private: {
+            remaining: updatedMemberPackage.remaining_private_session || 0,
+            used: updatedMemberPackage.used_private_session || 0,
+            total: totalPrivateSessions
+          }
+        },
+        dates: {
+          start_date: updatedMemberPackage.start_date,
+          end_date: updatedMemberPackage.end_date
+        },
+        updated_at: updatedMemberPackage.updatedAt
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error updating member package:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 // Export member data dengan informasi lengkap
 const exportMemberData = async (req, res) => {
   try {
@@ -1646,6 +1832,7 @@ module.exports = {
   getMemberBookings,
   addPackageToMember,
   extendPackageDuration,
+  updateMemberPackage,
   exportMemberData,
  
 }; 

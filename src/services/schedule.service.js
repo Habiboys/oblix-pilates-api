@@ -397,6 +397,85 @@ class ScheduleService {
 
         return whereClause;
     }
+
+    /**
+     * Deteksi status schedule berdasarkan booking data
+     * @param {Object} schedule - Schedule object dengan bookings
+     * @returns {Object} Status schedule
+     */
+    static detectScheduleStatus(schedule) {
+        const currentTime = new Date();
+        const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
+        const isPastSchedule = currentTime > scheduleDateTime;
+        
+        // Jika schedule belum lewat, return status normal
+        if (!isPastSchedule) {
+            return {
+                status: 'upcoming',
+                is_completed: false,
+                is_cancelled: false,
+                reason: null
+            };
+        }
+
+        // Jika schedule sudah lewat, analisis booking data
+        const signupBookings = schedule.Bookings?.filter(b => b.status === 'signup') || [];
+        const cancelledBookings = schedule.Bookings?.filter(b => b.status === 'cancelled') || [];
+        const totalBookings = schedule.Bookings?.length || 0;
+        
+        // Jika tidak ada booking sama sekali
+        if (totalBookings === 0) {
+            return {
+                status: 'cancelled',
+                reason: 'no_bookings',
+                description: 'Kelas dibatalkan karena tidak ada booking'
+            };
+        }
+        
+        // Jika semua booking di-cancel
+        if (cancelledBookings.length === totalBookings && totalBookings > 0) {
+            return {
+                status: 'cancelled',
+                reason: 'all_bookings_cancelled',
+                description: 'Kelas dibatalkan karena semua booking di-cancel',
+                cancelled_count: cancelledBookings.length,
+                total_bookings: totalBookings
+            };
+        }
+        
+        // Jika ada booking yang signup (kelas dilaksanakan)
+        if (signupBookings.length > 0) {
+            return {
+                status: 'completed',
+                reason: 'has_signup_bookings',
+                description: 'Kelas dilaksanakan',
+                signup_count: signupBookings.length,
+                total_bookings: totalBookings,
+                attendance_rate: Math.round((signupBookings.length / totalBookings) * 100)
+            };
+        }
+        
+        // Fallback: jika ada booking tapi tidak ada yang signup
+        return {
+            status: 'cancelled',
+            reason: 'no_signup_bookings',
+            description: 'Kelas dibatalkan karena tidak ada booking yang signup',
+            total_bookings: totalBookings
+        };
+    }
+
+    /**
+     * Format schedule data dengan status detection
+     */
+    static async formatScheduleDataWithStatus(schedule, includeBookings = false) {
+        const baseData = await this.formatScheduleData(schedule, includeBookings);
+        const statusInfo = this.detectScheduleStatus(schedule);
+        
+        return {
+            ...baseData,
+            schedule_status: statusInfo
+        };
+    }
 }
 
 module.exports = ScheduleService; 

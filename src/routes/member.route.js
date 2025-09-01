@@ -6,9 +6,10 @@ const { validate } = require('../middlewares/validation.middleware');
 const {
   createMemberSchema,
   updateMemberSchema,
+  updateMemberPackageSchema,
+  memberPackageIdSchema,
   getMembersQuerySchema,
-  memberIdSchema,
-
+  memberIdSchema
 } = require('../validations/member.validation');
 
 
@@ -95,7 +96,17 @@ router.post('/:id/packages',
 router.put('/packages/:member_package_id/extend',
   validateToken,
   checkRole('admin'),
+  validate(memberPackageIdSchema, 'params'),
   memberController.extendPackageDuration
+);
+
+// Update member package (admin only)
+router.put('/packages/:member_package_id',
+  validateToken,
+  checkRole('admin'),
+  validate(memberPackageIdSchema, 'params'),
+  validate(updateMemberPackageSchema, 'body'),
+  memberController.updateMemberPackage
 );
 
 // Export member data
