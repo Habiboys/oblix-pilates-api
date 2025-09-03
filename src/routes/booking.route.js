@@ -47,17 +47,17 @@ router.put('/:id/admin-cancel',
 );
 
 
-// User routes (member role only)
+// User routes (user role only)
 router.post('/', 
     validateToken,
-    checkRole('member'),
+    checkRole('user'),
     validate(createUserBookingSchema, 'body'),
     bookingController.createUserBooking
 );
 
 router.put('/:id/cancel', 
     validateToken,
-    checkRole('member'),
+    checkRole('user'),
     bookingController.cancelBooking
 );
 
