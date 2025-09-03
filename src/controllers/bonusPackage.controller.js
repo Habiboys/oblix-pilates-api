@@ -196,26 +196,12 @@ const createBonusPackage = async (req, res) => {
       });
     }
 
-    // Clean up empty string values and convert to proper types
-    const cleanGroupSession = group_session === '' ? 0 : parseInt(group_session) || 0;
-    const cleanPrivateSession = private_session === '' ? 0 : parseInt(private_session) || 0;
-    const cleanDurationValue = parseInt(duration_value) || 0;
-
     // Validate at least one session type is provided
-    if (cleanGroupSession === 0 && cleanPrivateSession === 0) {
+    if ((!group_session || group_session === 0) && (!private_session || private_session === 0)) {
       await t.rollback();
       return res.status(400).json({
         success: false,
         message: 'Minimal satu jenis sesi (group_session atau private_session) harus diisi'
-      });
-    }
-
-    // Validate session values are not negative
-    if (cleanGroupSession < 0 || cleanPrivateSession < 0) {
-      await t.rollback();
-      return res.status(400).json({
-        success: false,
-        message: 'Session count tidak boleh negatif'
       });
     }
 
@@ -252,7 +238,7 @@ const createBonusPackage = async (req, res) => {
     const newPackage = await Package.create({
       type: 'bonus',
       name: packageName,
-      duration_value: cleanDurationValue,
+      duration_value: parseInt(duration_value),
       duration_unit,
       reminder_day: 1,      // Default: 1 hari sebelum expiry
       reminder_session: 1   // Default: 1 sesi tersisa
@@ -261,8 +247,8 @@ const createBonusPackage = async (req, res) => {
     // Create package bonus
     await PackageBonus.create({
       package_id: newPackage.id,
-      group_session: cleanGroupSession > 0 ? cleanGroupSession : null,
-      private_session: cleanPrivateSession > 0 ? cleanPrivateSession : null
+      group_session: group_session !== undefined && group_session !== null ? parseInt(group_session) : 0,
+      private_session: private_session !== undefined && private_session !== null ? parseInt(private_session) : 0
     }, { transaction: t });
 
     // Validate member exists
@@ -298,8 +284,8 @@ const createBonusPackage = async (req, res) => {
       used_group_session: 0,
       used_private_session: 0,
       used_semi_private_session: 0,
-      remaining_group_session: cleanGroupSession,
-      remaining_private_session: cleanPrivateSession,
+      remaining_group_session: group_session !== undefined && group_session !== null ? parseInt(group_session) : 0,
+      remaining_private_session: private_session !== undefined && private_session !== null ? parseInt(private_session) : 0,
       remaining_semi_private_session: 0
     }, { transaction: t });
 
@@ -314,8 +300,8 @@ const createBonusPackage = async (req, res) => {
       message: 'Bonus package created and assigned to member successfully',
       data: {
         package_id: newPackage.id,
-        group_session: cleanGroupSession > 0 ? cleanGroupSession : null,
-        private_session: cleanPrivateSession > 0 ? cleanPrivateSession : null,
+        group_session: group_session !== undefined && group_session !== null ? parseInt(group_session) : 0,
+        private_session: private_session !== undefined && private_session !== null ? parseInt(private_session) : 0,
         duration_value: newPackage.duration_value,
         duration_unit: newPackage.duration_unit,
         member_id
@@ -453,8 +439,8 @@ const updateBonusPackage = async (req, res) => {
       } else {
         await PackageBonus.create({
           package_id: package.id,
-          group_session: group_session ? parseInt(group_session) : null,
-          private_session: private_session ? parseInt(private_session) : null
+          group_session: group_session !== undefined && group_session !== null ? parseInt(group_session) : 0,
+          private_session: private_session !== undefined && private_session !== null ? parseInt(private_session) : 0
         });
       }
     }

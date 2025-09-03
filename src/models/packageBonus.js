@@ -22,11 +22,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     private_session: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true,
+      defaultValue: 0
     },
     group_session: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true,
+      defaultValue: 0
     }
   }, {
     sequelize,
