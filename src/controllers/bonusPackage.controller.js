@@ -310,9 +310,33 @@ const createBonusPackage = async (req, res) => {
   } catch (error) {
     await t.rollback();
     logger.error('Error creating bonus package:', error);
+    
+    // Handle validation errors specifically
+    if (error.name === 'ValidationError' || error.message?.includes('ValidationError')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: error.errors || error.message
+      });
+    }
+    
+    // Handle Sequelize validation errors
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Data validation error',
+        errors: error.errors?.map(e => ({
+          field: e.path,
+          message: e.message
+        })) || error.message
+      });
+    }
+    
+    // Handle other errors
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
