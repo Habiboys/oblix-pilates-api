@@ -196,12 +196,26 @@ const createBonusPackage = async (req, res) => {
       });
     }
 
+    // Clean up empty string values and convert to proper types
+    const cleanGroupSession = group_session === '' ? 0 : parseInt(group_session) || 0;
+    const cleanPrivateSession = private_session === '' ? 0 : parseInt(private_session) || 0;
+    const cleanDurationValue = parseInt(duration_value) || 0;
+
     // Validate at least one session type is provided
-    if ((!group_session || group_session === 0) && (!private_session || private_session === 0)) {
+    if (cleanGroupSession === 0 && cleanPrivateSession === 0) {
       await t.rollback();
       return res.status(400).json({
         success: false,
         message: 'Minimal satu jenis sesi (group_session atau private_session) harus diisi'
+      });
+    }
+
+    // Validate session values are not negative
+    if (cleanGroupSession < 0 || cleanPrivateSession < 0) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Session count tidak boleh negatif'
       });
     }
 
@@ -238,7 +252,7 @@ const createBonusPackage = async (req, res) => {
     const newPackage = await Package.create({
       type: 'bonus',
       name: packageName,
-      duration_value: parseInt(duration_value),
+      duration_value: cleanDurationValue,
       duration_unit,
       reminder_day: 1,      // Default: 1 hari sebelum expiry
       reminder_session: 1   // Default: 1 sesi tersisa
@@ -247,8 +261,8 @@ const createBonusPackage = async (req, res) => {
     // Create package bonus
     await PackageBonus.create({
       package_id: newPackage.id,
-      group_session: group_session ? parseInt(group_session) : null,
-      private_session: private_session ? parseInt(private_session) : null
+      group_session: cleanGroupSession > 0 ? cleanGroupSession : null,
+      private_session: cleanPrivateSession > 0 ? cleanPrivateSession : null
     }, { transaction: t });
 
     // Validate member exists
@@ -284,8 +298,8 @@ const createBonusPackage = async (req, res) => {
       used_group_session: 0,
       used_private_session: 0,
       used_semi_private_session: 0,
-      remaining_group_session: group_session ? parseInt(group_session) : 0,
-      remaining_private_session: private_session ? parseInt(private_session) : 0,
+      remaining_group_session: cleanGroupSession,
+      remaining_private_session: cleanPrivateSession,
       remaining_semi_private_session: 0
     }, { transaction: t });
 
@@ -300,8 +314,8 @@ const createBonusPackage = async (req, res) => {
       message: 'Bonus package created and assigned to member successfully',
       data: {
         package_id: newPackage.id,
-        group_session: group_session ? parseInt(group_session) : null,
-        private_session: private_session ? parseInt(private_session) : null,
+        group_session: cleanGroupSession > 0 ? cleanGroupSession : null,
+        private_session: cleanPrivateSession > 0 ? cleanPrivateSession : null,
         duration_value: newPackage.duration_value,
         duration_unit: newPackage.duration_unit,
         member_id
@@ -310,33 +324,9 @@ const createBonusPackage = async (req, res) => {
   } catch (error) {
     await t.rollback();
     logger.error('Error creating bonus package:', error);
-    
-    // Handle validation errors specifically
-    if (error.name === 'ValidationError' || error.message?.includes('ValidationError')) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: error.errors || error.message
-      });
-    }
-    
-    // Handle Sequelize validation errors
-    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Data validation error',
-        errors: error.errors?.map(e => ({
-          field: e.path,
-          message: e.message
-        })) || error.message
-      });
-    }
-    
-    // Handle other errors
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      message: 'Internal server error'
     });
   }
 };

@@ -2,14 +2,6 @@ const Joi = require('joi');
 
 // Validation schema for creating bonus package
 const createBonusPackageSchema = Joi.object({
-  // Optional fields that might be sent from frontend
-  name: Joi.string().optional().allow(''),
-  price: Joi.string().optional().allow(''),
-  reminder_day: Joi.string().optional().allow(''),
-  reminder_session: Joi.string().optional().allow(''),
-  category_id: Joi.string().optional().allow(''),
-  
-  // Required fields
   duration_value: Joi.number()
     .integer()
     .positive()
