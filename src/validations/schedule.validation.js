@@ -222,11 +222,11 @@ const createSemiPrivateScheduleSchema = Joi.object({
         'any.required': 'Booking deadline hour is required'
     }),
 
-    min_signup: Joi.number().integer().min(1).max(Joi.ref('pax')).required().messages({
+    min_signup: Joi.number().integer().min(1).max(2).required().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',
         'number.min': 'Minimum signup must be at least 1',
-        'number.max': 'Minimum signup cannot exceed pax',
+        'number.max': 'Minimum signup cannot exceed 2 (semi-private pax is fixed at 2)',
         'any.required': 'Minimum signup is required'
     }),
     cancel_buffer_minutes: Joi.number().integer().min(0).max(1440).required().messages({
@@ -312,11 +312,11 @@ const updateSemiPrivateScheduleSchema = Joi.object({
         'number.max': 'Booking deadline hour cannot exceed 72'
     }),
 
-    min_signup: Joi.number().integer().min(1).max(Joi.ref('pax')).optional().messages({
+    min_signup: Joi.number().integer().min(1).max(2).optional().messages({
         'number.base': 'Minimum signup must be a number',
         'number.integer': 'Minimum signup must be an integer',
         'number.min': 'Minimum signup must be at least 1',
-        'number.max': 'Minimum signup cannot exceed pax'
+        'number.max': 'Minimum signup cannot exceed 2 (semi-private pax is fixed at 2)'
     }),
     cancel_buffer_minutes: Joi.number().integer().min(0).max(1440).optional().messages({
         'number.base': 'Cancel buffer minutes must be a number',
