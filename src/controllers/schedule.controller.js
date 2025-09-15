@@ -886,7 +886,7 @@ const createSemiPrivateSchedule = async (req, res) => {
 
         // ✅ Business Logic Validation
         // Validate pax >= min_signup
-        if (parseInt(pax) < parseInt(min_signup)) {
+        if (pax < parseInt(min_signup)) {
             return res.status(400).json({
                 status: 'error',
                 message: 'Pax must be greater than or equal to minimum signup'
