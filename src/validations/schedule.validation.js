@@ -401,13 +401,7 @@ const createPrivateScheduleSchema = Joi.object({
             'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
     }),
-    booking_deadline_hour: Joi.number().integer().min(1).max(72).required().messages({
-        'number.base': 'Booking deadline hour must be a number',
-        'number.integer': 'Booking deadline hour must be an integer',
-        'number.min': 'Booking deadline hour must be at least 1',
-        'number.max': 'Booking deadline hour cannot exceed 72',
-        'any.required': 'Booking deadline hour is required'
-    }),
+ 
     cancel_buffer_minutes: Joi.number().integer().min(0).max(1440).required().messages({
         'number.base': 'Cancel buffer minutes must be a number',
         'number.integer': 'Cancel buffer minutes must be an integer',
@@ -452,12 +446,6 @@ const updatePrivateScheduleSchema = Joi.object({
     ).optional().messages({
             'date.base': 'Schedule until must be a valid date',
         'date.format': 'Schedule until must be in ISO format (YYYY-MM-DD)'
-    }),
-    booking_deadline_hour: Joi.number().integer().min(1).max(72).optional().messages({
-        'number.base': 'Booking deadline hour must be a number',
-        'number.integer': 'Booking deadline hour must be an integer',
-        'number.min': 'Booking deadline hour must be at least 1',
-        'number.max': 'Booking deadline hour cannot exceed 72'
     }),
 
  
