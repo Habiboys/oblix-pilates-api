@@ -1591,17 +1591,20 @@ const createPrivateSchedule = async (req, res) => {
             }
         }
 
-        // Validate booking_deadline_hour > cancel_buffer_minutes
-        const deadlineHours = parseInt(booking_deadline_hour);
-        const bufferMinutes = parseInt(cancel_buffer_minutes);
-        const bufferHours = bufferMinutes / 60; // Convert minutes to hours
-        
-        // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
-        if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Booking deadline hour must be greater than cancel buffer time'
-            });
+        // For private schedules, booking_deadline_hour is not required since booking is done immediately by admin
+        // Only validate if booking_deadline_hour is provided (for backward compatibility)
+        if (booking_deadline_hour !== undefined) {
+            const deadlineHours = parseInt(booking_deadline_hour);
+            const bufferMinutes = parseInt(cancel_buffer_minutes);
+            const bufferHours = bufferMinutes / 60; // Convert minutes to hours
+            
+            // Jika cancel_buffer_minutes > 0, maka booking_deadline_hour harus > buffer_hours
+            if (bufferMinutes > 0 && deadlineHours <= bufferHours) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Booking deadline hour must be greater than cancel buffer time'
+                });
+            }
         }
 
         // Create schedule data
@@ -1617,7 +1620,7 @@ const createPrivateSchedule = async (req, res) => {
             time_end,
             repeat_type,
             schedule_until: repeat_type === 'weekly' ? schedule_until : null,
-            booking_deadline_hour: parseInt(booking_deadline_hour),
+            booking_deadline_hour: booking_deadline_hour ? parseInt(booking_deadline_hour) : 0, // Default to 0 for private schedules
             
             min_signup: parseInt(min_signup),
             cancel_buffer_minutes: parseInt(cancel_buffer_minutes),
@@ -1932,7 +1935,8 @@ const updatePrivateSchedule = async (req, res) => {
             });
         }
 
-        // Validate booking_deadline_hour > cancel_buffer_minutes
+        // For private schedules, booking_deadline_hour is not required since booking is done immediately by admin
+        // Only validate if booking_deadline_hour is provided (for backward compatibility)
         if (updateData.booking_deadline_hour !== undefined && updateData.cancel_buffer_minutes !== undefined) {
             const deadlineHours = updateData.booking_deadline_hour;
             const bufferMinutes = updateData.cancel_buffer_minutes;
