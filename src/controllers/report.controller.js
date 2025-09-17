@@ -19,40 +19,30 @@ const getRevenueReport = async (req, res) => {
         // Get total members
         const totalMembers = await Member.count();
 
-        // Get total payments from Payment table
-        const totalPayments = await Payment.count({
+        // Get total payments from Order table (consistent with dashboard)
+        const totalPayments = await Order.count({
             where: {
-                payment_status: 'success',
-                transaction_time: {
+                payment_status: 'paid',
+                created_at: {
                     [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
                 }
             }
         });
 
-        // Get total revenue from Payment table
-        const paymentsForRevenue = await Payment.findAll({
+        // Get total revenue from Order table (consistent with dashboard)
+        const totalRevenue = await Order.sum('total_amount', {
             where: {
-                payment_status: 'success',
-                transaction_time: {
+                payment_status: 'paid',
+                created_at: {
                     [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
                 }
-            },
-            include: [
-                {
-                    model: Order,
-                    attributes: ['total_amount']
-                }
-            ]
+            }
         });
 
-        const totalRevenue = paymentsForRevenue.reduce((sum, payment) => {
-            return sum + (parseFloat(payment.Order?.total_amount) || 0);
-        }, 0);
-
-        // Build search conditions
+        // Build search conditions for Order table
         const searchConditions = {
-            payment_status: 'success',
-            transaction_time: {
+            payment_status: 'paid',
+            created_at: {
                 [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
             }
         };
@@ -60,48 +50,21 @@ const getRevenueReport = async (req, res) => {
         // Add search conditions if search parameter is provided
         let includeConditions = [
             {
-                model: Order,
-                include: [
-                    {
-                        model: Member,
-                        attributes: ['id', 'full_name']
-                    }
-                ]
+                model: Member,
+                attributes: ['id', 'full_name']
             }
         ];
 
         if (search && search.trim()) {
             const searchTerm = `%${search.trim()}%`;
-            includeConditions = [
-                {
-                    model: Order,
-                    include: [
-                        {
-                            model: Member,
-                            attributes: ['id', 'full_name'],
-                            where: {
-                                full_name: {
-                                    [Op.like]: searchTerm
-                                }
-                            }
-                        }
-                    ],
-                    where: {
-                        [Op.or]: [
-                            {
-                                package_name: {
-                                    [Op.like]: searchTerm
-                                }
-                            }
-                        ]
-                    }
-                }
-            ];
-            
-            // Add payment method search to main conditions
             searchConditions[Op.or] = [
                 {
-                    payment_type: {
+                    package_name: {
+                        [Op.like]: searchTerm
+                    }
+                },
+                {
+                    '$Member.full_name$': {
                         [Op.like]: searchTerm
                     }
                 }
@@ -109,16 +72,16 @@ const getRevenueReport = async (req, res) => {
         }
 
         // Get total count for pagination with search
-        const totalPaymentsCount = await Payment.count({
+        const totalPaymentsCount = await Order.count({
             where: searchConditions,
             include: includeConditions
         });
 
-        // Get payment details with Order and Member information (with pagination and search)
-        const payments = await Payment.findAll({
+        // Get order details with Member information (with pagination and search)
+        const orders = await Order.findAll({
             where: searchConditions,
             include: includeConditions,
-            order: [['transaction_time', 'DESC']],
+            order: [['created_at', 'DESC']],
             limit: limitNum,
             offset: offset
         });
@@ -126,23 +89,23 @@ const getRevenueReport = async (req, res) => {
         // Calculate pagination info
         const totalPages = Math.ceil(totalPaymentsCount / limitNum);
 
-        // Format payment data
-        const formattedPayments = payments.map((payment, index) => ({
+        // Format order data
+        const formattedPayments = orders.map((order, index) => ({
             no: offset + index + 1,
-            payment_date: new Date(payment.transaction_time).toLocaleDateString('en-GB', {
+            payment_date: new Date(order.created_at).toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'
             }),
-            payment_time: new Date(payment.transaction_time).toLocaleTimeString('en-US', {
+            payment_time: new Date(order.created_at).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
             }),
-            package_name: payment.Order?.package_name || 'Unknown Package',
-            member_name: payment.Order?.Member?.full_name || 'Unknown Member',
-            payment_method: payment.payment_type || 'Unknown',
-            price: parseFloat(payment.Order?.total_amount) || 0
+            package_name: order.package_name || 'Unknown Package',
+            member_name: order.Member?.full_name || 'Unknown Member',
+            payment_method: order.midtrans_payment_type || 'Unknown',
+            price: parseFloat(order.total_amount) || 0
         }));
 
         res.json({

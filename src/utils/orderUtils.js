@@ -62,6 +62,9 @@ const updateOrderStatus = async (orderId, midtransData, notificationData) => {
         // Update order
         await order.update(updateData);
 
+        // Create or update Payment record
+        await createOrUpdatePayment(order, midtransData, newPaymentStatus);
+
         // If payment successful, create member package
         if (newPaymentStatus === 'paid' && newOrderStatus === 'completed') {
             await createMemberPackage(order);
@@ -272,10 +275,49 @@ const verifyOrderWithMidtrans = async (order) => {
     }
 };
 
+/**
+ * Create or update Payment record
+ */
+const createOrUpdatePayment = async (order, midtransData, paymentStatus) => {
+    try {
+        // Check if payment record already exists
+        let payment = await Payment.findOne({
+            where: { order_id: order.id }
+        });
+
+        const paymentData = {
+            order_id: order.id,
+            payment_type: midtransData.payment_type || order.midtrans_payment_type || 'unknown',
+            payment_status: paymentStatus === 'paid' ? 'success' : 
+                          paymentStatus === 'failed' ? 'failed' : 'pending',
+            transaction_time: midtransData.transaction_time || new Date(),
+            settlement_time: paymentStatus === 'paid' ? new Date() : null,
+            midtrans_response: midtransData
+        };
+
+        if (payment) {
+            // Update existing payment record
+            await payment.update(paymentData);
+            logger.info(`✅ Payment record updated for order ${order.order_number}`);
+        } else {
+            // Create new payment record
+            payment = await Payment.create(paymentData);
+            logger.info(`✅ Payment record created for order ${order.order_number}`);
+        }
+
+        return payment;
+
+    } catch (error) {
+        logger.error(`❌ Error creating/updating payment record for order ${order.order_number}:`, error);
+        throw error;
+    }
+};
+
 module.exports = {
     updateOrderStatus,
     mapOrderStatus,
     createMemberPackage,
+    createOrUpdatePayment,
     isPhantomOrder,
     getOrdersForVerification,
     verifyOrderWithMidtrans
