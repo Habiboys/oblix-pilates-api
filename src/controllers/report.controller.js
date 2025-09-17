@@ -23,7 +23,7 @@ const getRevenueReport = async (req, res) => {
         const totalPayments = await Order.count({
             where: {
                 payment_status: 'paid',
-                created_at: {
+                createdAt: {
                     [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
                 }
             }
@@ -33,7 +33,7 @@ const getRevenueReport = async (req, res) => {
         const totalRevenue = await Order.sum('total_amount', {
             where: {
                 payment_status: 'paid',
-                created_at: {
+                createdAt: {
                     [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
                 }
             }
@@ -42,7 +42,7 @@ const getRevenueReport = async (req, res) => {
         // Build search conditions for Order table
         const searchConditions = {
             payment_status: 'paid',
-            created_at: {
+            createdAt: {
                 [Op.between]: [startDate + ' 00:00:00', endDate + ' 23:59:59']
             }
         };
@@ -92,12 +92,12 @@ const getRevenueReport = async (req, res) => {
         // Format order data
         const formattedPayments = orders.map((order, index) => ({
             no: offset + index + 1,
-            payment_date: new Date(order.created_at).toLocaleDateString('en-GB', {
+            payment_date: new Date(order.createdAt).toLocaleDateString('en-GB', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'
             }),
-            payment_time: new Date(order.created_at).toLocaleTimeString('en-US', {
+            payment_time: new Date(order.createdAt).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: true
