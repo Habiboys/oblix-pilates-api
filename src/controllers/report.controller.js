@@ -81,7 +81,7 @@ const getRevenueReport = async (req, res) => {
         const orders = await Order.findAll({
             where: searchConditions,
             include: includeConditions,
-            order: [['created_at', 'DESC']],
+            order: [['createdAt', 'DESC']],
             limit: limitNum,
             offset: offset
         });
@@ -92,15 +92,15 @@ const getRevenueReport = async (req, res) => {
         // Format order data
         const formattedPayments = orders.map((order, index) => ({
             no: offset + index + 1,
-            payment_date: new Date(order.createdAt).toLocaleDateString('en-GB', {
+            payment_date: new Date(order.createdAt).toLocaleDateString('id-ID', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'
             }),
-            payment_time: new Date(order.createdAt).toLocaleTimeString('en-US', {
+            payment_time: new Date(order.createdAt).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: true
+                hour12: false
             }),
             package_name: order.package_name || 'Unknown Package',
             member_name: order.Member?.full_name || 'Unknown Member',
@@ -244,7 +244,7 @@ const getPayrollReport = async (req, res) => {
                     semi_private_class: trainer.rate_semi_private_class || trainer.rate_per_class || 250000,
                     private_class: trainer.rate_private_class || trainer.rate_per_class || 275000
                 },
-                payroll_date: new Date(startDate).toLocaleDateString('en-GB', {
+                payroll_date: new Date(startDate).toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric'
@@ -364,7 +364,7 @@ const getPayrollDetail = async (req, res) => {
 
             return {
                 no: index + 1,
-                class_date: new Date(schedule.date_start).toLocaleDateString('en-GB', {
+                class_date: new Date(schedule.date_start).toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric'

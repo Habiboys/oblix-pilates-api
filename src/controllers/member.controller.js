@@ -492,16 +492,16 @@ const getMemberDetailById = async (req, res) => {
 
       return {
         no: index + 1,
-        payment_date: mp.Order?.paid_at ? new Date(mp.Order.paid_at).toLocaleDateString('en-GB', {
+        payment_date: mp.Order?.paid_at ? new Date(mp.Order.paid_at).toLocaleDateString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric'
-        }) : (mp.Order?.createdAt ? new Date(mp.Order.createdAt).toLocaleDateString('en-GB', {
+        }) : (mp.Order?.createdAt ? new Date(mp.Order.createdAt).toLocaleDateString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric'
         }) : '-'),
-        expired_date: mp.end_date ? new Date(mp.end_date).toLocaleDateString('en-GB', {
+        expired_date: mp.end_date ? new Date(mp.end_date).toLocaleDateString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric'
@@ -526,12 +526,12 @@ const getMemberDetailById = async (req, res) => {
     // Format bookings data
     const formattedBookings = bookings.map((booking, index) => ({
       no: index + 1,
-      booked_date: new Date(booking.createdAt).toLocaleDateString('en-GB', {
+      booked_date: new Date(booking.createdAt).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
       }),
-      class_date: new Date(booking.Schedule.date_start).toLocaleDateString('en-GB', {
+      class_date: new Date(booking.Schedule.date_start).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
@@ -546,13 +546,13 @@ const getMemberDetailById = async (req, res) => {
       full_name: member.full_name,
       username: member.username,
       email: member.User.email,
-      date_of_birth: member.dob ? new Date(member.dob).toLocaleDateString('en-GB', {
+      date_of_birth: member.dob ? new Date(member.dob).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
       }) : '-',
       phone_number: member.phone_number,
-      join_date: member.date_of_join ? new Date(member.date_of_join).toLocaleDateString('en-GB', {
+      join_date: member.date_of_join ? new Date(member.date_of_join).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
@@ -603,13 +603,13 @@ const getMemberProfile = async (req, res) => {
       full_name: member.full_name,
       username: member.username,
       email: member.User.email,
-      date_of_birth: member.dob ? new Date(member.dob).toLocaleDateString('en-GB', {
+      date_of_birth: member.dob ? new Date(member.dob).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
       }) : '-',
       phone_number: member.phone_number,
-      join_date: member.date_of_join ? new Date(member.date_of_join).toLocaleDateString('en-GB', {
+      join_date: member.date_of_join ? new Date(member.date_of_join).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
@@ -698,21 +698,21 @@ const getMemberPackages = async (req, res) => {
       return {
         id: mp.id, // Tambahkan ID member package
         no: index + 1,
-        payment_date: mp.Order?.paid_at ? new Date(mp.Order.paid_at).toLocaleDateString('en-GB', {
+        payment_date: mp.Order?.paid_at ? new Date(mp.Order.paid_at).toLocaleDateString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric'
-        }) : (mp.Order?.createdAt ? new Date(mp.Order.createdAt).toLocaleDateString('en-GB', {
+        }) : (mp.Order?.createdAt ? new Date(mp.Order.createdAt).toLocaleDateString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric'
         }) : '-'),
-        expired_date: mp.end_date ? new Date(mp.end_date).toLocaleDateString('en-GB', {
+        expired_date: mp.end_date ? new Date(mp.end_date).toLocaleDateString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric'
         }) : '-',
-        start_date: mp.start_date ? new Date(mp.start_date).toLocaleDateString('en-GB', {
+        start_date: mp.start_date ? new Date(mp.start_date).toLocaleDateString('id-ID', {
           day: '2-digit',
           month: 'short',
           year: 'numeric'
@@ -793,12 +793,12 @@ const getMemberBookings = async (req, res) => {
     // Format bookings data
     const formattedBookings = bookings.map((booking, index) => ({
       no: index + 1,
-      booked_date: new Date(booking.createdAt).toLocaleDateString('en-GB', {
+      booked_date: new Date(booking.createdAt).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
       }),
-      class_date: new Date(booking.Schedule.date_start).toLocaleDateString('en-GB', {
+      class_date: new Date(booking.Schedule.date_start).toLocaleDateString('id-ID', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'

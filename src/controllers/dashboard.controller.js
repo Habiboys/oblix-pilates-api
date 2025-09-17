@@ -55,7 +55,7 @@ const getDashboardData = async (req, res) => {
             return {
                 no: index + 1,
                 id: schedule.id,
-                class_date: new Date(schedule.date_start).toLocaleDateString('en-GB', {
+                class_date: new Date(schedule.date_start).toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric'
@@ -253,7 +253,7 @@ const getTodayClasses = async (req, res) => {
             return {
                 no: index + 1,
                 id: schedule.id,
-                class_date: new Date(schedule.date_start).toLocaleDateString('en-GB', {
+                class_date: new Date(schedule.date_start).toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric'
