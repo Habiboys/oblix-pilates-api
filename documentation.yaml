@@ -2748,6 +2748,22 @@ components:
           type: string
           format: binary
           description: Schedule picture (JPG, PNG, GIF, WebP, max 5MB) - Optional
+    ChangeStaffPasswordRequest:
+      type: object
+      required:
+        - password
+        - confirmPassword
+      properties:
+        password:
+          type: string
+          minLength: 6
+          description: New password
+          example: newPassword123
+        confirmPassword:
+          type: string
+          minLength: 6
+          description: Confirmation of new password
+          example: newPassword123
 paths:
   /auth/register:
     post:
@@ -6026,6 +6042,65 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
           description: Invalid staff ID format or cannot delete the only admin user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Staff not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /staff/{id}/change-password:
+    put:
+      tags:
+        - Staff Management
+      summary: Change staff password
+      description: Change password for a specific staff member (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Staff ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeStaffPasswordRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validation error or password mismatch
           content:
             application/json:
               schema:

@@ -11,12 +11,12 @@ const getAllStaff = async (req, res) => {
     const whereClause = {
       role: 'admin'
     };
-    
+
     if (search) {
       whereClause[Op.or] = [
-                    { full_name: { [Op.like]: `%${search}%` } },
-            { username: { [Op.like]: `%${search}%` } },
-            { email: { [Op.like]: `%${search}%` } }
+        { full_name: { [Op.like]: `%${search}%` } },
+        { username: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
       ];
     }
 
@@ -224,7 +224,7 @@ const updateStaff = async (req, res) => {
         role: 'admin'
       }
     });
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -235,7 +235,7 @@ const updateStaff = async (req, res) => {
     // Check if user with same email exists (excluding current user)
     if (email && email !== user.email) {
       const existingUser = await User.findOne({
-        where: { 
+        where: {
           email,
           id: { [Op.ne]: id }
         }
@@ -254,10 +254,10 @@ const updateStaff = async (req, res) => {
       const Member = await Member.findOne({
         where: { user_id: user.id }
       });
-      
+
       if (Member && username !== Member.username) {
         const existingMember = await Member.findOne({
-          where: { 
+          where: {
             username,
             user_id: { [Op.ne]: user.id }
           }
@@ -306,7 +306,7 @@ const updateStaff = async (req, res) => {
     const updatedUser = await User.findByPk(id, {
       include: [
         {
-          model: Member,  
+          model: Member,
         }
       ]
     });
@@ -352,7 +352,7 @@ const deleteStaff = async (req, res) => {
         }
       ]
     });
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -386,7 +386,7 @@ const deleteStaff = async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting staff:', error);
-    
+
     // Handle foreign key constraint error specifically
     if (error.name === 'SequelizeForeignKeyConstraintError') {
       return res.status(400).json({
@@ -394,7 +394,49 @@ const deleteStaff = async (req, res) => {
         message: 'Cannot delete staff with associated data. Please remove all related records first.'
       });
     }
-    
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
+// Change staff password
+const changePassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    const user = await User.findOne({
+      where: {
+        id,
+        role: 'admin'
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Staff not found'
+      });
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Update password
+    await user.update({
+      password: hashedPassword
+    });
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Error changing staff password:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'
@@ -407,5 +449,6 @@ module.exports = {
   getStaffById,
   createStaff,
   updateStaff,
-  deleteStaff
+  deleteStaff,
+  changePassword
 }; 

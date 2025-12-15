@@ -152,9 +152,30 @@ const staffQuerySchema = Joi.object({
     })
 });
 
+// Validation schema for changing staff password
+const changeStaffPasswordSchema = Joi.object({
+  password: Joi.string()
+    .min(6)
+    .max(255)
+    .required()
+    .messages({
+      'string.min': 'Password must be at least 6 characters long',
+      'string.max': 'Password cannot exceed 255 characters',
+      'any.required': 'Password is required'
+    }),
+  confirmPassword: Joi.string()
+    .required()
+    .valid(Joi.ref('password'))
+    .messages({
+      'any.only': 'Passwords do not match',
+      'any.required': 'Confirm password is required'
+    })
+});
+
 module.exports = {
   createStaffSchema,
   updateStaffSchema,
   staffIdSchema,
-  staffQuerySchema
+  staffQuerySchema,
+  changeStaffPasswordSchema
 }; 

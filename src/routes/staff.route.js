@@ -7,7 +7,8 @@ const {
   createStaffSchema,
   updateStaffSchema,
   staffIdSchema,
-  staffQuerySchema
+  staffQuerySchema,
+  changeStaffPasswordSchema
 } = require('../validations/staff.validation');
 
 // Get all staff (admin only)
@@ -41,6 +42,15 @@ router.put('/:id',
   validate(staffIdSchema, 'params'),
   validate(updateStaffSchema, 'body'),
   staffController.updateStaff
+);
+
+// Change staff password (admin only)
+router.put('/:id/change-password',
+  validateToken,
+  checkRole('admin'),
+  validate(staffIdSchema, 'params'),
+  validate(changeStaffPasswordSchema, 'body'),
+  staffController.changePassword
 );
 
 // Delete staff (admin only)
