@@ -59,7 +59,7 @@ const createUserBooking = async (req, res) => {
         // Cek apakah schedule sudah lewat waktu
         const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
         const currentDateTime = new Date();
-        
+
         if (scheduleDateTime <= currentDateTime) {
             return res.status(400).json({
                 success: false,
@@ -69,7 +69,7 @@ const createUserBooking = async (req, res) => {
 
         // Cek booking deadline hour
         const bookingDeadline = new Date(scheduleDateTime.getTime() - (schedule.booking_deadline_hour * 60 * 60 * 1000));
-        
+
         if (currentDateTime >= bookingDeadline) {
             return res.status(400).json({
                 success: false,
@@ -92,7 +92,7 @@ const createUserBooking = async (req, res) => {
 
         const maxCapacity = schedule.pax || 20;
         const minSignup = schedule.min_signup || 1;
-        
+
         // Cek apakah sudah ada booking untuk member ini di schedule ini
         const existingBooking = await Booking.findOne({
             where: {
@@ -196,9 +196,9 @@ const createUserBooking = async (req, res) => {
                     status: 'signup'
                 }
             });
-            
+
             logger.info(`📊 Rechecking capacity after cancel: currentSignupsAfterCancel=${currentSignupsAfterCancel}, maxCapacity=${maxCapacity}`);
-            
+
             // PERBAIKAN: Cek apakah ada member di waitlist yang harus diprioritaskan
             const waitlistCount = await Booking.count({
                 where: {
@@ -206,13 +206,13 @@ const createUserBooking = async (req, res) => {
                     status: 'waiting_list'
                 }
             });
-            
+
             logger.info(`📊 Waitlist check before reuse: ${waitlistCount} members in waitlist`);
-            
+
             // Update booking status berdasarkan kapasitas saat ini
             let finalBookingStatus = 'signup';
             let finalBookingNotes = `User booking (reused) - MemberPackageID: ${selectedMemberPackageId}`;
-            
+
             if (currentSignupsAfterCancel >= maxCapacity) {
                 finalBookingStatus = 'waiting_list';
                 finalBookingNotes = `Booking masuk waitlist karena kelas penuh (reused) - MemberPackageID: ${selectedMemberPackageId}`;
@@ -225,7 +225,7 @@ const createUserBooking = async (req, res) => {
             } else {
                 logger.info(`✅ Reused booking will be signup: currentSignupsAfterCancel (${currentSignupsAfterCancel}) < maxCapacity (${maxCapacity}) dan tidak ada waitlist`);
             }
-            
+
             // Update existing booking
             const updateData = {
                 status: finalBookingStatus,
@@ -233,13 +233,13 @@ const createUserBooking = async (req, res) => {
                 notes: finalBookingNotes,
                 cancelled_by: null // Reset cancelled_by
             };
-            
+
             // Set waitlist_joined_at jika masuk waitlist
             if (finalBookingStatus === 'waiting_list') {
                 updateData.waitlist_joined_at = new Date();
                 logger.info(`⏰ Set waitlist_joined_at for reused booking ${existingBooking.id}`);
             }
-            
+
             await existingBooking.update(updateData);
             booking = existingBooking;
             isReusedBooking = true;
@@ -254,13 +254,13 @@ const createUserBooking = async (req, res) => {
                 booking_date: new Date(),
                 notes: bookingNotes
             };
-            
+
             // Set waitlist_joined_at jika masuk waitlist
             if (bookingStatus === 'waiting_list') {
                 bookingData.waitlist_joined_at = new Date();
                 logger.info(`⏰ Set waitlist_joined_at for new booking`);
             }
-            
+
             booking = await Booking.create(bookingData);
             logger.info(`🆕 Created new booking ${booking.id} for member ${member_id}`);
         }
@@ -301,12 +301,12 @@ const createUserBooking = async (req, res) => {
         // Update session usage untuk member package
         try {
             logger.info(`🔍 Using selected member package: memberPackageId=${selectedMemberPackageId}`);
-            
+
             if (selectedMemberPackageId) {
                 logger.info(`🔄 Updating session usage for member package ${selectedMemberPackageId}`);
                 const updateResult = await updateSessionUsage(selectedMemberPackageId, member_id, selectedPackageId, booking.id);
                 logger.info(`✅ Session usage updated successfully:`, updateResult);
-                
+
                 // PERBAIKAN: Set start_date dan end_date saat booking berhasil (status = 'signup')
                 if (booking.status === 'signup') {
                     try {
@@ -380,15 +380,22 @@ const createUserBooking = async (req, res) => {
 // Create booking for admin (menambahkan member ke schedule)
 const createAdminBooking = async (req, res) => {
     try {
-        const { schedule_id, member_ids, notes } = req.body;
+        const { schedule_id, member_ids, notes, guests } = req.body;
 
         // Validasi input
-        if (!schedule_id || !member_ids || !Array.isArray(member_ids) || member_ids.length === 0) {
+        const hasMembers = member_ids && Array.isArray(member_ids) && member_ids.length > 0;
+        const hasGuests = guests && Array.isArray(guests) && guests.length > 0;
+
+        if (!schedule_id || (!hasMembers && !hasGuests)) {
             return res.status(400).json({
                 success: false,
-                message: 'schedule_id dan member_ids (array) harus diisi'
+                message: 'schedule_id dan minimal satu member atau guest harus diisi'
             });
         }
+
+        // Initialize arrays if undefined
+        const membersList = hasMembers ? member_ids : [];
+        const guestsList = hasGuests ? guests : [];
 
         // Cek apakah schedule exists
         const schedule = await Schedule.findByPk(schedule_id);
@@ -400,21 +407,25 @@ const createAdminBooking = async (req, res) => {
         }
 
         // Cek apakah semua member exists
-        const members = await Member.findAll({
-            where: { id: member_ids }
-        });
-
-        if (members.length !== member_ids.length) {
-            return res.status(404).json({
-                success: false,
-                message: 'Beberapa member tidak ditemukan'
+        // Cek apakah semua member exists
+        let members = [];
+        if (membersList.length > 0) {
+            members = await Member.findAll({
+                where: { id: membersList }
             });
+
+            if (members.length !== membersList.length) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Beberapa member tidak ditemukan'
+                });
+            }
         }
 
         // Cek apakah schedule sudah lewat waktu
         const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
         const currentDateTime = new Date();
-        
+
         if (scheduleDateTime <= currentDateTime) {
             return res.status(400).json({
                 success: false,
@@ -432,45 +443,53 @@ const createAdminBooking = async (req, res) => {
 
         const maxCapacity = schedule.pax || 20;
         const availableSlots = maxCapacity - currentSignups;
-        
-        if (member_ids.length > availableSlots) {
+        const totalToAdd = membersList.length + guestsList.length;
+
+        if (totalToAdd > availableSlots) {
             return res.status(400).json({
                 success: false,
-                message: `Schedule hanya memiliki ${availableSlots} slot tersisa, tidak cukup untuk ${member_ids.length} member`
+                message: `Schedule hanya memiliki ${availableSlots} slot tersisa, tidak cukup untuk ${totalToAdd} orang (${membersList.length} member + ${guestsList.length} guest)`
             });
         }
 
         // Cek existing bookings untuk semua member (hanya yang aktif, bukan cancelled)
-        const existingBookings = await Booking.findAll({
-            where: {
-                schedule_id,
-                member_id: member_ids,
-                status: {
-                    [Op.notIn]: ['cancelled']
+        if (membersList.length > 0) {
+            const existingBookings = await Booking.findAll({
+                where: {
+                    schedule_id,
+                    member_id: membersList,
+                    status: {
+                        [Op.notIn]: ['cancelled']
+                    }
                 }
-            }
-        });
-
-        if (existingBookings.length > 0) {
-            const existingMemberIds = existingBookings.map(b => b.member_id);
-            const existingMemberNames = members
-                .filter(m => existingMemberIds.includes(m.id))
-                .map(m => m.full_name);
-            
-            return res.status(400).json({
-                success: false,
-                message: `Beberapa member sudah terdaftar di schedule ini: ${existingMemberNames.join(', ')}`
             });
+
+            if (existingBookings.length > 0) {
+                const existingMemberIds = existingBookings.map(b => b.member_id);
+                const existingMemberNames = members
+                    .filter(m => existingMemberIds.includes(m.id))
+                    .map(m => m.full_name);
+
+                return res.status(400).json({
+                    success: false,
+                    message: `Beberapa member sudah terdaftar di schedule ini: ${existingMemberNames.join(', ')}`
+                });
+            }
+
+            // Cek booking yang sudah di-cancel untuk diaktifkan kembali
         }
 
-        // Cek booking yang sudah di-cancel untuk diaktifkan kembali
-        const cancelledBookings = await Booking.findAll({
-            where: {
-                schedule_id,
-                member_id: member_ids,
-                status: 'cancelled'
-            }
-        });
+        // Cek booking yang sudah di-cancel untuk diaktifkan kembali (only for members)
+        let cancelledBookings = [];
+        if (membersList.length > 0) {
+            cancelledBookings = await Booking.findAll({
+                where: {
+                    schedule_id,
+                    member_id: membersList,
+                    status: 'cancelled'
+                }
+            });
+        }
 
         const membersToReuse = [];
         const membersToCreate = [];
@@ -512,10 +531,10 @@ const createAdminBooking = async (req, res) => {
         }
 
         if (membersWithConflicts.length > 0) {
-            const conflictDetails = membersWithConflicts.map(m => 
+            const conflictDetails = membersWithConflicts.map(m =>
                 `${m.member_name}: ${m.conflicts.map(c => c.message).join(', ')}`
             ).join('; ');
-            
+
             return res.status(400).json({
                 success: false,
                 message: 'Beberapa member memiliki jadwal yang bentrok',
@@ -529,7 +548,7 @@ const createAdminBooking = async (req, res) => {
         // Buat multiple bookings untuk semua member
         const adminNotes = notes ? `${notes} (Ditambahkan oleh admin)` : 'Ditambahkan oleh admin';
         const bookings = [];
-        
+
         // Aktifkan kembali booking yang sudah di-cancel
         for (const { member, cancelledBooking } of membersToReuse) {
             try {
@@ -566,12 +585,12 @@ const createAdminBooking = async (req, res) => {
                 logger.error(`❌ Failed to reactivate booking for ${member.full_name}: ${error.message}`);
             }
         }
-        
+
         // Buat booking baru untuk member yang belum pernah booking
         for (const member of membersToCreate) {
             // Cari package yang tersedia untuk member ini
             let bestPackage = null;
-            
+
             // Tentukan scheduleType seperti di user booking
             let scheduleType = 'group';
             if (schedule.type === 'private') {
@@ -579,7 +598,7 @@ const createAdminBooking = async (req, res) => {
             } else if (schedule.type === 'semi_private') {
                 scheduleType = 'semi_private';
             }
-            
+
             // Debug: Cek MemberPackage yang dimiliki member (simplified)
             const memberPackages = await MemberPackage.findAll({
                 where: { member_id: member.id },
@@ -590,7 +609,7 @@ const createAdminBooking = async (req, res) => {
                     }
                 ]
             });
-            
+
             logger.info(`🔍 Debug ${member.full_name}: Found ${memberPackages.length} member packages`);
             memberPackages.forEach((mp, idx) => {
                 logger.info(`  Package ${idx + 1}: ${mp.Package?.name} (${mp.Package?.type})`);
@@ -599,7 +618,7 @@ const createAdminBooking = async (req, res) => {
                 logger.info(`    Semi-Private: ${mp.remaining_semi_private_session}/${mp.used_semi_private_session}`);
                 logger.info(`    End Date: ${mp.end_date}, Active: ${mp.end_date ? (new Date(mp.end_date) >= new Date() ? 'Yes' : 'No') : 'No end date'}`);
             });
-            
+
             try {
                 bestPackage = await getBestPackageForBooking(member.id, scheduleType);
                 logger.info(`✅ ${member.full_name}: Found best package: ${bestPackage.package_name}`);
@@ -649,6 +668,31 @@ const createAdminBooking = async (req, res) => {
             }
         }
 
+        // Buat booking untuk guests
+        for (const guestName of guestsList) {
+            try {
+                const booking = await Booking.create({
+                    schedule_id,
+                    member_id: null,
+                    guest_name: guestName,
+                    status: 'signup',
+                    notes: notes ? `${notes} (Guest added by admin)` : 'Guest added by admin'
+                });
+
+                bookings.push({
+                    booking_id: booking.id,
+                    member_name: guestName,
+                    is_guest: true,
+                    package_name: 'Guest (No Package)',
+                    package_type: 'guest'
+                });
+
+                logger.info(`🆕 Created guest booking ${booking.id} for ${guestName}`);
+            } catch (error) {
+                logger.error(`❌ Failed to create booking for guest ${guestName}: ${error.message}`);
+            }
+        }
+
         if (bookings.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -666,68 +710,68 @@ const createAdminBooking = async (req, res) => {
             const member = members.find(m => m.full_name === booking.member_name);
             if (member) {
                 try {
-                                         // Untuk booking yang di-reactivate, kita perlu fetch booking data yang lengkap
-                     let fullBookingData;
-                     if (booking.action === 'reactivated') {
-                         fullBookingData = await Booking.findByPk(booking.booking_id, {
-                             include: [
-                                 {
-                                     model: Schedule,
-                                     include: [
-                                         {
-                                             model: Class
-                                         },
-                                         {
-                                             model: Trainer
-                                         }
-                                     ]
-                                 },
-                                 {
-                                     model: Member,
-                                     include: [
-                                         {
-                                             model: User
-                                         }
-                                     ]
-                                 }
-                             ]
-                         });
-                                         } else {
-                         // Untuk booking baru, gunakan data yang sudah ada
-                         fullBookingData = await Booking.findByPk(booking.booking_id, {
-                             include: [
-                                 {
-                                     model: Schedule,
-                                     include: [
-                                         {
-                                             model: Class
-                                         },
-                                         {
-                                             model: Trainer
-                                         }
-                                     ]
-                                 },
-                                 {
-                                     model: Member,
-                                     include: [
-                                         {
-                                             model: User
-                                         }
-                                     ]
-                                 }
-                             ]
-                         });
-                     }
-                    
-                                         if (fullBookingData && fullBookingData.Schedule && fullBookingData.Schedule.Class) {
-                         try {
-                             await whatsappService.sendBookingConfirmation(fullBookingData);
-                         } catch (whatsappError) {
-                             logger.warn(`WhatsApp notification failed for ${member.full_name}:`, whatsappError.message);
-                         }
-                     } else {
-                         logger.warn(`Cannot send WhatsApp notification for ${member.full_name}: Missing booking data`);
-                     }
+                    // Untuk booking yang di-reactivate, kita perlu fetch booking data yang lengkap
+                    let fullBookingData;
+                    if (booking.action === 'reactivated') {
+                        fullBookingData = await Booking.findByPk(booking.booking_id, {
+                            include: [
+                                {
+                                    model: Schedule,
+                                    include: [
+                                        {
+                                            model: Class
+                                        },
+                                        {
+                                            model: Trainer
+                                        }
+                                    ]
+                                },
+                                {
+                                    model: Member,
+                                    include: [
+                                        {
+                                            model: User
+                                        }
+                                    ]
+                                }
+                            ]
+                        });
+                    } else {
+                        // Untuk booking baru, gunakan data yang sudah ada
+                        fullBookingData = await Booking.findByPk(booking.booking_id, {
+                            include: [
+                                {
+                                    model: Schedule,
+                                    include: [
+                                        {
+                                            model: Class
+                                        },
+                                        {
+                                            model: Trainer
+                                        }
+                                    ]
+                                },
+                                {
+                                    model: Member,
+                                    include: [
+                                        {
+                                            model: User
+                                        }
+                                    ]
+                                }
+                            ]
+                        });
+                    }
+
+                    if (fullBookingData && fullBookingData.Schedule && fullBookingData.Schedule.Class) {
+                        try {
+                            await whatsappService.sendBookingConfirmation(fullBookingData);
+                        } catch (whatsappError) {
+                            logger.warn(`WhatsApp notification failed for ${member.full_name}:`, whatsappError.message);
+                        }
+                    } else {
+                        logger.warn(`Cannot send WhatsApp notification for ${member.full_name}: Missing booking data`);
+                    }
                 } catch (whatsappError) {
                     logger.warn(`Failed to send WhatsApp notification to ${member.full_name}:`, whatsappError);
                 }
@@ -736,7 +780,7 @@ const createAdminBooking = async (req, res) => {
 
         const reactivatedCount = bookings.filter(b => b.action === 'reactivated').length;
         const newBookingsCount = bookings.filter(b => !b.action).length;
-        
+
         res.status(201).json({
             success: true,
             message: `${bookings.length} member berhasil ditambahkan ke schedule oleh admin`,
@@ -788,7 +832,7 @@ const updateBookingStatus = async (req, res) => {
                 }
             ]
         });
-        
+
         if (!booking) {
             return res.status(404).json({
                 success: false,
@@ -806,7 +850,7 @@ const updateBookingStatus = async (req, res) => {
         }
 
         const oldStatus = booking.status;
-        
+
         // Update booking
         await booking.update({
             status: status || booking.status,
@@ -823,7 +867,7 @@ const updateBookingStatus = async (req, res) => {
                         package_id: booking.package_id
                     }
                 });
-                
+
                 if (memberPackage) {
                     await updateSessionUsage(memberPackage.id, booking.member_id, booking.package_id);
                     logger.info(`✅ Session usage updated after status change from waiting_list to signup for member ${booking.member_id}`);
@@ -945,7 +989,7 @@ const cancelBooking = async (req, res) => {
         const { id } = req.params;
         const { reason } = req.body || {};
         const cancelReason = reason || 'Booking dibatalkan oleh user';
-        
+
         logger.info(`🔧 USER CANCEL BOOKING called for booking ID: ${id}`);
         logger.info(`🔧 User ID: ${req.user.id}, Role: ${req.user.role}`);
 
@@ -1039,7 +1083,7 @@ const cancelBooking = async (req, res) => {
         try {
             // Refresh booking data untuk memastikan status terbaru
             await booking.reload();
-            
+
             // Extract member_package_id dari notes
             let memberPackageId = null;
             if (booking.notes && booking.notes.includes('MemberPackageID:')) {
@@ -1048,7 +1092,7 @@ const cancelBooking = async (req, res) => {
                     memberPackageId = match[1];
                 }
             }
-            
+
             // Gunakan member_package_id dari notes jika ada, jika tidak gunakan package_id
             let targetMemberPackage = null;
             if (memberPackageId) {
@@ -1058,17 +1102,17 @@ const cancelBooking = async (req, res) => {
                     }
                 });
             }
-            
+
             // Fallback: cari berdasarkan package_id jika member_package_id tidak ditemukan
             if (!targetMemberPackage) {
                 targetMemberPackage = await require('../models').MemberPackage.findOne({
-                where: {
-                    member_id: booking.member_id,
-                    package_id: booking.package_id
-                }
-            });
+                    where: {
+                        member_id: booking.member_id,
+                        package_id: booking.package_id
+                    }
+                });
             }
-            
+
             if (targetMemberPackage) {
                 await updateSessionUsage(targetMemberPackage.id, booking.member_id, targetMemberPackage.package_id);
             }
@@ -1086,9 +1130,9 @@ const cancelBooking = async (req, res) => {
                     status: 'waiting_list'
                 }
             });
-            
+
             logger.info(`📊 Waitlist check for schedule ${booking.schedule_id}: ${waitlistCount} members in waitlist`);
-            
+
             if (waitlistCount > 0) {
                 promotionResult = await processWaitlistPromotion(booking.schedule_id);
                 if (promotionResult) {
@@ -1098,9 +1142,9 @@ const cancelBooking = async (req, res) => {
                 }
             } else {
                 logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (waitlist empty)`);
-                }
-            } catch (error) {
-                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+            }
+        } catch (error) {
+            logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
         }
 
         res.json({
@@ -1138,7 +1182,7 @@ const adminCancelBooking = async (req, res) => {
         const { id } = req.params;
         const { reason } = req.body || {};
         const cancelReason = reason || 'Booking dibatalkan oleh admin';
-        
+
         logger.info(`🔧 ADMIN CANCEL BOOKING called for booking ID: ${id}`);
         logger.info(`🔧 Admin user ID: ${req.user.id}, Role: ${req.user.role}`);
 
@@ -1202,11 +1246,11 @@ const adminCancelBooking = async (req, res) => {
                 booking.Schedule.time_start,
                 cancelReason
             );
-            
+
             // Send email
             const memberEmail = booking.Member.User?.email || booking.Member.email;
             let emailResult = { success: false, error: 'No email available' };
-            
+
             if (memberEmail) {
                 emailResult = await emailService.sendAdminCancellationEmail(
                     booking.Member.full_name,
@@ -1217,13 +1261,13 @@ const adminCancelBooking = async (req, res) => {
                     cancelReason
                 );
             }
-            
+
             if (whatsappResult.success) {
                 logger.info(`✅ Admin cancellation WhatsApp & Email sent to ${booking.Member.full_name}`);
                 logger.info(`📱 WhatsApp: ${whatsappResult.success ? '✅' : '❌'}, 📧 Email: ${emailResult.success ? '✅' : '❌'}`);
-                } else {
+            } else {
                 logger.error(`❌ Failed to send admin cancellation to ${booking.Member.full_name}: ${whatsappResult.error}`);
-                }
+            }
         } catch (error) {
             logger.error('Error initiating admin cancellation:', error);
         }
@@ -1232,7 +1276,7 @@ const adminCancelBooking = async (req, res) => {
         try {
             // Refresh booking data untuk memastikan status terbaru
             await booking.reload();
-            
+
             // Extract member_package_id dari notes
             let memberPackageId = null;
             if (booking.notes && booking.notes.includes('MemberPackageID:')) {
@@ -1241,7 +1285,7 @@ const adminCancelBooking = async (req, res) => {
                     memberPackageId = match[1];
                 }
             }
-            
+
             // Gunakan member_package_id dari notes jika ada, jika tidak gunakan package_id
             let targetMemberPackage = null;
             if (memberPackageId) {
@@ -1251,17 +1295,17 @@ const adminCancelBooking = async (req, res) => {
                     }
                 });
             }
-            
+
             // Fallback: cari berdasarkan package_id jika member_package_id tidak ditemukan
             if (!targetMemberPackage) {
                 targetMemberPackage = await require('../models').MemberPackage.findOne({
-                where: {
-                    member_id: booking.member_id,
-                    package_id: booking.package_id
-                }
-            });
+                    where: {
+                        member_id: booking.member_id,
+                        package_id: booking.package_id
+                    }
+                });
             }
-            
+
             if (targetMemberPackage) {
                 await updateSessionUsage(targetMemberPackage.id, booking.member_id, targetMemberPackage.package_id);
             }
@@ -1279,9 +1323,9 @@ const adminCancelBooking = async (req, res) => {
                     status: 'waiting_list'
                 }
             });
-            
+
             logger.info(`📊 Waitlist check for schedule ${booking.schedule_id}: ${waitlistCount} members in waitlist`);
-            
+
             if (waitlistCount > 0) {
                 promotionResult = await processWaitlistPromotion(booking.schedule_id);
                 if (promotionResult) {
@@ -1291,9 +1335,9 @@ const adminCancelBooking = async (req, res) => {
                 }
             } else {
                 logger.info(`ℹ️ No waitlist members to promote for schedule ${booking.schedule_id} (waitlist empty)`);
-                }
-            } catch (error) {
-                logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
+            }
+        } catch (error) {
+            logger.error(`❌ Failed to process waitlist promotion: ${error.message}`);
         }
 
         const responseData = {
@@ -1319,7 +1363,7 @@ const adminCancelBooking = async (req, res) => {
                 } : null
             }
         };
-        
+
         logger.info(`✅ ADMIN CANCEL RESPONSE: cancelled_by = ${responseData.data.cancelled_by}`);
         res.json(responseData);
     } catch (error) {
@@ -1486,7 +1530,7 @@ const updateScheduleAttendance = async (req, res) => {
         for (const booking of bookings) {
             const attendanceData = attendances.find(a => a.booking_id === booking.id);
             const oldAttendance = booking.attendance;
-            
+
             if (attendanceData) {
                 await booking.update({
                     attendance: attendanceData.attendance,

@@ -15,7 +15,7 @@ class ScheduleService {
         if (schedule.pax) {
             return schedule.pax;
         }
-        
+
         // Fallback ke default jika pax tidak ada
         switch (schedule.type) {
             case 'group':
@@ -34,7 +34,7 @@ class ScheduleService {
      */
     static getMinSignup(type, customMinSignup = null) {
         if (customMinSignup) return customMinSignup;
-        
+
         switch (type) {
             case 'group':
                 return 5;
@@ -56,7 +56,7 @@ class ScheduleService {
         const availableSlots = Math.max(0, maxCapacity - signupBookings.length);
         const isFull = availableSlots === 0;
         const hasWaitlist = waitlistBookings.length > 0;
-        
+
         let status = 'available';
         if (isFull && hasWaitlist) {
             status = 'full_with_waitlist';
@@ -65,7 +65,7 @@ class ScheduleService {
         } else if (signupBookings.length < minSignup) {
             status = 'minimum_not_met';
         }
-        
+
         return {
             status,
             isFull,
@@ -85,7 +85,7 @@ class ScheduleService {
         const cancelBufferMinutes = schedule.cancel_buffer_minutes ?? 120;
         const cancelDeadline = new Date(scheduleDateTime.getTime() - (cancelBufferMinutes * 60 * 1000));
         const isPastCancelDeadline = currentDateTime > cancelDeadline;
-        
+
         return {
             isPastCancelDeadline,
             cancelBufferMinutes,
@@ -115,9 +115,9 @@ class ScheduleService {
                 private_sessions_left: memberPackage.private_sessions_left || 0,
                 semi_private_sessions_left: memberPackage.semi_private_sessions_left || 0,
                 group_sessions_left: memberPackage.group_sessions_left || 0,
-                total_sessions_left: (memberPackage.private_sessions_left || 0) + 
-                                   (memberPackage.semi_private_sessions_left || 0) + 
-                                   (memberPackage.group_sessions_left || 0)
+                total_sessions_left: (memberPackage.private_sessions_left || 0) +
+                    (memberPackage.semi_private_sessions_left || 0) +
+                    (memberPackage.group_sessions_left || 0)
             };
         } catch (error) {
             logger.error('Error getting member session info:', error);
@@ -133,11 +133,11 @@ class ScheduleService {
         const signupBookings = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'signup') : [];
         const waitlistBookings = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'waiting_list') : [];
         const cancelledBookings = schedule.Bookings ? schedule.Bookings.filter(b => b.status === 'cancelled') : [];
-        
+
         // Hitung status dan kapasitas
         const statusInfo = this.calculateScheduleStatus(schedule, signupBookings, waitlistBookings);
         const cancelInfo = this.checkCancelBufferTime(schedule);
-        
+
         const scheduleData = {
             id: schedule.id,
             class_name: schedule.Class?.class_name || '',
@@ -149,7 +149,7 @@ class ScheduleService {
             date_start: schedule.date_start,
             time_start: schedule.time_start,
             time_end: schedule.time_end,
-            
+
             // ✅ Tambahkan object class dan trainer
             class: {
                 id: schedule.Class?.id || null,
@@ -168,7 +168,7 @@ class ScheduleService {
                 description: schedule.Trainer?.description || ''
             },
             level: schedule.level || null,
-            
+
             // Informasi booking dan slot
             max_capacity: statusInfo.maxCapacity,
             current_signups: signupBookings.length,
@@ -176,7 +176,7 @@ class ScheduleService {
             cancelled_count: cancelledBookings.length,
             available_slots: statusInfo.availableSlots,
             min_signup: statusInfo.minSignup,
-            
+
             // Status dan kondisi
             status: statusInfo.status,
             is_full: statusInfo.isFull,
@@ -184,24 +184,24 @@ class ScheduleService {
             is_past_cancel_deadline: cancelInfo.isPastCancelDeadline,
             can_book: !cancelInfo.isPastCancelDeadline && (statusInfo.availableSlots > 0 || statusInfo.hasWaitlist),
             can_cancel: !cancelInfo.isPastCancelDeadline,
-            
+
             // Informasi tambahan
             cancel_buffer_minutes: cancelInfo.cancelBufferMinutes,
             repeat_type: schedule.repeat_type || 'none',
             schedule_until: schedule.schedule_until,
             parent_schedule_id: schedule.parent_schedule_id,
-            
+
             // Metadata
             created_at: schedule.createdAt,
             updated_at: schedule.updatedAt
         };
-        
+
         // Tambahkan informasi khusus berdasarkan tipe
         if (schedule.type === 'group') {
             scheduleData.booking_deadline_hour = schedule.booking_deadline_hour || 24;
 
         }
-        
+
         if (schedule.type === 'private' && schedule.assignedMember) {
             scheduleData.assigned_member = {
                 id: schedule.assignedMember.id,
@@ -210,16 +210,18 @@ class ScheduleService {
                 phone: schedule.assignedMember.phone_number
             };
         }
-        
+
         // Tambahkan detail booking jika diminta
         if (includeBookings && schedule.Bookings) {
             // Get session summary for each member
             const bookingPromises = schedule.Bookings.map(async (b) => {
                 let sessionSummary = null;
-                try {
-                    sessionSummary = await getMemberSessionSummary(b.member_id);
-                } catch (error) {
-                    logger.error(`Error getting session summary for member ${b.member_id}:`, error);
+                if (b.member_id) {
+                    try {
+                        sessionSummary = await getMemberSessionSummary(b.member_id);
+                    } catch (error) {
+                        logger.error(`Error getting session summary for member ${b.member_id}:`, error);
+                    }
                 }
                 return { booking: b, sessionSummary };
             });
@@ -230,10 +232,12 @@ class ScheduleService {
                 .filter(item => item.booking.status === 'signup')
                 .map(item => ({
                     id: item.booking.id,
-                    member_id: item.booking.Member.id,
-                    member_name: item.booking.Member.full_name,
-                    member_phone: item.booking.Member.phone_number,
-                    member_email: item.booking.Member.User?.email || '',
+                    member_id: item.booking.Member?.id || null,
+                    member_name: item.booking.Member?.full_name || item.booking.guest_name || 'Guest',
+                    member_phone: item.booking.Member?.phone_number || '-',
+                    member_email: item.booking.Member?.User?.email || '-',
+                    is_guest: !item.booking.Member, // Flag to identify guest
+                    guest_name: item.booking.guest_name,
                     status: item.booking.status,
                     attendance: item.booking.attendance,
                     notes: item.booking.notes,
@@ -248,7 +252,7 @@ class ScheduleService {
                         package_type: item.booking.Package.type
                     } : null
                 }));
-            
+
             // PERBAIKAN: Sort waitlist bookings berdasarkan waitlist_joined_at
             const waitlistBookingsWithSessions = bookingsWithSessions
                 .filter(item => item.booking.status === 'waiting_list')
@@ -256,44 +260,48 @@ class ScheduleService {
                     // Gunakan waitlist_joined_at jika ada, fallback ke createdAt
                     const aTime = a.booking.waitlist_joined_at ? a.booking.waitlist_joined_at.getTime() : a.booking.createdAt.getTime();
                     const bTime = b.booking.waitlist_joined_at ? b.booking.waitlist_joined_at.getTime() : b.booking.createdAt.getTime();
-                    
+
                     if (aTime !== bTime) {
                         return aTime - bTime; // First come, first served
                     }
                     return a.booking.id.localeCompare(b.booking.id);
                 });
-            
+
             scheduleData.waitlist_bookings = waitlistBookingsWithSessions.map((item, index) => ({
-                    id: item.booking.id,
-                    member_id: item.booking.Member.id,
-                    member_name: item.booking.Member.full_name,
-                    member_phone: item.booking.Member.phone_number,
-                    member_email: item.booking.Member.User?.email || '',
-                    status: item.booking.status,
-                    attendance: item.booking.attendance,
-                    notes: item.booking.notes,
-                    created_at: item.booking.createdAt,
+                id: item.booking.id,
+                member_id: item.booking.Member?.id || null,
+                member_name: item.booking.Member?.full_name || item.booking.guest_name || 'Guest',
+                member_phone: item.booking.Member?.phone_number || '-',
+                member_email: item.booking.Member?.User?.email || '-',
+                is_guest: !item.booking.Member,
+                guest_name: item.booking.guest_name,
+                status: item.booking.status,
+                attendance: item.booking.attendance,
+                notes: item.booking.notes,
+                created_at: item.booking.createdAt,
                 waitlist_joined_at: item.booking.waitlist_joined_at,
                 waitlist_position: index + 1, // ✅ Tambahkan posisi waitlist
-                    // Tambahkan session left info
-                    session_left: item.sessionSummary ? {
-                        total_available_sessions: item.sessionSummary.total_available_sessions,
-                        packages: item.sessionSummary.packages
-                    } : null,
-                    package_info: item.booking.Package ? {
-                        package_name: item.booking.Package.name,
-                        package_type: item.booking.Package.type
-                    } : null
-                }));
-            
+                // Tambahkan session left info
+                session_left: item.sessionSummary ? {
+                    total_available_sessions: item.sessionSummary.total_available_sessions,
+                    packages: item.sessionSummary.packages
+                } : null,
+                package_info: item.booking.Package ? {
+                    package_name: item.booking.Package.name,
+                    package_type: item.booking.Package.type
+                } : null
+            }));
+
             scheduleData.cancelled_bookings = bookingsWithSessions
                 .filter(item => item.booking.status === 'cancelled')
                 .map(item => ({
                     id: item.booking.id,
-                    member_id: item.booking.Member.id,
-                    member_name: item.booking.Member.full_name,
-                    member_phone: item.booking.Member.phone_number,
-                    member_email: item.booking.Member.User?.email || '',
+                    member_id: item.booking.Member?.id || null,
+                    member_name: item.booking.Member?.full_name || item.booking.guest_name || 'Guest',
+                    member_phone: item.booking.Member?.phone_number || '-',
+                    member_email: item.booking.Member?.User?.email || '-',
+                    is_guest: !item.booking.Member,
+                    guest_name: item.booking.guest_name,
                     status: item.booking.status,
                     attendance: item.booking.attendance,
                     notes: item.booking.notes,
@@ -311,7 +319,7 @@ class ScheduleService {
                     } : null
                 }));
         }
-        
+
         return scheduleData;
     }
 
@@ -356,7 +364,7 @@ class ScheduleService {
         if (includeBookings) {
             includes.push({
                 model: Booking,
-                attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt', 'cancelled_by', 'waitlist_joined_at'],
+                attributes: ['id', 'schedule_id', 'member_id', 'package_id', 'guest_name', 'status', 'attendance', 'notes', 'createdAt', 'updatedAt', 'cancelled_by', 'waitlist_joined_at'],
                 include: [
                     {
                         model: Member,
@@ -407,7 +415,7 @@ class ScheduleService {
         const currentTime = new Date();
         const scheduleDateTime = new Date(`${schedule.date_start}T${schedule.time_start}`);
         const isPastSchedule = currentTime > scheduleDateTime;
-        
+
         // Jika schedule belum lewat, return status normal
         if (!isPastSchedule) {
             return {
@@ -422,7 +430,7 @@ class ScheduleService {
         const signupBookings = schedule.Bookings?.filter(b => b.status === 'signup') || [];
         const cancelledBookings = schedule.Bookings?.filter(b => b.status === 'cancelled') || [];
         const totalBookings = schedule.Bookings?.length || 0;
-        
+
         // Jika tidak ada booking sama sekali
         if (totalBookings === 0) {
             return {
@@ -431,7 +439,7 @@ class ScheduleService {
                 description: 'Kelas dibatalkan karena tidak ada booking'
             };
         }
-        
+
         // Jika semua booking di-cancel
         if (cancelledBookings.length === totalBookings && totalBookings > 0) {
             return {
@@ -442,7 +450,7 @@ class ScheduleService {
                 total_bookings: totalBookings
             };
         }
-        
+
         // Jika ada booking yang signup (kelas dilaksanakan)
         if (signupBookings.length > 0) {
             return {
@@ -454,7 +462,7 @@ class ScheduleService {
                 attendance_rate: Math.round((signupBookings.length / totalBookings) * 100)
             };
         }
-        
+
         // Fallback: jika ada booking tapi tidak ada yang signup
         return {
             status: 'cancelled',
@@ -470,7 +478,7 @@ class ScheduleService {
     static async formatScheduleDataWithStatus(schedule, includeBookings = false) {
         const baseData = await this.formatScheduleData(schedule, includeBookings);
         const statusInfo = this.detectScheduleStatus(schedule);
-        
+
         return {
             ...baseData,
             schedule_status: statusInfo

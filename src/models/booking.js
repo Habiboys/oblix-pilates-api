@@ -32,11 +32,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     member_id: {
       type: DataTypes.UUID,
-      allowNull: false
+      allowNull: true // Changed to allow null for guest bookings
     },
     package_id: {
       type: DataTypes.UUID,
-      allowNull: false
+      allowNull: true // Changed to allow null for guest bookings
+    },
+    guest_name: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Name for external member/guest'
     },
     status: {
       type: DataTypes.ENUM('signup', 'waiting_list', 'cancelled'),
