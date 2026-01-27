@@ -34,11 +34,12 @@ const uploadRoutes = require('./routes/upload.route');
 // Level routes removed - level is now enum field in schedule
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
-const swaggerDocument = YAML.load(path.join(__dirname,'../documentation.yaml'));
+const swaggerDocument = YAML.load(path.join(__dirname, '../documentation.yaml'));
 const { logger, errorLogger } = require('./middlewares/logger.middleware');
 const { startAllCronJobs } = require('./cron/bookingCron');
 const { startReminderCronJobs } = require('./cron/reminderCron');
 const { startOrderExpiryCron } = require('./cron/orderCron');
+const { startLogCleanupCron } = require('./cron/logCleanupCron');
 
 // Middleware untuk logging semua request
 app.use(logger);
@@ -121,9 +122,10 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`API Documentation: http://localhost:${PORT}/api-docs`);
   console.log(`Logs will be saved to: logs/api-${new Date().toISOString().split('T')[0]}.log`);
-  
+
   // Start cron jobs
   startAllCronJobs();
   startReminderCronJobs();
   startOrderExpiryCron();
+  startLogCleanupCron();
 });
