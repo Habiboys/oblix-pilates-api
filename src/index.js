@@ -39,7 +39,6 @@ const { logger, errorLogger } = require('./middlewares/logger.middleware');
 const { startAllCronJobs } = require('./cron/bookingCron');
 const { startReminderCronJobs } = require('./cron/reminderCron');
 const { startOrderExpiryCron } = require('./cron/orderCron');
-const { startLogCleanupCron } = require('./cron/logCleanupCron');
 
 // Middleware untuk logging semua request
 app.use(logger);
@@ -127,5 +126,4 @@ app.listen(PORT, () => {
   startAllCronJobs();
   startReminderCronJobs();
   startOrderExpiryCron();
-  startLogCleanupCron();
 });
